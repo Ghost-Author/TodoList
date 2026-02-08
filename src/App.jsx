@@ -40,6 +40,10 @@ const App = () => {
   
   // --- Auth ---
   useEffect(() => {
+    if (!supabase) {
+      setAuthLoading(false);
+      return undefined;
+    }
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
@@ -112,7 +116,7 @@ const App = () => {
   };
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!supabase || !session?.user?.id) return;
     const userId = session.user.id;
     Promise.all([ensureDefaultCategories(userId), loadTasks(userId)])
       .then(([cats]) => {
@@ -279,6 +283,24 @@ const App = () => {
     }));
     return { total, completed, highPriority, catData };
   }, [tasks, categories]);
+
+  if (!supabase) {
+    return (
+      <div className="min-h-screen text-slate-900 pb-24">
+        <div className="max-w-md mx-auto p-6 md:p-10">
+          <div className="card-soft p-8 mt-16">
+            <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a] flex items-center gap-2 mb-2">
+              <Cloud className="w-7 h-7 text-[#ff8acb]" /> 云朵清单
+            </h1>
+            <p className="text-[#7b6f8c] mb-4">未检测到 Supabase 配置。</p>
+            <p className="text-sm text-[#7b6f8c]">
+              请在 Vercel 或本地环境变量中设置 `VITE_SUPABASE_URL` 与 `VITE_SUPABASE_ANON_KEY`。
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (authLoading) {
     return (
