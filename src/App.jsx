@@ -9,7 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   LayoutGrid,
-  Trophy,
+  Cloud,
   PieChart,
   StickyNote,
   X
@@ -145,11 +145,10 @@ const App = () => {
           <>
             <div className="grid grid-cols-1 gap-6 mb-8">
               <div className="lg:col-span-2 flex flex-col justify-end">
-                <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a]">云朵清单</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a] flex items-center gap-2">
+                  <Cloud className="w-7 h-7 text-[#ff8acb]" /> 云朵清单
+                </h1>
                 <p className="text-[#7b6f8c] mt-1">把每件事放进软绵绵的小云朵里。</p>
-                <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold pill-soft rounded-full px-3 py-1 w-fit shadow-sm">
-                  <Trophy className="w-3 h-3" /> 可爱模式已开启
-                </div>
               </div>
             </div>
 
