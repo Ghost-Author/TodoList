@@ -488,11 +488,12 @@ const App = () => {
                       placeholder="验证码"
                       className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                     />
-                    <div className="px-4 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a] font-black tracking-[0.2em]">
+                    <button
+                      type="button"
+                      onClick={refreshCaptcha}
+                      className="px-4 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a] font-black tracking-[0.2em]"
+                    >
                       {captchaText}
-                    </div>
-                    <button type="button" onClick={refreshCaptcha} className="text-xs text-[#7b6f8c] hover:text-[#ff6fb1]">
-                      换一个
                     </button>
                   </div>
                   {authError && (
