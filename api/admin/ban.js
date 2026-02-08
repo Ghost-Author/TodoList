@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server missing Supabase credentials' });
   }
 
-  const { id, action } = req.body || {};
+  const { id, action, reason, adminEmail } = req.body || {};
   if (!id || !action) {
     return res.status(400).json({ error: 'Missing id or action' });
   }
@@ -33,6 +33,12 @@ export default async function handler(req, res) {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
+    await supabase.from('admin_audit').insert({
+      admin_email: adminEmail || null,
+      action: action === 'ban' ? 'ban_user' : 'unban_user',
+      target_user_id: id,
+      detail: { reason: reason || null }
+    });
     return res.status(200).json({
       id: data?.user?.id,
       ban_expires_at: data?.user?.ban_expires_at || null

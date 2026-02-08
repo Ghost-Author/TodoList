@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server missing Supabase credentials' });
   }
 
-  const { email } = req.body || {};
+  const { email, adminEmail } = req.body || {};
   if (!email) {
     return res.status(400).json({ error: 'Missing email' });
   }
@@ -35,6 +35,11 @@ export default async function handler(req, res) {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
+    await supabase.from('admin_audit').insert({
+      admin_email: adminEmail || null,
+      action: 'reset_password',
+      detail: { email }
+    });
     return res.status(200).json({
       actionLink: data?.properties?.action_link || data?.action_link || null
     });

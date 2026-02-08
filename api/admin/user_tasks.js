@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, text, completed, created_at, due_date, priority, category')
+      .select('id, text, completed, created_at, due_date, priority, category, tags')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(20);

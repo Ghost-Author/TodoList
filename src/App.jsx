@@ -34,6 +34,7 @@ const App = () => {
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
   const [dragId, setDragId] = useState(null);
+  const [captchaFails, setCaptchaFails] = useState(0);
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -382,9 +383,11 @@ const App = () => {
     }
     if (captchaInput.trim().toUpperCase() !== captchaText) {
       setAuthError('验证码不正确');
+      setCaptchaFails((v) => v + 1);
       refreshCaptcha();
       return;
     }
+    setCaptchaFails(0);
     try {
       if (authMode === 'signup') {
         const { error } = await supabase.auth.signUp({
@@ -607,11 +610,21 @@ const App = () => {
                     <button
                       type="button"
                       onClick={refreshCaptcha}
-                      className="px-4 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a] font-black tracking-[0.2em]"
+                      className="px-2 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a]"
+                      title="点击刷新验证码"
                     >
-                      {captchaText}
+                      {captchaImage ? (
+                        <img src={captchaImage} alt="captcha" className="h-8 w-28 object-contain" />
+                      ) : (
+                        <span className="font-black tracking-[0.2em]">{captchaText}</span>
+                      )}
                     </button>
                   </div>
+                  {captchaFails >= 3 && (
+                    <div className="text-[10px] text-[#ff6fb1]">
+                      连续输错多次，请刷新验证码后再试
+                    </div>
+                  )}
                   {authError && (
                     <div className="text-xs text-[#ff6fb1]">{authError}</div>
                   )}

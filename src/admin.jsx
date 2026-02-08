@@ -18,6 +18,7 @@ const AdminApp = () => {
   const [resetLink, setResetLink] = useState('');
   const [userSearch, setUserSearch] = useState('');
   const [userTasks, setUserTasks] = useState([]);
+  const [banReason, setBanReason] = useState('');
 
   const loadSummary = async () => {
     setError('');
@@ -121,11 +122,17 @@ const AdminApp = () => {
           'Content-Type': 'application/json',
           'x-admin-secret': secret
         },
-        body: JSON.stringify({ id, action: isBanned ? 'unban' : 'ban' })
+        body: JSON.stringify({
+          id,
+          action: isBanned ? 'unban' : 'ban',
+          reason: banReason,
+          adminEmail: selectedUser?.email || null
+        })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || '请求失败');
       setUserDetail((prev) => prev ? { ...prev, ban_expires_at: json.ban_expires_at } : prev);
+      setBanReason('');
     } catch (err) {
       setError(err.message || '请求失败');
     }
@@ -141,7 +148,7 @@ const AdminApp = () => {
           'Content-Type': 'application/json',
           'x-admin-secret': secret
         },
-        body: JSON.stringify({ email })
+        body: JSON.stringify({ email, adminEmail: selectedUser?.email || null })
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || '请求失败');
@@ -299,6 +306,13 @@ const AdminApp = () => {
                     <div><span className="font-bold text-[#3b2e4a]">禁用状态：</span>{userDetail.ban_expires_at ? `已禁用（到 ${new Date(userDetail.ban_expires_at).toLocaleString()}）` : '正常'}</div>
 
                     <div className="flex gap-2 pt-2">
+                      <input
+                        type="text"
+                        value={banReason}
+                        onChange={(e) => setBanReason(e.target.value)}
+                        placeholder="禁用原因（可选）"
+                        className="flex-1 text-xs bg-white/80 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      />
                       <button
                         type="button"
                         onClick={() => toggleBan(userDetail.id, Boolean(userDetail.ban_expires_at))}
@@ -332,6 +346,7 @@ const AdminApp = () => {
                             <div className="text-[#7b6f8c]">
                               {t.completed ? '已完成' : '进行中'} · {t.priority || '-'} · {t.category || '-'}
                               {t.due_date ? ` · 截止 ${t.due_date}` : ''}
+                              {t.tags && t.tags.length > 0 ? ` · #${t.tags.join(' #')}` : ''}
                             </div>
                           </div>
                         ))}
