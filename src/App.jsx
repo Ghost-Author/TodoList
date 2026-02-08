@@ -1,19 +1,14 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Trash2, 
   CheckCircle2, 
   Circle, 
-  Clock, 
   BarChart3, 
   Calendar,
   ChevronDown,
   ChevronUp,
   LayoutGrid,
-  Play,
-  Pause,
-  RotateCcw,
-  Coffee,
   Trophy,
   PieChart,
   StickyNote,
@@ -43,12 +38,6 @@ const App = () => {
   const [isManagingCats, setIsManagingCats] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
   
-  // Pomodoro State
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isActive, setIsActive] = useState(false);
-  const [isBreak, setIsBreak] = useState(false);
-  const timerRef = useRef(null);
-
   // --- Persistence ---
   useEffect(() => {
     localStorage.setItem('organized_tasks_v3_1', JSON.stringify(tasks));
@@ -61,34 +50,6 @@ const App = () => {
   useEffect(() => {
     document.title = '云朵清单';
   }, []);
-
-  // --- Pomodoro Logic ---
-  const toggleTimer = () => setIsActive(!isActive);
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeft(isBreak ? 5 * 60 : 25 * 60);
-  };
-
-  useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      clearInterval(timerRef.current);
-      setIsActive(false);
-      const nextMode = !isBreak;
-      setIsBreak(nextMode);
-      setTimeLeft(nextMode ? 5 * 60 : 25 * 60);
-    }
-    return () => clearInterval(timerRef.current);
-  }, [isActive, timeLeft, isBreak]);
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   // --- Task & Category Logic ---
   const priorities = {
@@ -182,26 +143,12 @@ const App = () => {
 
         {view === 'tasks' ? (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-6 mb-8">
               <div className="lg:col-span-2 flex flex-col justify-end">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-800">云朵清单</h1>
                 <p className="text-slate-500 mt-1">把每件事放进软绵绵的小云朵里。</p>
                 <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-sky-500 bg-white/70 border border-sky-100 rounded-full px-3 py-1 w-fit shadow-sm">
                   <Trophy className="w-3 h-3" /> 可爱模式已开启
-                </div>
-              </div>
-
-              <div className={`p-6 rounded-3xl shadow-xl border flex flex-col items-center transition-all ${isBreak ? 'bg-emerald-50/80 border-emerald-100' : 'bg-sky-50/80 border-sky-100'}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  {isBreak ? <Coffee className="w-4 h-4 text-emerald-600" /> : <Clock className="w-4 h-4 text-sky-600" />}
-                  <span className={`text-xs font-bold uppercase tracking-widest ${isBreak ? 'text-emerald-600' : 'text-sky-600'}`}>{isBreak ? '休息中' : '专注中'}</span>
-                </div>
-                <div className="text-4xl font-black font-mono text-slate-800 mb-4 tracking-tight">{formatTime(timeLeft)}</div>
-                <div className="flex gap-2">
-                  <button onClick={toggleTimer} className={`p-3 rounded-full shadow-md transition-all active:scale-95 ${isActive ? 'bg-white text-slate-600' : 'bg-slate-800 text-white'}`}>
-                    {isActive ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-                  </button>
-                  <button onClick={resetTimer} className="p-3 bg-white text-slate-400 rounded-full shadow-sm hover:text-slate-600 transition-colors"><RotateCcw className="w-5 h-5" /></button>
                 </div>
               </div>
             </div>
