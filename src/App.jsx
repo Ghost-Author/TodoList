@@ -14,42 +14,122 @@ import {
   StickyNote,
   X
 } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 const App = () => {
   // --- State Management ---
-  const [tasks, setTasks] = useState(() => {
-    const saved = localStorage.getItem('organized_tasks_v3_1');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [categories, setCategories] = useState(() => {
-    const saved = localStorage.getItem('custom_categories');
-    return saved ? JSON.parse(saved) : ['工作', '生活', '学习', '健康', '其他'];
-  });
+  const [tasks, setTasks] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+  const [authMode, setAuthMode] = useState('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('medium');
-  const [category, setCategory] = useState(categories[0]);
+  const [category, setCategory] = useState('');
   const [filter, setFilter] = useState('all');
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
   
-  // --- Persistence ---
+  // --- Auth ---
   useEffect(() => {
-    localStorage.setItem('organized_tasks_v3_1', JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    localStorage.setItem('custom_categories', JSON.stringify(categories));
-  }, [categories]);
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setSession(data.session);
+      setAuthLoading(false);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+    });
+    return () => {
+      mounted = false;
+      listener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     document.title = '云朵清单';
   }, []);
+
+  useEffect(() => {
+    if (!session) {
+      setTasks([]);
+      setCategories([]);
+      setCategory('');
+    }
+  }, [session]);
+
+  const defaultCategories = ['工作', '生活', '学习', '健康', '其他'];
+
+  const ensureDefaultCategories = async (userId) => {
+    const { data: existing, error } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    if (existing.length > 0) {
+      setCategories(existing.map((c) => c.name));
+      return existing;
+    }
+    const { data: inserted, error: insertError } = await supabase
+      .from('categories')
+      .insert(defaultCategories.map((name) => ({ name, user_id: userId })))
+      .select('id, name')
+      .order('created_at', { ascending: true });
+    if (insertError) throw insertError;
+    setCategories(inserted.map((c) => c.name));
+    return inserted;
+  };
+
+  const loadTasks = async (userId) => {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('id, text, note, due_date, priority, category, completed, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    setTasks(
+      data.map((task) => ({
+        id: task.id,
+        text: task.text,
+        note: task.note || '',
+        dueDate: task.due_date || '',
+        priority: task.priority || 'medium',
+        category: task.category || '',
+        completed: task.completed,
+        createdAt: task.created_at
+      }))
+    );
+  };
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const userId = session.user.id;
+    Promise.all([ensureDefaultCategories(userId), loadTasks(userId)])
+      .then(([cats]) => {
+        if (!category && cats.length > 0) {
+          setCategory(cats[0].name);
+        }
+      })
+      .catch(() => {
+        // keep UI usable even if remote load fails
+      });
+  }, [session]);
+
+  useEffect(() => {
+    if (!category && categories.length > 0) {
+      setCategory(categories[0]);
+    }
+  }, [categories, category]);
 
   // --- Task & Category Logic ---
   const priorities = {
@@ -59,46 +139,121 @@ const App = () => {
     none: { label: '不重要不紧急', color: 'text-gray-400', bg: 'bg-gray-50', border: 'border-gray-100' }
   };
 
-  const addTask = (e) => {
+  const addTask = async (e) => {
     e.preventDefault();
     const trimmedInput = input.trim();
-    if (!trimmedInput) return;
-    const newTask = {
-      id: Date.now(),
-      text: trimmedInput,
-      note: note.trim(),
-      dueDate: dueDate,
-      priority,
-      category,
-      completed: false,
-      createdAt: new Date().toISOString()
-    };
-    setTasks([newTask, ...tasks]);
+    if (!trimmedInput || !session?.user?.id) return;
+    const taskCategory = category || categories[0] || '';
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: session.user.id,
+        text: trimmedInput,
+        note: note.trim(),
+        due_date: dueDate || null,
+        priority,
+        category: taskCategory,
+        completed: false
+      })
+      .select('id, text, note, due_date, priority, category, completed, created_at')
+      .single();
+    if (error) return;
+    setTasks([
+      {
+        id: data.id,
+        text: data.text,
+        note: data.note || '',
+        dueDate: data.due_date || '',
+        priority: data.priority || 'medium',
+        category: data.category || taskCategory,
+        completed: data.completed,
+        createdAt: data.created_at
+      },
+      ...tasks
+    ]);
     setInput('');
     setNote('');
     setDueDate('');
   };
 
-  const addCategory = () => {
-    if (newCatInput.trim() && !categories.includes(newCatInput.trim())) {
-      setCategories([...categories, newCatInput.trim()]);
-      setNewCatInput('');
-    }
+  const addCategory = async () => {
+    const trimmed = newCatInput.trim();
+    if (!trimmed || categories.includes(trimmed) || !session?.user?.id) return;
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({ name: trimmed, user_id: session.user.id })
+      .select('name')
+      .single();
+    if (error) return;
+    setCategories([...categories, data.name]);
+    setNewCatInput('');
   };
 
-  const removeCategory = (cat) => {
-    if (categories.length > 1) {
-      setCategories(categories.filter(c => c !== cat));
-      if (category === cat) setCategory(categories[0]);
-    }
+  const removeCategory = async (cat) => {
+    if (categories.length <= 1 || !session?.user?.id) return;
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('name', cat);
+    if (error) return;
+    const next = categories.filter(c => c !== cat);
+    setCategories(next);
+    if (category === cat) setCategory(next[0] || '');
   };
 
-  const toggleTask = (id) => {
+  const toggleTask = async (id) => {
+    const target = tasks.find(t => t.id === id);
+    if (!target || !session?.user?.id) return;
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed: !target.completed })
+      .eq('id', id)
+      .eq('user_id', session.user.id);
+    if (error) return;
     setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
   };
 
-  const deleteTask = (id) => {
+  const deleteTask = async (id) => {
+    if (!session?.user?.id) return;
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id);
+    if (error) return;
     setTasks(tasks.filter(t => t.id !== id));
+  };
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!email.trim() || !password) {
+      setAuthError('请输入邮箱和密码');
+      return;
+    }
+    if (authMode === 'signup') {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password
+      });
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
+      setAuthError('注册成功，请检查邮箱完成验证后登录');
+      setAuthMode('signin');
+      return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password
+    });
+    if (error) setAuthError(error.message);
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
   const isOverdue = (date) => {
@@ -125,12 +280,67 @@ const App = () => {
     return { total, completed, highPriority, catData };
   }, [tasks, categories]);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-[#7b6f8c]">
+        加载中...
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen text-slate-900 pb-24">
+        <div className="max-w-md mx-auto p-6 md:p-10">
+          <div className="card-soft p-8 mt-16">
+            <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a] flex items-center gap-2 mb-2">
+              <Cloud className="w-7 h-7 text-[#ff8acb]" /> 云朵清单
+            </h1>
+            <p className="text-[#7b6f8c] mb-6">登录后即可同步你的清单。</p>
+            <form onSubmit={handleAuth} className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="邮箱"
+                className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="密码"
+                className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+              />
+              {authError && (
+                <div className="text-xs text-[#ff6fb1]">{authError}</div>
+              )}
+              <button type="submit" className="w-full btn-soft py-3 rounded-2xl font-bold transition-all">
+                {authMode === 'signup' ? '注册' : '登录'}
+              </button>
+            </form>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode(authMode === 'signup' ? 'signin' : 'signup');
+                setAuthError('');
+              }}
+              className="mt-4 text-xs text-[#7b6f8c] hover:text-[#ff6fb1]"
+            >
+              {authMode === 'signup' ? '已有账号？去登录' : '没有账号？去注册'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen text-slate-900 pb-24">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         
         {/* Nav Tabs */}
-        <div className="flex justify-center mb-8">
+        <div className="flex items-center justify-between mb-8 gap-4">
           <div className="card-soft-sm p-1 flex">
             <button onClick={() => setView('tasks')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'tasks' ? 'tab-active' : 'tab-inactive hover:text-[#ff6fb1]'}`}>
               <LayoutGrid className="w-4 h-4" /> 任务清单
@@ -139,6 +349,9 @@ const App = () => {
               <PieChart className="w-4 h-4" /> 小成就
             </button>
           </div>
+          <button onClick={signOut} className="text-xs font-bold text-[#7b6f8c] hover:text-[#ff6fb1]">
+            退出登录
+          </button>
         </div>
 
         {view === 'tasks' ? (
