@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import { initSentry, Sentry } from './sentry.js';
 
 const AdminApp = () => {
   const [secret, setSecret] = useState('');
@@ -75,8 +76,12 @@ const AdminApp = () => {
   );
 };
 
+initSentry();
+
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AdminApp />
+    <Sentry.ErrorBoundary fallback={<div className="min-h-screen flex items-center justify-center text-[#7b6f8c]">后台出错了，请刷新重试。</div>}>
+      <AdminApp />
+    </Sentry.ErrorBoundary>
   </React.StrictMode>
 );

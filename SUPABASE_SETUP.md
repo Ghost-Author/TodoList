@@ -12,6 +12,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 VITE_ADMIN_EMAILS=admin1@example.com,admin2@example.com
 ADMIN_SECRET=your_admin_secret
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+VITE_SENTRY_DSN=your_sentry_dsn
 ```
 
 5. (Optional) If email confirmation is enabled, users must verify email before login.

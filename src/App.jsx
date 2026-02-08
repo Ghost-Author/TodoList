@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -43,6 +43,7 @@ const App = () => {
   const [sortBy, setSortBy] = useState('created_desc');
   const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(v => v.trim()).filter(Boolean);
   const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
+  const deferredQuery = useDeferredValue(searchQuery);
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
@@ -353,8 +354,8 @@ const App = () => {
     let result = tasks;
     if (filter === 'active') result = tasks.filter(t => !t.completed);
     if (filter === 'completed') result = tasks.filter(t => t.completed);
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
+    if (deferredQuery.trim()) {
+      const q = deferredQuery.trim().toLowerCase();
       result = result.filter(t => {
         const hay = [
           t.text,
@@ -377,7 +378,7 @@ const App = () => {
     }[sortBy];
     if (sorter) result = [...result].sort(sorter);
     return result;
-  }, [tasks, filter, searchQuery, sortBy]);
+  }, [tasks, filter, deferredQuery, sortBy]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -914,6 +915,7 @@ const App = () => {
               <div className="space-y-3 text-sm text-[#7b6f8c] leading-relaxed">
                 <p>云朵清单仅收集账号邮箱与您主动填写的任务内容，用于账号登录与数据同步。</p>
                 <p>数据存储于 Supabase（数据库与认证服务），并通过行级权限控制仅允许账号本人访问。</p>
+                <p>我们使用 Sentry 进行错误监控，可能收集设备与浏览器信息以帮助定位问题。</p>
                 <p>您可以在设置中导出或清空自己的数据。如需注销账号，可联系我们处理。</p>
                 <p>如有疑问请联系：liupggg@gmail.com</p>
               </div>
