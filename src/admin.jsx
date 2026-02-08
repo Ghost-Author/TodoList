@@ -16,6 +16,7 @@ const AdminApp = () => {
   const [userDetail, setUserDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [resetLink, setResetLink] = useState('');
+  const [userSearch, setUserSearch] = useState('');
 
   const loadSummary = async () => {
     setError('');
@@ -58,6 +59,25 @@ const AdminApp = () => {
     } finally {
       setUsersLoading(false);
     }
+  };
+
+  const exportUsers = () => {
+    const rows = users.map((u) => ({
+      email: u.email || '',
+      created_at: u.created_at || '',
+      last_sign_in_at: u.last_sign_in_at || ''
+    }));
+    const header = ['email', 'created_at', 'last_sign_in_at'];
+    const csv = [header.join(','), ...rows.map(r => header.map(k => `"${String(r[k]).replace(/\"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `users_page_${page}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   const loadUserDetail = async (id) => {
@@ -184,13 +204,21 @@ const AdminApp = () => {
 
           {tab === 'users' && (
             <div className="mt-6">
-              <div className="flex items-center justify-between mb-3 text-xs text-[#7b6f8c]">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3 text-xs text-[#7b6f8c]">
                 <span>第 {page} 页</span>
                 <div className="flex gap-2">
                   <button onClick={() => loadUsers(Math.max(page - 1, 1))} className="pill-soft px-3 py-1 rounded-full">上一页</button>
                   <button onClick={() => loadUsers(page + 1)} className="pill-soft px-3 py-1 rounded-full">下一页</button>
+                  <button onClick={exportUsers} className="pill-soft px-3 py-1 rounded-full">导出本页</button>
                 </div>
               </div>
+              <input
+                type="text"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="搜索邮箱"
+                className="mb-3 w-full text-xs bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+              />
               <div className="card-soft-sm p-4 overflow-auto">
                 <table className="w-full text-xs text-left">
                   <thead className="text-[#7b6f8c]">
@@ -202,7 +230,7 @@ const AdminApp = () => {
                     </tr>
                   </thead>
                   <tbody className="text-[#3b2e4a]">
-                    {users.map((u) => (
+                    {users.filter((u) => (u.email || '').toLowerCase().includes(userSearch.trim().toLowerCase())).map((u) => (
                       <tr key={u.id} className="border-t border-[#ffe4f2]">
                         <td className="py-2">{u.email || '-'}</td>
                         <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>

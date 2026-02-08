@@ -46,6 +46,7 @@ const App = () => {
   const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(v => v.trim()).filter(Boolean);
   const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
   const deferredQuery = useDeferredValue(searchQuery);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
@@ -261,6 +262,47 @@ const App = () => {
       .eq('user_id', session.user.id);
     if (error) return;
     setTasks(tasks.filter(t => t.id !== id));
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const selectAllFiltered = () => {
+    setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
+  };
+
+  const bulkComplete = async (completed) => {
+    if (!session?.user?.id || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed })
+      .in('id', ids)
+      .eq('user_id', session.user.id);
+    if (error) return;
+    setTasks(tasks.map(t => selectedIds.has(t.id) ? { ...t, completed } : t));
+    clearSelection();
+  };
+
+  const bulkDelete = async () => {
+    if (!session?.user?.id || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .in('id', ids)
+      .eq('user_id', session.user.id);
+    if (error) return;
+    setTasks(tasks.filter(t => !selectedIds.has(t.id)));
+    clearSelection();
   };
 
   const handleAuth = async (e) => {
@@ -766,6 +808,31 @@ const App = () => {
                   清除筛选
                 </button>
               </div>
+              <div className="flex flex-wrap gap-2 text-xs font-bold">
+                <button type="button" onClick={selectAllFiltered} className="pill-soft px-3 py-1 rounded-full">
+                  全选当前
+                </button>
+                <button type="button" onClick={clearSelection} className="pill-soft px-3 py-1 rounded-full">
+                  取消选择
+                </button>
+                <button type="button" onClick={() => bulkComplete(true)} className="pill-soft px-3 py-1 rounded-full">
+                  标记完成
+                </button>
+                <button type="button" onClick={() => bulkComplete(false)} className="pill-soft px-3 py-1 rounded-full">
+                  标记未完成
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('确定要删除所选任务吗？')) {
+                      bulkDelete();
+                    }
+                  }}
+                  className="px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8]"
+                >
+                  批量删除
+                </button>
+              </div>
             </div>
 
             {/* Task Items */}
@@ -778,6 +845,13 @@ const App = () => {
                 filteredTasks.map(task => (
                   <div key={task.id} className={`group flex flex-col transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}>
                     <div className="flex items-center gap-4 p-4">
+                      <button
+                        onClick={() => toggleSelect(task.id)}
+                        className={`h-5 w-5 rounded-md border flex items-center justify-center text-xs font-black ${selectedIds.has(task.id) ? 'bg-[#ff8acb] text-white border-[#ff8acb]' : 'bg-white border-[#ffe4f2] text-[#7b6f8c]'}`}
+                        title="选择任务"
+                      >
+                        {selectedIds.has(task.id) ? '✓' : ''}
+                      </button>
                       <button onClick={() => toggleTask(task.id)} className={`flex-shrink-0 transition-transform active:scale-90 ${task.completed ? 'text-[#ff6fb1]' : 'text-slate-300 hover:text-[#ff8acb]'}`}>
                         {task.completed ? <CheckCircle2 className="w-7 h-7" /> : <Circle className="w-7 h-7" />}
                       </button>
