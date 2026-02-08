@@ -14,6 +14,9 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { generateCaptcha } from './utils/captcha.js';
+import AuthPanel from './components/AuthPanel.jsx';
+import Toast from './components/Toast.jsx';
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 
 const App = () => {
@@ -86,43 +89,6 @@ const App = () => {
   useEffect(() => {
     document.title = '云朵清单';
   }, []);
-
-  const generateCaptcha = (length = 5) => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const text = Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    const canvas = document.createElement('canvas');
-    canvas.width = 140;
-    canvas.height = 48;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return { text, image: '' };
-
-    ctx.fillStyle = '#fff7fb';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (let i = 0; i < 5; i += 1) {
-      ctx.strokeStyle = `rgba(255, 138, 203, ${0.25 + Math.random() * 0.2})`;
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.stroke();
-    }
-
-    ctx.font = 'bold 26px Quicksand, Nunito, Arial Rounded MT Bold, sans-serif';
-    ctx.fillStyle = '#3b2e4a';
-    [...text].forEach((ch, i) => {
-      const angle = (Math.random() - 0.5) * 0.4;
-      const x = 12 + i * 24;
-      const y = 32 + (Math.random() * 6 - 3);
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-      ctx.fillText(ch, 0, 0);
-      ctx.restore();
-    });
-
-    const image = canvas.toDataURL('image/png');
-    return { text, image };
-  };
 
   useEffect(() => {
     const { text, image } = generateCaptcha(5);
@@ -623,108 +589,29 @@ const App = () => {
 
   if (!session) {
     return (
-      <div className="min-h-screen text-slate-900 pb-24">
-        <div className="max-w-md mx-auto p-6 md:p-10">
-          <div className="card-soft p-8 mt-16">
-            <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a] flex items-center gap-2 mb-2">
-              <Cloud className="w-7 h-7 text-[#ff8acb]" /> 云朵清单
-            </h1>
-            <p className="text-[#7b6f8c] mb-6">登录后即可同步你的清单。</p>
-            {recoveryMode ? (
-              <div className="space-y-4">
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="设置新密码"
-                  className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                />
-                {authError && (
-                  <div className="text-xs text-[#ff6fb1]">{authError}</div>
-                )}
-                <button type="button" onClick={updatePassword} className="w-full btn-soft py-3 rounded-2xl font-bold transition-all">
-                  更新密码
-                </button>
-              </div>
-            ) : (
-              <>
-                <form onSubmit={handleAuth} className="space-y-4">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="邮箱"
-                    className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                  />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="密码"
-                    className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                  />
-                  <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
-                    <input
-                      type="text"
-                      value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
-                      placeholder="验证码"
-                      className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                    />
-                    <button
-                      type="button"
-                      onClick={refreshCaptcha}
-                      className="px-2 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a]"
-                      title="点击刷新验证码"
-                    >
-                      {captchaImage ? (
-                        <img src={captchaImage} alt="captcha" className="h-8 w-28 object-contain" />
-                      ) : (
-                        <span className="font-black tracking-[0.2em]">{captchaText}</span>
-                      )}
-                    </button>
-                  </div>
-                  {captchaFails >= 3 && (
-                    <div className="text-[10px] text-[#ff6fb1]">
-                      连续输错多次，请刷新验证码后再试
-                    </div>
-                  )}
-                  {captchaLockUntil > Date.now() && (
-                    <div className="text-[10px] text-[#ff6fb1]">
-                      请稍后再试（约 {Math.ceil((captchaLockUntil - Date.now()) / 1000)} 秒）
-                    </div>
-                  )}
-                  {authError && (
-                    <div className="text-xs text-[#ff6fb1]">{authError}</div>
-                  )}
-                  <button type="submit" className="w-full btn-soft py-3 rounded-2xl font-bold transition-all">
-                    {authMode === 'signup' ? '注册' : '登录'}
-                  </button>
-                </form>
-                <div className="mt-4 flex items-center justify-between text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthMode(authMode === 'signup' ? 'signin' : 'signup');
-                      setAuthError('');
-                    }}
-                    className="text-[#7b6f8c] hover:text-[#ff6fb1]"
-                  >
-                    {authMode === 'signup' ? '已有账号？去登录' : '没有账号？去注册'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={sendResetEmail}
-                    className="text-[#7b6f8c] hover:text-[#ff6fb1]"
-                  >
-                    忘记密码
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <AuthPanel
+        recoveryMode={recoveryMode}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        updatePassword={updatePassword}
+        authError={authError}
+        authMode={authMode}
+        setAuthMode={setAuthMode}
+        setAuthError={setAuthError}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        handleAuth={handleAuth}
+        sendResetEmail={sendResetEmail}
+        captchaInput={captchaInput}
+        setCaptchaInput={setCaptchaInput}
+        captchaImage={captchaImage}
+        captchaText={captchaText}
+        refreshCaptcha={refreshCaptcha}
+        captchaFails={captchaFails}
+        captchaLockUntil={captchaLockUntil}
+      />
     );
   }
 
@@ -1161,16 +1048,7 @@ const App = () => {
           </div>
         )}
 
-        {toast && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 border border-[#ffe4f2] px-4 py-2 rounded-full text-xs text-[#3b2e4a] shadow-sm flex items-center gap-3">
-            <span>{toast.message}</span>
-            {toast.action && (
-              <button type="button" onClick={undoDelete} className="text-[#ff6fb1] font-bold">
-                {toast.action}
-              </button>
-            )}
-          </div>
-        )}
+        <Toast toast={toast} onAction={undoDelete} />
 
         <div className="mt-16 text-center">
           <p className="text-[#ff9ccc] text-[10px] font-black uppercase tracking-[0.3em]">Soft Focus · Sweet Progress</p>
