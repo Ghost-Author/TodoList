@@ -41,6 +41,8 @@ const App = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_desc');
+  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(v => v.trim()).filter(Boolean);
+  const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
@@ -506,6 +508,11 @@ const App = () => {
             </button>
           </div>
           <div className="flex items-center gap-3 text-xs font-bold">
+            {isAdmin && (
+              <a href="/admin.html" className="text-[#7b6f8c] hover:text-[#ff6fb1]">
+                后台
+              </a>
+            )}
             <button onClick={() => setShowSettings(true)} className="text-[#7b6f8c] hover:text-[#ff6fb1]">
               设置
             </button>
