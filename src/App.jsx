@@ -35,6 +35,8 @@ const App = () => {
   const [captchaImage, setCaptchaImage] = useState('');
   const [dragId, setDragId] = useState(null);
   const [captchaFails, setCaptchaFails] = useState(0);
+  const [captchaLockUntil, setCaptchaLockUntil] = useState(0);
+  const [toast, setToast] = useState('');
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -369,21 +371,35 @@ const App = () => {
     setTasks(updated);
     setDragId(null);
     if (!session?.user?.id) return;
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .upsert(updated.map((t) => ({ id: t.id, user_id: session.user.id, order_index: t.orderIndex })), { onConflict: 'id' });
+    if (!error) {
+      setToast('排序已保存');
+      setTimeout(() => setToast(''), 1500);
+    }
   };
 
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError('');
+    if (captchaLockUntil > Date.now()) {
+      setAuthError('验证码错误次数过多，请稍后再试');
+      return;
+    }
     if (!email.trim() || !password) {
       setAuthError('请输入邮箱和密码');
       return;
     }
     if (captchaInput.trim().toUpperCase() !== captchaText) {
       setAuthError('验证码不正确');
-      setCaptchaFails((v) => v + 1);
+      setCaptchaFails((v) => {
+        const next = v + 1;
+        if (next >= 5) {
+          setCaptchaLockUntil(Date.now() + 60 * 1000);
+        }
+        return next;
+      });
       refreshCaptcha();
       return;
     }
@@ -623,6 +639,11 @@ const App = () => {
                   {captchaFails >= 3 && (
                     <div className="text-[10px] text-[#ff6fb1]">
                       连续输错多次，请刷新验证码后再试
+                    </div>
+                  )}
+                  {captchaLockUntil > Date.now() && (
+                    <div className="text-[10px] text-[#ff6fb1]">
+                      请稍后再试（约 {Math.ceil((captchaLockUntil - Date.now()) / 1000)} 秒）
                     </div>
                   )}
                   {authError && (
@@ -1089,6 +1110,12 @@ const App = () => {
                 <p>如有疑问请联系：liupggg@gmail.com</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 border border-[#ffe4f2] px-4 py-2 rounded-full text-xs text-[#3b2e4a] shadow-sm">
+            {toast}
           </div>
         )}
 

@@ -19,6 +19,9 @@ const AdminApp = () => {
   const [userSearch, setUserSearch] = useState('');
   const [userTasks, setUserTasks] = useState([]);
   const [banReason, setBanReason] = useState('');
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const loadSummary = async () => {
     setError('');
@@ -80,6 +83,28 @@ const AdminApp = () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const loadAudit = async (targetPage = 1) => {
+    setError('');
+    setAuditLoading(true);
+    try {
+      const res = await fetch(`/api/admin/audit?page=${targetPage}&per_page=20`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        }
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '请求失败');
+      setAuditLogs(json.logs || []);
+      setAuditPage(targetPage);
+    } catch (err) {
+      setError(err.message || '请求失败');
+    } finally {
+      setAuditLoading(false);
+    }
   };
 
   const loadUserDetail = async (id) => {
@@ -185,6 +210,9 @@ const AdminApp = () => {
             <button onClick={() => setTab('users')} className={tab === 'users' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
               用户列表
             </button>
+            <button onClick={() => { setTab('audit'); loadAudit(1); }} className={tab === 'audit' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
+              操作审计
+            </button>
           </div>
 
           {tab === 'summary' && data && (
@@ -270,6 +298,48 @@ const AdminApp = () => {
                     {users.length === 0 && !usersLoading && (
                       <tr>
                         <td className="py-4 text-[#7b6f8c]" colSpan="4">暂无数据</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'audit' && (
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-3 text-xs text-[#7b6f8c]">
+                <span>第 {auditPage} 页</span>
+                <div className="flex gap-2">
+                  <button onClick={() => loadAudit(Math.max(auditPage - 1, 1))} className="pill-soft px-3 py-1 rounded-full">上一页</button>
+                  <button onClick={() => loadAudit(auditPage + 1)} className="pill-soft px-3 py-1 rounded-full">下一页</button>
+                  <button onClick={() => loadAudit(auditPage)} className="pill-soft px-3 py-1 rounded-full">{auditLoading ? '加载中...' : '刷新'}</button>
+                </div>
+              </div>
+              <div className="card-soft-sm p-4 overflow-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="text-[#7b6f8c]">
+                    <tr>
+                      <th className="py-2">时间</th>
+                      <th className="py-2">管理员</th>
+                      <th className="py-2">动作</th>
+                      <th className="py-2">对象</th>
+                      <th className="py-2">备注</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-[#3b2e4a]">
+                    {auditLogs.map((log) => (
+                      <tr key={log.id} className="border-t border-[#ffe4f2]">
+                        <td className="py-2">{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>
+                        <td className="py-2">{log.admin_email || '-'}</td>
+                        <td className="py-2">{log.action || '-'}</td>
+                        <td className="py-2">{log.target_user_id || '-'}</td>
+                        <td className="py-2">{log.detail?.reason || log.detail?.email || '-'}</td>
+                      </tr>
+                    ))}
+                    {auditLogs.length === 0 && !auditLoading && (
+                      <tr>
+                        <td className="py-4 text-[#7b6f8c]" colSpan="5">暂无记录</td>
                       </tr>
                     )}
                   </tbody>
