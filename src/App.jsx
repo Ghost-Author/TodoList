@@ -32,6 +32,8 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [captchaText, setCaptchaText] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
+  const [dragId, setDragId] = useState(null);
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -80,16 +82,53 @@ const App = () => {
     document.title = '云朵清单';
   }, []);
 
-  useEffect(() => {
+  const generateCaptcha = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const next = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    setCaptchaText(next);
+    const text = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const canvas = document.createElement('canvas');
+    canvas.width = 140;
+    canvas.height = 48;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { text, image: '' };
+
+    ctx.fillStyle = '#fff7fb';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < 5; i += 1) {
+      ctx.strokeStyle = `rgba(255, 138, 203, ${0.25 + Math.random() * 0.2})`;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
+      ctx.stroke();
+    }
+
+    ctx.font = 'bold 26px Quicksand, Nunito, Arial Rounded MT Bold, sans-serif';
+    ctx.fillStyle = '#3b2e4a';
+    [...text].forEach((ch, i) => {
+      const angle = (Math.random() - 0.5) * 0.4;
+      const x = 12 + i * 24;
+      const y = 32 + (Math.random() * 6 - 3);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillText(ch, 0, 0);
+      ctx.restore();
+    });
+
+    const image = canvas.toDataURL('image/png');
+    return { text, image };
+  };
+
+  useEffect(() => {
+    const { text, image } = generateCaptcha();
+    setCaptchaText(text);
+    setCaptchaImage(image);
   }, []);
 
   const refreshCaptcha = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const next = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    setCaptchaText(next);
+    const { text, image } = generateCaptcha();
+    setCaptchaText(text);
+    setCaptchaImage(image);
     setCaptchaInput('');
   };
 
@@ -127,8 +166,9 @@ const App = () => {
   const loadTasks = async (userId) => {
     const { data, error } = await supabase
       .from('tasks')
-      .select('id, text, note, due_date, priority, category, completed, created_at')
+      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
       .eq('user_id', userId)
+      .order('order_index', { ascending: true })
       .order('created_at', { ascending: false });
     if (error) throw error;
     setTasks(
@@ -140,6 +180,7 @@ const App = () => {
         priority: task.priority || 'medium',
         category: task.category || '',
         tags: task.tags || [],
+        orderIndex: task.order_index ?? 0,
         completed: task.completed,
         createdAt: task.created_at
       }))
@@ -179,6 +220,7 @@ const App = () => {
     const trimmedInput = input.trim();
     if (!trimmedInput || !session?.user?.id) return;
     const taskCategory = category || categories[0] || '';
+    const minOrder = tasks.length ? Math.min(...tasks.map((t) => t.orderIndex ?? 0)) : 0;
     const { data, error } = await supabase
       .from('tasks')
       .insert({
@@ -189,9 +231,10 @@ const App = () => {
         priority,
         category: taskCategory,
         tags,
+        order_index: minOrder - 1,
         completed: false
       })
-      .select('id, text, note, due_date, priority, category, tags, completed, created_at')
+      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
       .single();
     if (error) return;
     setTasks([
@@ -203,6 +246,7 @@ const App = () => {
         priority: data.priority || 'medium',
         category: data.category || taskCategory,
         tags: data.tags || [],
+        orderIndex: data.order_index ?? (minOrder - 1),
         completed: data.completed,
         createdAt: data.created_at
       },
@@ -303,6 +347,30 @@ const App = () => {
     if (error) return;
     setTasks(tasks.filter(t => !selectedIds.has(t.id)));
     clearSelection();
+  };
+
+  const canDrag = filter === 'all' && !searchQuery.trim() && sortBy === 'manual';
+
+  const handleDragStart = (id) => {
+    if (!canDrag) return;
+    setDragId(id);
+  };
+
+  const handleDrop = async (targetId) => {
+    if (!canDrag || !dragId || dragId === targetId) return;
+    const ordered = [...tasks].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
+    const fromIndex = ordered.findIndex((t) => t.id === dragId);
+    const toIndex = ordered.findIndex((t) => t.id === targetId);
+    if (fromIndex < 0 || toIndex < 0) return;
+    const [moved] = ordered.splice(fromIndex, 1);
+    ordered.splice(toIndex, 0, moved);
+    const updated = ordered.map((t, idx) => ({ ...t, orderIndex: idx }));
+    setTasks(updated);
+    setDragId(null);
+    if (!session?.user?.id) return;
+    await supabase
+      .from('tasks')
+      .upsert(updated.map((t) => ({ id: t.id, user_id: session.user.id, order_index: t.orderIndex })), { onConflict: 'id' });
   };
 
   const handleAuth = async (e) => {
@@ -434,6 +502,7 @@ const App = () => {
       });
     }
     const sorter = {
+      manual: (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0),
       created_desc: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
       created_asc: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
       due_asc: (a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31'),
@@ -790,6 +859,7 @@ const App = () => {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                 >
+                  <option value="manual">手动排序</option>
                   <option value="created_desc">按创建时间（新→旧）</option>
                   <option value="created_asc">按创建时间（旧→新）</option>
                   <option value="due_asc">按截止日期（近→远）</option>
@@ -832,6 +902,9 @@ const App = () => {
                 >
                   批量删除
                 </button>
+                <span className="text-[10px] text-[#7b6f8c] self-center">
+                  {canDrag ? '拖动任务可手动排序' : '切换到手动排序且清空筛选后可拖动'}
+                </span>
               </div>
             </div>
 
@@ -843,7 +916,14 @@ const App = () => {
                 </div>
               ) : (
                 filteredTasks.map(task => (
-                  <div key={task.id} className={`group flex flex-col transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}>
+                  <div
+                    key={task.id}
+                    className={`group flex flex-col transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}
+                    draggable={canDrag}
+                    onDragStart={() => handleDragStart(task.id)}
+                    onDragOver={(e) => canDrag && e.preventDefault()}
+                    onDrop={() => handleDrop(task.id)}
+                  >
                     <div className="flex items-center gap-4 p-4">
                       <button
                         onClick={() => toggleSelect(task.id)}

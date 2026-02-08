@@ -17,6 +17,7 @@ const AdminApp = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [resetLink, setResetLink] = useState('');
   const [userSearch, setUserSearch] = useState('');
+  const [userTasks, setUserTasks] = useState([]);
 
   const loadSummary = async () => {
     setError('');
@@ -83,6 +84,7 @@ const AdminApp = () => {
   const loadUserDetail = async (id) => {
     setDetailLoading(true);
     setResetLink('');
+    setUserTasks([]);
     try {
       const res = await fetch(`/api/admin/user?id=${id}`, {
         method: 'GET',
@@ -94,6 +96,15 @@ const AdminApp = () => {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || '请求失败');
       setUserDetail(json);
+      const tasksRes = await fetch(`/api/admin/user_tasks?id=${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        }
+      });
+      const tasksJson = await tasksRes.json();
+      if (tasksRes.ok) setUserTasks(tasksJson.tasks || []);
     } catch (err) {
       setError(err.message || '请求失败');
     } finally {
@@ -310,6 +321,22 @@ const AdminApp = () => {
                         <div className="break-all bg-white/80 p-2 rounded-lg border border-[#ffe4f2]">{resetLink}</div>
                       </div>
                     )}
+
+                    <div className="mt-3">
+                      <div className="text-[#3b2e4a] font-bold mb-2">最近任务（20 条）</div>
+                      <div className="card-soft-sm p-3 max-h-48 overflow-auto text-xs">
+                        {userTasks.length === 0 && <div className="text-[#7b6f8c]">暂无任务</div>}
+                        {userTasks.map((t) => (
+                          <div key={t.id} className="py-2 border-b border-[#ffe4f2]">
+                            <div className="font-bold text-[#3b2e4a]">{t.text}</div>
+                            <div className="text-[#7b6f8c]">
+                              {t.completed ? '已完成' : '进行中'} · {t.priority || '-'} · {t.category || '-'}
+                              {t.due_date ? ` · 截止 ${t.due_date}` : ''}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
