@@ -16,7 +16,8 @@ root.render(
 );
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+  // Unregister old SW to prevent stale cache blank screens
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((reg) => reg.unregister());
   });
 }
