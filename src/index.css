@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700&family=ZCOOL+KuaiLe&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,7 +14,7 @@ html {
 }
 
 body {
-  font-family: "ZCOOL KuaiLe", "M PLUS Rounded 1c", "Segoe UI", sans-serif;
+  font-family: "Quicksand", "Nunito", "Comic Sans MS", "Arial Rounded MT Bold", system-ui, sans-serif;
   background: radial-gradient(1100px 700px at 8% -10%, #ffe3f1 0%, transparent 60%),
     radial-gradient(900px 700px at 105% 5%, #e2f2ff 0%, transparent 55%),
     radial-gradient(900px 900px at 100% 100%, #e8f7ff 0%, transparent 60%),
@@ -58,7 +58,7 @@ body::after {
 }
 
 h1, h2, h3 {
-  font-family: "ZCOOL KuaiLe", "M PLUS Rounded 1c", sans-serif;
+  font-family: "Quicksand", "Nunito", "Comic Sans MS", "Arial Rounded MT Bold", system-ui, sans-serif;
 }
 
 .card-soft {
