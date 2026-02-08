@@ -1,22 +1,19 @@
 import React, { useState, useEffect, useMemo, useDeferredValue, Suspense, useRef } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  CheckCircle2, 
-  Circle, 
-  Calendar,
-  ChevronDown,
-  ChevronUp,
   LayoutGrid,
   Cloud,
-  PieChart,
-  StickyNote,
-  X
+  PieChart
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { generateCaptcha } from './utils/captcha.js';
 import AuthPanel from './components/AuthPanel.jsx';
 import Toast from './components/Toast.jsx';
+import EmailVerifyBanner from './components/EmailVerifyBanner.jsx';
+import SettingsModal from './components/SettingsModal.jsx';
+import PrivacyModal from './components/PrivacyModal.jsx';
+import TaskForm from './components/TaskForm.jsx';
+import FiltersBar from './components/FiltersBar.jsx';
+import TaskList from './components/TaskList.jsx';
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 
 const App = () => {
@@ -644,11 +641,7 @@ const App = () => {
           </div>
         </div>
 
-        {!session.user.email_confirmed_at && (
-          <div className="card-soft-sm px-4 py-3 mb-6 text-sm text-[#7b6f8c]">
-            你的邮箱尚未验证，请前往邮箱完成验证以确保账号安全。
-          </div>
-        )}
+        <EmailVerifyBanner show={!session.user.email_confirmed_at} />
 
         {view === 'tasks' ? (
           <>
@@ -661,310 +654,60 @@ const App = () => {
               </div>
             </div>
 
-            {/* Expanded Add Form */}
-            <form onSubmit={addTask} className="card-soft p-6 mb-8 space-y-6">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="这一刻想完成什么？"
-                className="w-full text-lg font-bold outline-none border-b-2 border-transparent focus:border-[#ff8acb] transition-colors py-2 bg-transparent text-[#3b2e4a]"
-              />
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                {/* Left Side: Note */}
-                <div className="flex flex-col gap-1.5 h-full">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-wider">详细备注</label>
-                  <textarea 
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="输入具体执行步骤..."
-                    className="w-full text-sm bg-white/70 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#ffd7ea] flex-grow min-h-[120px] resize-none transition-all border border-[#ffe4f2]"
-                  />
-                </div>
+            <TaskForm
+              addTask={addTask}
+              input={input}
+              setInput={setInput}
+              note={note}
+              setNote={setNote}
+              dueDate={dueDate}
+              setDueDate={setDueDate}
+              priority={priority}
+              setPriority={setPriority}
+              priorities={priorities}
+              category={category}
+              setCategory={setCategory}
+              categories={categories}
+              isManagingCats={isManagingCats}
+              setIsManagingCats={setIsManagingCats}
+              newCatInput={newCatInput}
+              setNewCatInput={setNewCatInput}
+              addCategory={addCategory}
+              removeCategory={removeCategory}
+              tags={tags}
+              setTags={setTags}
+              tagInput={tagInput}
+              setTagInput={setTagInput}
+            />
 
-                {/* Right Side: Options */}
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-wider">截止日期</label>
-                    <input 
-                      type="date"
-                      value={dueDate}
-                      onChange={(e) => setDueDate(e.target.value)}
-                      className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#ffd7ea] ring-1 ring-[#ffe4f2]"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">优先级</label>
-                      <select 
-                        value={priority} 
-                        onChange={(e) => setPriority(e.target.value)} 
-                        className="w-full bg-white/70 text-xs font-bold p-2.5 rounded-xl outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] h-[42px]"
-                      >
-                        {Object.entries(priorities).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">分类</label>
-                        <button type="button" onClick={() => setIsManagingCats(!isManagingCats)} className="text-[10px] text-[#ff6fb1] font-bold hover:underline">管理</button>
-                      </div>
-                      <select 
-                        value={category} 
-                        onChange={(e) => setCategory(e.target.value)} 
-                        className="w-full bg-white/70 text-xs font-bold p-2.5 rounded-xl outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] h-[42px]"
-                      >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-wider">标签</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        placeholder="输入标签后回车"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const trimmed = tagInput.trim();
-                            if (trimmed && !tags.includes(trimmed)) {
-                              setTags([...tags, trimmed]);
-                              setTagInput('');
-                            }
-                          }
-                        }}
-                        className="flex-1 text-xs bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const trimmed = tagInput.trim();
-                          if (trimmed && !tags.includes(trimmed)) {
-                            setTags([...tags, trimmed]);
-                            setTagInput('');
-                          }
-                        }}
-                        className="pill-soft px-3 rounded-xl text-xs font-bold"
-                      >
-                        添加
-                      </button>
-                    </div>
-                    {tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {tags.map((t) => (
-                          <span key={t} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
-                            #{t}
-                            <button type="button" onClick={() => setTags(tags.filter(tag => tag !== t))}>
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+            <FiltersBar
+              filter={filter}
+              setFilter={setFilter}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              selectAllFiltered={selectAllFiltered}
+              clearSelection={clearSelection}
+              bulkComplete={bulkComplete}
+              bulkDelete={bulkDelete}
+              canDrag={canDrag}
+            />
 
-              {/* Category Manager Overlay */}
-              {isManagingCats && (
-                <div className="card-soft-sm p-4 animate-in zoom-in-95 duration-200">
-                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-xs font-bold text-[#3b2e4a]">分类管理</h4>
-                    <button type="button" onClick={() => setIsManagingCats(false)}><X className="w-4 h-4 text-[#ff9ccc]" /></button>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {categories.map(cat => (
-                      <span key={cat} className="bg-white px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 text-slate-600 shadow-sm border border-[#ffe4f2]">
-                        {cat}
-                        <button type="button" onClick={() => removeCategory(cat)} className="text-slate-300 hover:text-red-500 transition-colors"><X className="w-3 h-3" /></button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={newCatInput} 
-                      onChange={(e) => setNewCatInput(e.target.value)}
-                      placeholder="新分类名称..."
-                      className="flex-grow text-xs p-2.5 rounded-xl border-none outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] bg-white/80"
-                    />
-                    <button type="button" onClick={addCategory} className="btn-soft px-4 py-2 rounded-xl text-xs font-bold transition-colors">添加</button>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2 border-t border-slate-50">
-                <button type="submit" className="w-full md:w-auto btn-soft px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95">
-                  <Plus className="w-5 h-5" /> 确认录入任务
-                </button>
-              </div>
-            </form>
-
-            {/* List Controls */}
-            <div className="flex flex-col gap-4 mb-6">
-              <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar">
-                {['all', 'active', 'completed'].map((f) => (
-                  <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors ${filter === f ? 'text-[#ff6fb1]' : 'text-slate-400 hover:text-[#ff6fb1]'}`}>
-                    {f === 'all' ? '全部任务' : f === 'active' ? '进行中' : '已归档'}
-                    {filter === f && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#ff8acb] rounded-full" />}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="搜索任务/备注/分类/标签"
-                  className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                >
-                  <option value="manual">手动排序</option>
-                  <option value="created_desc">按创建时间（新→旧）</option>
-                  <option value="created_asc">按创建时间（旧→新）</option>
-                  <option value="due_asc">按截止日期（近→远）</option>
-                  <option value="due_desc">按截止日期（远→近）</option>
-                  <option value="priority">按优先级</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSortBy('created_desc');
-                    setFilter('all');
-                  }}
-                  className="pill-soft px-4 py-2 rounded-xl text-sm font-bold"
-                >
-                  清除筛选
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs font-bold">
-                <button type="button" onClick={selectAllFiltered} className="pill-soft px-3 py-1 rounded-full">
-                  全选当前
-                </button>
-                <button type="button" onClick={clearSelection} className="pill-soft px-3 py-1 rounded-full">
-                  取消选择
-                </button>
-                <button type="button" onClick={() => bulkComplete(true)} className="pill-soft px-3 py-1 rounded-full">
-                  标记完成
-                </button>
-                <button type="button" onClick={() => bulkComplete(false)} className="pill-soft px-3 py-1 rounded-full">
-                  标记未完成
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('确定要删除所选任务吗？')) {
-                      bulkDelete();
-                    }
-                  }}
-                  className="px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8]"
-                >
-                  批量删除
-                </button>
-                <span className="text-[10px] text-[#7b6f8c] self-center">
-                  {canDrag ? '拖动任务可手动排序' : '切换到手动排序且清空筛选后可拖动'}
-                </span>
-              </div>
-            </div>
-
-            {/* Task Items */}
-            <div className="space-y-4">
-              {filteredTasks.length === 0 ? (
-                <div className="py-20 text-center bg-white/70 rounded-3xl border border-dashed border-[#ffd7ea]">
-                  <p className="text-slate-400 text-sm">清单空空如也，给自己一个拥抱吧</p>
-                </div>
-              ) : (
-                filteredTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className={`group flex flex-col transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}
-                    draggable={canDrag}
-                    onDragStart={() => handleDragStart(task.id)}
-                    onDragOver={(e) => canDrag && e.preventDefault()}
-                    onDrop={() => handleDrop(task.id)}
-                  >
-                    <div className="flex items-center gap-4 p-4">
-                      <button
-                        onClick={() => toggleSelect(task.id)}
-                        className={`h-5 w-5 rounded-md border flex items-center justify-center text-xs font-black ${selectedIds.has(task.id) ? 'bg-[#ff8acb] text-white border-[#ff8acb]' : 'bg-white border-[#ffe4f2] text-[#7b6f8c]'}`}
-                        title="选择任务"
-                      >
-                        {selectedIds.has(task.id) ? '✓' : ''}
-                      </button>
-                      <button onClick={() => toggleTask(task.id)} className={`flex-shrink-0 transition-transform active:scale-90 ${task.completed ? 'text-[#ff6fb1]' : 'text-slate-300 hover:text-[#ff8acb]'}`}>
-                        {task.completed ? <CheckCircle2 className="w-7 h-7" /> : <Circle className="w-7 h-7" />}
-                      </button>
-                      
-                      <div className="flex-grow min-w-0 cursor-pointer" onClick={() => setExpandedId(expandedId === task.id ? null : task.id)}>
-                      <div className="flex items-center gap-2 mb-1 overflow-hidden">
-                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${priorities[task.priority].bg} ${priorities[task.priority].color} border ${priorities[task.priority].border}`}>
-                          {priorities[task.priority].label}
-                        </span>
-                        {task.dueDate && (
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap ${isOverdue(task.dueDate) && !task.completed ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
-                            <Calendar className="w-3 h-3" /> {task.dueDate}
-                          </span>
-                        )}
-                        <span className="text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-100">
-                          {task.category}
-                        </span>
-                        {(task.tags || []).slice(0, 3).map((t) => (
-                          <span key={t} className="text-[9px] px-1.5 py-0.5 rounded font-black pill-soft">
-                            #{t}
-                          </span>
-                        ))}
-                        {(task.tags || []).length > 3 && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-black text-[#7b6f8c] bg-white/70 border border-[#ffe4f2]">
-                            +{(task.tags || []).length - 3}
-                          </span>
-                        )}
-                      </div>
-                        <p className={`text-base font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>{task.text}</p>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setExpandedId(expandedId === task.id ? null : task.id)} className={`p-2 transition-colors ${expandedId === task.id ? 'text-[#ff6fb1]' : 'text-slate-300'}`}>
-                          {expandedId === task.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                        </button>
-                        <button onClick={() => deleteTask(task.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Expanded Note & Details */}
-                    {expandedId === task.id && (
-                      <div className="px-4 pb-4 pt-0 border-t border-slate-50 animate-in slide-in-from-top-2 duration-200">
-                        <div className="bg-white/70 rounded-xl p-4 mt-2 border border-[#ffe4f2]">
-                          <h4 className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1">
-                            <StickyNote className="w-3 h-3" /> 详细备忘
-                          </h4>
-                          <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-                            {task.note || "暂无备注内容"}
-                          </p>
-                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                            <span className="text-[10px] font-medium text-slate-400">录入时间: {new Date(task.createdAt).toLocaleString()}</span>
-                            <div className="flex gap-2">
-                               <span className="text-[10px] font-black px-2 py-0.5 pill-soft rounded-full">{task.category}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
+            <TaskList
+              filteredTasks={filteredTasks}
+              toggleSelect={toggleSelect}
+              selectedIds={selectedIds}
+              toggleTask={toggleTask}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+              priorities={priorities}
+              isOverdue={isOverdue}
+              deleteTask={deleteTask}
+              canDrag={canDrag}
+              handleDragStart={handleDragStart}
+              handleDrop={handleDrop}
+            />
           </>
         ) : (
           <Suspense fallback={<div className="text-sm text-[#7b6f8c]">加载统计中...</div>}>
@@ -972,81 +715,21 @@ const App = () => {
           </Suspense>
         )}
 
-        {showSettings && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
-            <div className="card-soft w-full max-w-md p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#3b2e4a]">设置</h3>
-                <button onClick={() => setShowSettings(false)} className="text-[#ff9ccc]">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <label className="text-xs text-[#7b6f8c]">修改密码</label>
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="新密码"
-                      className="flex-1 bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                    />
-                    <button type="button" onClick={updatePassword} className="btn-soft px-4 rounded-xl font-bold">
-                      更新
-                    </button>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={exportData} className="pill-soft px-4 py-2 rounded-xl font-bold">
-                    导出数据
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm('确定要清空所有数据吗？此操作不可恢复。')) {
-                        clearAllData();
-                      }
-                    }}
-                    className="px-4 py-2 rounded-xl font-bold text-white bg-[#ff7aa8]"
-                  >
-                    清空数据
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPrivacy(true);
-                    setShowSettings(false);
-                  }}
-                  className="text-[#7b6f8c] hover:text-[#ff6fb1] underline"
-                >
-                  查看隐私政策
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <SettingsModal
+          show={showSettings}
+          onClose={() => setShowSettings(false)}
+          newPassword={newPassword}
+          setNewPassword={setNewPassword}
+          updatePassword={updatePassword}
+          exportData={exportData}
+          clearAllData={clearAllData}
+          openPrivacy={() => {
+            setShowPrivacy(true);
+            setShowSettings(false);
+          }}
+        />
 
-        {showPrivacy && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
-            <div className="card-soft w-full max-w-2xl p-6 max-h-[80vh] overflow-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-[#3b2e4a]">隐私政策</h3>
-                <button onClick={() => setShowPrivacy(false)} className="text-[#ff9ccc]">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-3 text-sm text-[#7b6f8c] leading-relaxed">
-                <p>云朵清单仅收集账号邮箱与您主动填写的任务内容，用于账号登录与数据同步。</p>
-                <p>数据存储于 Supabase（数据库与认证服务），并通过行级权限控制仅允许账号本人访问。</p>
-                <p>我们使用 Sentry 进行错误监控，可能收集设备与浏览器信息以帮助定位问题。</p>
-                <p>您可以在设置中导出或清空自己的数据。如需注销账号，可联系我们处理。</p>
-                <p>如有疑问请联系：liupggg@gmail.com</p>
-              </div>
-            </div>
-          </div>
-        )}
+        <PrivacyModal show={showPrivacy} onClose={() => setShowPrivacy(false)} />
 
         <Toast toast={toast} onAction={undoDelete} />
 
