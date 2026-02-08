@@ -58,6 +58,10 @@ const App = () => {
     localStorage.setItem('custom_categories', JSON.stringify(categories));
   }, [categories]);
 
+  useEffect(() => {
+    document.title = '云朵清单';
+  }, []);
+
   // --- Pomodoro Logic ---
   const toggleTimer = () => setIsActive(!isActive);
   const resetTimer = () => {
@@ -166,11 +170,11 @@ const App = () => {
         
         {/* Nav Tabs */}
         <div className="flex justify-center mb-8">
-          <div className="bg-white/80 backdrop-blur p-1 rounded-2xl shadow-sm border border-rose-100 flex">
-            <button onClick={() => setView('tasks')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'tasks' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'text-slate-500 hover:text-rose-500'}`}>
+          <div className="bg-white/80 backdrop-blur p-1 rounded-2xl shadow-sm border border-sky-100 flex">
+            <button onClick={() => setView('tasks')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'tasks' ? 'bg-sky-500 text-white shadow-lg shadow-sky-200' : 'text-slate-500 hover:text-sky-500'}`}>
               <LayoutGrid className="w-4 h-4" /> 任务清单
             </button>
-            <button onClick={() => setView('stats')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'stats' ? 'bg-rose-500 text-white shadow-lg shadow-rose-200' : 'text-slate-500 hover:text-rose-500'}`}>
+            <button onClick={() => setView('stats')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'stats' ? 'bg-sky-500 text-white shadow-lg shadow-sky-200' : 'text-slate-500 hover:text-sky-500'}`}>
               <PieChart className="w-4 h-4" /> 小成就
             </button>
           </div>
@@ -182,15 +186,15 @@ const App = () => {
               <div className="lg:col-span-2 flex flex-col justify-end">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-800">云朵清单</h1>
                 <p className="text-slate-500 mt-1">把每件事放进软绵绵的小云朵里。</p>
-                <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-rose-500 bg-white/70 border border-rose-100 rounded-full px-3 py-1 w-fit shadow-sm">
+                <div className="mt-3 inline-flex items-center gap-2 text-xs font-bold text-sky-500 bg-white/70 border border-sky-100 rounded-full px-3 py-1 w-fit shadow-sm">
                   <Trophy className="w-3 h-3" /> 可爱模式已开启
                 </div>
               </div>
 
-              <div className={`p-6 rounded-3xl shadow-xl border flex flex-col items-center transition-all ${isBreak ? 'bg-emerald-50/80 border-emerald-100' : 'bg-rose-50/80 border-rose-100'}`}>
+              <div className={`p-6 rounded-3xl shadow-xl border flex flex-col items-center transition-all ${isBreak ? 'bg-emerald-50/80 border-emerald-100' : 'bg-sky-50/80 border-sky-100'}`}>
                 <div className="flex items-center gap-2 mb-2">
-                  {isBreak ? <Coffee className="w-4 h-4 text-emerald-600" /> : <Clock className="w-4 h-4 text-rose-600" />}
-                  <span className={`text-xs font-bold uppercase tracking-widest ${isBreak ? 'text-emerald-600' : 'text-rose-600'}`}>{isBreak ? '休息中' : '专注中'}</span>
+                  {isBreak ? <Coffee className="w-4 h-4 text-emerald-600" /> : <Clock className="w-4 h-4 text-sky-600" />}
+                  <span className={`text-xs font-bold uppercase tracking-widest ${isBreak ? 'text-emerald-600' : 'text-sky-600'}`}>{isBreak ? '休息中' : '专注中'}</span>
                 </div>
                 <div className="text-4xl font-black font-mono text-slate-800 mb-4 tracking-tight">{formatTime(timeLeft)}</div>
                 <div className="flex gap-2">
@@ -203,13 +207,13 @@ const App = () => {
             </div>
 
             {/* Expanded Add Form */}
-            <form onSubmit={addTask} className="bg-white/90 backdrop-blur p-6 rounded-3xl shadow-xl shadow-rose-100/60 mb-8 border border-white space-y-6">
+            <form onSubmit={addTask} className="bg-white/90 backdrop-blur p-6 rounded-3xl shadow-xl shadow-sky-100/60 mb-8 border border-white space-y-6">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="这一刻想完成什么？"
-                className="w-full text-lg font-bold outline-none border-b-2 border-slate-50 focus:border-rose-400 transition-colors py-2 bg-transparent"
+                className="w-full text-lg font-bold outline-none border-b-2 border-slate-50 focus:border-sky-400 transition-colors py-2 bg-transparent"
               />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
@@ -220,7 +224,7 @@ const App = () => {
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     placeholder="输入具体执行步骤..."
-                    className="w-full text-sm bg-rose-50/60 rounded-xl p-3 outline-none focus:ring-2 focus:ring-rose-100 flex-grow min-h-[120px] resize-none transition-all"
+                    className="w-full text-sm bg-sky-50/60 rounded-xl p-3 outline-none focus:ring-2 focus:ring-sky-100 flex-grow min-h-[120px] resize-none transition-all"
                   />
                 </div>
 
@@ -232,7 +236,7 @@ const App = () => {
                       type="date"
                       value={dueDate}
                       onChange={(e) => setDueDate(e.target.value)}
-                      className="w-full text-sm bg-rose-50/60 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-rose-100 ring-1 ring-rose-100"
+                      className="w-full text-sm bg-sky-50/60 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-100 ring-1 ring-sky-100"
                     />
                   </div>
                   
@@ -242,7 +246,7 @@ const App = () => {
                       <select 
                         value={priority} 
                         onChange={(e) => setPriority(e.target.value)} 
-                        className="w-full bg-rose-50/60 text-xs font-bold p-2.5 rounded-xl outline-none ring-1 ring-rose-100 focus:ring-2 focus:ring-rose-100 h-[42px]"
+                        className="w-full bg-sky-50/60 text-xs font-bold p-2.5 rounded-xl outline-none ring-1 ring-sky-100 focus:ring-2 focus:ring-sky-100 h-[42px]"
                       >
                         {Object.entries(priorities).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                       </select>
@@ -250,12 +254,12 @@ const App = () => {
                     <div className="flex flex-col gap-1.5">
                       <div className="flex justify-between items-center px-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">分类</label>
-                        <button type="button" onClick={() => setIsManagingCats(!isManagingCats)} className="text-[10px] text-rose-500 font-bold hover:underline">管理</button>
+                        <button type="button" onClick={() => setIsManagingCats(!isManagingCats)} className="text-[10px] text-sky-500 font-bold hover:underline">管理</button>
                       </div>
                       <select 
                         value={category} 
                         onChange={(e) => setCategory(e.target.value)} 
-                        className="w-full bg-rose-50/60 text-xs font-bold p-2.5 rounded-xl outline-none ring-1 ring-rose-100 focus:ring-2 focus:ring-rose-100 h-[42px]"
+                        className="w-full bg-sky-50/60 text-xs font-bold p-2.5 rounded-xl outline-none ring-1 ring-sky-100 focus:ring-2 focus:ring-sky-100 h-[42px]"
                       >
                         {categories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
@@ -266,14 +270,14 @@ const App = () => {
 
               {/* Category Manager Overlay */}
               {isManagingCats && (
-                <div className="bg-rose-50 p-4 rounded-2xl animate-in zoom-in-95 duration-200 border border-rose-100">
+                <div className="bg-sky-50 p-4 rounded-2xl animate-in zoom-in-95 duration-200 border border-sky-100">
                   <div className="flex justify-between items-center mb-3">
-                    <h4 className="text-xs font-bold text-rose-900">分类管理</h4>
-                    <button type="button" onClick={() => setIsManagingCats(false)}><X className="w-4 h-4 text-rose-400" /></button>
+                    <h4 className="text-xs font-bold text-sky-900">分类管理</h4>
+                    <button type="button" onClick={() => setIsManagingCats(false)}><X className="w-4 h-4 text-sky-400" /></button>
                   </div>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {categories.map(cat => (
-                      <span key={cat} className="bg-white px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 text-slate-600 shadow-sm border border-rose-100">
+                      <span key={cat} className="bg-white px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 text-slate-600 shadow-sm border border-sky-100">
                         {cat}
                         <button type="button" onClick={() => removeCategory(cat)} className="text-slate-300 hover:text-red-500 transition-colors"><X className="w-3 h-3" /></button>
                       </span>
@@ -285,15 +289,15 @@ const App = () => {
                       value={newCatInput} 
                       onChange={(e) => setNewCatInput(e.target.value)}
                       placeholder="新分类名称..."
-                      className="flex-grow text-xs p-2.5 rounded-xl border-none outline-none ring-1 ring-rose-200 focus:ring-2 focus:ring-rose-300"
+                      className="flex-grow text-xs p-2.5 rounded-xl border-none outline-none ring-1 ring-sky-200 focus:ring-2 focus:ring-sky-300"
                     />
-                    <button type="button" onClick={addCategory} className="bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-rose-600 transition-colors">添加</button>
+                    <button type="button" onClick={addCategory} className="bg-sky-500 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-sky-600 transition-colors">添加</button>
                   </div>
                 </div>
               )}
 
               <div className="flex justify-end pt-2 border-t border-slate-50">
-                <button type="submit" className="w-full md:w-auto bg-rose-500 hover:bg-rose-600 text-white px-10 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-rose-100 flex items-center justify-center gap-2 active:scale-95">
+                <button type="submit" className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 text-white px-10 py-3.5 rounded-2xl font-bold transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2 active:scale-95">
                   <Plus className="w-5 h-5" /> 确认录入任务
                 </button>
               </div>
@@ -302,9 +306,9 @@ const App = () => {
             {/* List Controls */}
             <div className="flex gap-6 border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar">
               {['all', 'active', 'completed'].map((f) => (
-                <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors ${filter === f ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'}`}>
+                <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors ${filter === f ? 'text-sky-500' : 'text-slate-400 hover:text-sky-500'}`}>
                   {f === 'all' ? '全部任务' : f === 'active' ? '进行中' : '已归档'}
-                  {filter === f && <div className="absolute bottom-0 left-0 w-full h-1 bg-rose-500 rounded-full" />}
+                  {filter === f && <div className="absolute bottom-0 left-0 w-full h-1 bg-sky-500 rounded-full" />}
                 </button>
               ))}
             </div>
@@ -312,14 +316,14 @@ const App = () => {
             {/* Task Items */}
             <div className="space-y-4">
               {filteredTasks.length === 0 ? (
-                <div className="py-20 text-center bg-white/60 rounded-3xl border border-dashed border-rose-100">
+                <div className="py-20 text-center bg-white/60 rounded-3xl border border-dashed border-sky-100">
                   <p className="text-slate-400 text-sm">清单空空如也，给自己一个拥抱吧</p>
                 </div>
               ) : (
                 filteredTasks.map(task => (
                   <div key={task.id} className={`group flex flex-col rounded-2xl border transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60' : 'bg-white/90 border-white shadow-sm hover:shadow-md'}`}>
                     <div className="flex items-center gap-4 p-4">
-                      <button onClick={() => toggleTask(task.id)} className={`flex-shrink-0 transition-transform active:scale-90 ${task.completed ? 'text-rose-500' : 'text-slate-300 hover:text-rose-400'}`}>
+                      <button onClick={() => toggleTask(task.id)} className={`flex-shrink-0 transition-transform active:scale-90 ${task.completed ? 'text-sky-500' : 'text-slate-300 hover:text-sky-400'}`}>
                         {task.completed ? <CheckCircle2 className="w-7 h-7" /> : <Circle className="w-7 h-7" />}
                       </button>
                       
@@ -337,11 +341,11 @@ const App = () => {
                             {task.category}
                           </span>
                         </div>
-                        <p className={`text-base font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-slate-700 group-hover:text-rose-500'}`}>{task.text}</p>
+                        <p className={`text-base font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-slate-700 group-hover:text-sky-500'}`}>{task.text}</p>
                       </div>
 
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setExpandedId(expandedId === task.id ? null : task.id)} className={`p-2 transition-colors ${expandedId === task.id ? 'text-rose-500' : 'text-slate-300'}`}>
+                        <button onClick={() => setExpandedId(expandedId === task.id ? null : task.id)} className={`p-2 transition-colors ${expandedId === task.id ? 'text-sky-500' : 'text-slate-300'}`}>
                           {expandedId === task.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                         </button>
                         <button onClick={() => deleteTask(task.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
@@ -353,7 +357,7 @@ const App = () => {
                     {/* Expanded Note & Details */}
                     {expandedId === task.id && (
                       <div className="px-4 pb-4 pt-0 border-t border-slate-50 animate-in slide-in-from-top-2 duration-200">
-                        <div className="bg-rose-50/60 rounded-xl p-4 mt-2 border border-rose-100">
+                        <div className="bg-sky-50/60 rounded-xl p-4 mt-2 border border-sky-100">
                           <h4 className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1">
                             <StickyNote className="w-3 h-3" /> 详细备忘
                           </h4>
@@ -363,7 +367,7 @@ const App = () => {
                           <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                             <span className="text-[10px] font-medium text-slate-400">录入时间: {new Date(task.createdAt).toLocaleString()}</span>
                             <div className="flex gap-2">
-                               <span className="text-[10px] font-black px-2 py-0.5 bg-rose-50 text-rose-600 rounded-full">{task.category}</span>
+                               <span className="text-[10px] font-black px-2 py-0.5 bg-sky-50 text-sky-600 rounded-full">{task.category}</span>
                             </div>
                           </div>
                         </div>
@@ -378,23 +382,23 @@ const App = () => {
           /* Stats View */
           <div className="space-y-8 animate-in fade-in duration-500">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="bg-white/90 p-6 rounded-3xl border border-rose-100 shadow-sm flex flex-col items-center">
-                 <div className="text-4xl font-black text-rose-500 mb-1">{stats.total}</div>
+               <div className="bg-white/90 p-6 rounded-3xl border border-sky-100 shadow-sm flex flex-col items-center">
+                 <div className="text-4xl font-black text-sky-500 mb-1">{stats.total}</div>
                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">任务总量</div>
                </div>
-               <div className="bg-white/90 p-6 rounded-3xl border border-rose-100 shadow-sm flex flex-col items-center">
+               <div className="bg-white/90 p-6 rounded-3xl border border-sky-100 shadow-sm flex flex-col items-center">
                  <div className="text-4xl font-black text-green-500 mb-1">{stats.completed}</div>
                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">累计完成</div>
                </div>
-               <div className="bg-rose-500 p-6 rounded-3xl shadow-lg shadow-rose-100 flex flex-col items-center text-white">
+               <div className="bg-sky-500 p-6 rounded-3xl shadow-lg shadow-sky-100 flex flex-col items-center text-white">
                  <div className="text-4xl font-black mb-1">{stats.total - stats.completed}</div>
-                 <div className="text-[10px] font-black text-rose-100 uppercase tracking-widest">剩余待办</div>
+                 <div className="text-[10px] font-black text-sky-100 uppercase tracking-widest">剩余待办</div>
                </div>
             </div>
 
-            <div className="bg-white/90 p-8 rounded-3xl border border-rose-100 shadow-sm">
+            <div className="bg-white/90 p-8 rounded-3xl border border-sky-100 shadow-sm">
               <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-rose-500" /> 分类进度概览
+                <BarChart3 className="w-5 h-5 text-sky-500" /> 分类进度概览
               </h3>
               <div className="space-y-6">
                 {stats.catData.map(cat => (
@@ -404,11 +408,11 @@ const App = () => {
                         <span className="text-sm font-bold text-slate-700">{cat.name}</span>
                         <span className="text-xs text-slate-400 ml-2">{cat.done} / {cat.count}</span>
                       </div>
-                      <span className="text-xs font-black text-rose-500">{Math.round((cat.done/cat.count)*100 || 0)}%</span>
+                      <span className="text-xs font-black text-sky-500">{Math.round((cat.done/cat.count)*100 || 0)}%</span>
                     </div>
                     <div className="h-2 w-full bg-slate-50 rounded-full overflow-hidden border border-slate-100">
                       <div 
-                        className="h-full bg-rose-500 transition-all duration-1000 ease-out rounded-full shadow-[0_0_8px_rgba(244,63,94,0.35)]"
+                        className="h-full bg-sky-500 transition-all duration-1000 ease-out rounded-full shadow-[0_0_8px_rgba(56,189,248,0.35)]"
                         style={{ width: `${(cat.done/cat.count)*100 || 0}%` }}
                       />
                     </div>
@@ -420,7 +424,7 @@ const App = () => {
         )}
 
         <div className="mt-16 text-center">
-          <p className="text-rose-300 text-[10px] font-black uppercase tracking-[0.3em]">Soft Focus · Sweet Progress</p>
+          <p className="text-sky-300 text-[10px] font-black uppercase tracking-[0.3em]">Soft Focus · Sweet Progress</p>
         </div>
 
       </div>

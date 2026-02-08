@@ -1,11 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=ZCOOL+KuaiLe&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Optional: smooth font rendering */
+:root {
+  color-scheme: light;
+}
+
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: "Fredoka", "ZCOOL KuaiLe", "Segoe UI", sans-serif;
+  background: radial-gradient(1200px 800px at 10% -10%, #e6f7ff 0%, transparent 60%),
+    radial-gradient(900px 700px at 110% 10%, #e8fff4 0%, transparent 55%),
+    linear-gradient(180deg, #f5fbff 0%, #f7fff9 100%);
 }
 
 /* Hide scrollbars for horizontal tab list */
