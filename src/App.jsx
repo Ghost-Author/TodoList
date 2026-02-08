@@ -275,24 +275,29 @@ const App = () => {
       refreshCaptcha();
       return;
     }
-    if (authMode === 'signup') {
-      const { error } = await supabase.auth.signUp({
+    try {
+      if (authMode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password
+        });
+        if (error) {
+          setAuthError(error.message);
+          return;
+        }
+        setAuthError('注册成功，请检查邮箱完成验证后登录');
+        setAuthMode('signin');
+        return;
+      }
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password
       });
-      if (error) {
-        setAuthError(error.message);
-        return;
-      }
-      setAuthError('注册成功，请检查邮箱完成验证后登录');
-      setAuthMode('signin');
-      return;
+      if (error) setAuthError(error.message);
+    } finally {
+      // One-time captcha: always refresh after submit
+      refreshCaptcha();
     }
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password
-    });
-    if (error) setAuthError(error.message);
   };
 
   const signOut = async () => {
@@ -484,7 +489,7 @@ const App = () => {
                     <input
                       type="text"
                       value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value)}
+                      onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
                       placeholder="验证码"
                       className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                     />
