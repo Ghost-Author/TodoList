@@ -30,6 +30,8 @@ const App = () => {
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [captchaText, setCaptchaText] = useState('');
+  const [captchaInput, setCaptchaInput] = useState('');
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -76,6 +78,19 @@ const App = () => {
   useEffect(() => {
     document.title = '云朵清单';
   }, []);
+
+  useEffect(() => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const next = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    setCaptchaText(next);
+  }, []);
+
+  const refreshCaptcha = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const next = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    setCaptchaText(next);
+    setCaptchaInput('');
+  };
 
   useEffect(() => {
     if (!session) {
@@ -253,6 +268,11 @@ const App = () => {
     setAuthError('');
     if (!email.trim() || !password) {
       setAuthError('请输入邮箱和密码');
+      return;
+    }
+    if (captchaInput.trim().toUpperCase() !== captchaText) {
+      setAuthError('验证码不正确');
+      refreshCaptcha();
       return;
     }
     if (authMode === 'signup') {
@@ -460,6 +480,21 @@ const App = () => {
                     placeholder="密码"
                     className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                   />
+                  <div className="flex flex-col md:flex-row gap-2 items-start md:items-center">
+                    <input
+                      type="text"
+                      value={captchaInput}
+                      onChange={(e) => setCaptchaInput(e.target.value)}
+                      placeholder="验证码"
+                      className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                    />
+                    <div className="px-4 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a] font-black tracking-[0.2em]">
+                      {captchaText}
+                    </div>
+                    <button type="button" onClick={refreshCaptcha} className="text-xs text-[#7b6f8c] hover:text-[#ff6fb1]">
+                      换一个
+                    </button>
+                  </div>
                   {authError && (
                     <div className="text-xs text-[#ff6fb1]">{authError}</div>
                   )}

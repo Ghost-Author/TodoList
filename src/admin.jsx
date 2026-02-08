@@ -12,6 +12,10 @@ const AdminApp = () => {
   const [users, setUsers] = useState([]);
   const [page, setPage] = useState(1);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [resetLink, setResetLink] = useState('');
 
   const loadSummary = async () => {
     setError('');
@@ -53,6 +57,66 @@ const AdminApp = () => {
       setError(err.message || '请求失败');
     } finally {
       setUsersLoading(false);
+    }
+  };
+
+  const loadUserDetail = async (id) => {
+    setDetailLoading(true);
+    setResetLink('');
+    try {
+      const res = await fetch(`/api/admin/user?id=${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        }
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '请求失败');
+      setUserDetail(json);
+    } catch (err) {
+      setError(err.message || '请求失败');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const toggleBan = async (id, isBanned) => {
+    setError('');
+    try {
+      const res = await fetch('/api/admin/ban', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        },
+        body: JSON.stringify({ id, action: isBanned ? 'unban' : 'ban' })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '请求失败');
+      setUserDetail((prev) => prev ? { ...prev, ban_expires_at: json.ban_expires_at } : prev);
+    } catch (err) {
+      setError(err.message || '请求失败');
+    }
+  };
+
+  const resetPassword = async (email) => {
+    setError('');
+    setResetLink('');
+    try {
+      const res = await fetch('/api/admin/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        },
+        body: JSON.stringify({ email })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || '请求失败');
+      setResetLink(json.actionLink || '');
+    } catch (err) {
+      setError(err.message || '请求失败');
     }
   };
 
@@ -134,6 +198,7 @@ const AdminApp = () => {
                       <th className="py-2">邮箱</th>
                       <th className="py-2">创建时间</th>
                       <th className="py-2">最近登录</th>
+                      <th className="py-2 text-right">操作</th>
                     </tr>
                   </thead>
                   <tbody className="text-[#3b2e4a]">
@@ -142,15 +207,83 @@ const AdminApp = () => {
                         <td className="py-2">{u.email || '-'}</td>
                         <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
                         <td className="py-2">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</td>
+                        <td className="py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedUser(u);
+                              loadUserDetail(u.id);
+                            }}
+                            className="pill-soft px-3 py-1 rounded-full text-[10px] font-bold"
+                          >
+                            详情
+                          </button>
+                        </td>
                       </tr>
                     ))}
                     {users.length === 0 && !usersLoading && (
                       <tr>
-                        <td className="py-4 text-[#7b6f8c]" colSpan="3">暂无数据</td>
+                        <td className="py-4 text-[#7b6f8c]" colSpan="4">暂无数据</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {selectedUser && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+              <div className="card-soft w-full max-w-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-[#3b2e4a]">用户详情</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setUserDetail(null);
+                      setResetLink('');
+                    }}
+                    className="text-[#ff9ccc]"
+                  >
+                    关闭
+                  </button>
+                </div>
+
+                {detailLoading && <div className="text-sm text-[#7b6f8c]">加载中...</div>}
+                {userDetail && (
+                  <div className="space-y-3 text-sm text-[#7b6f8c]">
+                    <div><span className=\"font-bold text-[#3b2e4a]\">邮箱：</span>{userDetail.email || '-'}</div>
+                    <div><span className=\"font-bold text-[#3b2e4a]\">创建时间：</span>{userDetail.created_at ? new Date(userDetail.created_at).toLocaleString() : '-'}</div>
+                    <div><span className=\"font-bold text-[#3b2e4a]\">最近登录：</span>{userDetail.last_sign_in_at ? new Date(userDetail.last_sign_in_at).toLocaleString() : '-'}</div>
+                    <div><span className=\"font-bold text-[#3b2e4a]\">邮箱验证：</span>{userDetail.email_confirmed_at ? '已验证' : '未验证'}</div>
+                    <div><span className=\"font-bold text-[#3b2e4a]\">禁用状态：</span>{userDetail.ban_expires_at ? `已禁用（到 ${new Date(userDetail.ban_expires_at).toLocaleString()}）` : '正常'}</div>
+
+                    <div className=\"flex gap-2 pt-2\">
+                      <button
+                        type=\"button\"
+                        onClick={() => toggleBan(userDetail.id, Boolean(userDetail.ban_expires_at))}
+                        className=\"pill-soft px-3 py-1 rounded-full font-bold\"
+                      >
+                        {userDetail.ban_expires_at ? '解禁' : '禁用'}
+                      </button>
+                      <button
+                        type=\"button\"
+                        onClick={() => resetPassword(userDetail.email)}
+                        className=\"pill-soft px-3 py-1 rounded-full font-bold\"
+                      >
+                        重置密码
+                      </button>
+                    </div>
+
+                    {resetLink && (
+                      <div className=\"mt-2 text-xs\">
+                        <div className=\"text-[#3b2e4a] font-bold mb-1\">重置链接（复制给用户）</div>
+                        <div className=\"break-all bg-white/80 p-2 rounded-lg border border-[#ffe4f2]\">{resetLink}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
