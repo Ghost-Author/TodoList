@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useDeferredValue, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useDeferredValue, Suspense, useRef } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -36,7 +36,9 @@ const App = () => {
   const [dragId, setDragId] = useState(null);
   const [captchaFails, setCaptchaFails] = useState(0);
   const [captchaLockUntil, setCaptchaLockUntil] = useState(0);
-  const [toast, setToast] = useState('');
+  const [toast, setToast] = useState(null);
+  const [undoData, setUndoData] = useState(null);
+  const undoTimerRef = useRef(null);
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -85,9 +87,9 @@ const App = () => {
     document.title = '云朵清单';
   }, []);
 
-  const generateCaptcha = () => {
+  const generateCaptcha = (length = 5) => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const text = Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    const text = Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     const canvas = document.createElement('canvas');
     canvas.width = 140;
     canvas.height = 48;
@@ -123,13 +125,14 @@ const App = () => {
   };
 
   useEffect(() => {
-    const { text, image } = generateCaptcha();
+    const { text, image } = generateCaptcha(5);
     setCaptchaText(text);
     setCaptchaImage(image);
   }, []);
 
-  const refreshCaptcha = () => {
-    const { text, image } = generateCaptcha();
+  const refreshCaptcha = (lengthOverride) => {
+    const length = lengthOverride || (captchaFails >= 3 ? 6 : 5);
+    const { text, image } = generateCaptcha(length);
     setCaptchaText(text);
     setCaptchaImage(image);
     setCaptchaInput('');
@@ -302,6 +305,7 @@ const App = () => {
 
   const deleteTask = async (id) => {
     if (!session?.user?.id) return;
+    const target = tasks.find((t) => t.id === id);
     const { error } = await supabase
       .from('tasks')
       .delete()
@@ -309,6 +313,15 @@ const App = () => {
       .eq('user_id', session.user.id);
     if (error) return;
     setTasks(tasks.filter(t => t.id !== id));
+    if (target) {
+      setUndoData([target]);
+      setToast({ message: '已删除 1 条任务', action: '撤销' });
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => {
+        setUndoData(null);
+        setToast(null);
+      }, 6000);
+    }
   };
 
   const toggleSelect = (id) => {
@@ -342,6 +355,7 @@ const App = () => {
   const bulkDelete = async () => {
     if (!session?.user?.id || selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
+    const deleted = tasks.filter((t) => selectedIds.has(t.id));
     const { error } = await supabase
       .from('tasks')
       .delete()
@@ -350,6 +364,42 @@ const App = () => {
     if (error) return;
     setTasks(tasks.filter(t => !selectedIds.has(t.id)));
     clearSelection();
+    if (deleted.length) {
+      setUndoData(deleted);
+      setToast({ message: `已删除 ${deleted.length} 条任务`, action: '撤销' });
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => {
+        setUndoData(null);
+        setToast(null);
+      }, 6000);
+    }
+  };
+
+  const undoDelete = async () => {
+    if (!undoData || !session?.user?.id) return;
+    const payload = undoData.map((t) => ({
+      id: t.id,
+      user_id: session.user.id,
+      text: t.text,
+      note: t.note,
+      due_date: t.dueDate || null,
+      priority: t.priority,
+      category: t.category,
+      tags: t.tags || [],
+      order_index: t.orderIndex ?? 0,
+      completed: t.completed,
+      created_at: t.createdAt
+    }));
+    const { error } = await supabase.from('tasks').insert(payload);
+    if (!error) {
+      setTasks((prev) => [...undoData, ...prev]);
+      setToast({ message: '已撤销删除' });
+    } else {
+      setToast({ message: '撤销失败' });
+    }
+    setUndoData(null);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => setToast(null), 2000);
   };
 
   const canDrag = filter === 'all' && !searchQuery.trim() && sortBy === 'manual';
@@ -393,14 +443,12 @@ const App = () => {
     }
     if (captchaInput.trim().toUpperCase() !== captchaText) {
       setAuthError('验证码不正确');
-      setCaptchaFails((v) => {
-        const next = v + 1;
-        if (next >= 5) {
-          setCaptchaLockUntil(Date.now() + 60 * 1000);
-        }
-        return next;
-      });
-      refreshCaptcha();
+      const next = captchaFails + 1;
+      setCaptchaFails(next);
+      if (next >= 5) {
+        setCaptchaLockUntil(Date.now() + 60 * 1000);
+      }
+      refreshCaptcha(next >= 3 ? 6 : 5);
       return;
     }
     setCaptchaFails(0);
@@ -1114,8 +1162,13 @@ const App = () => {
         )}
 
         {toast && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 border border-[#ffe4f2] px-4 py-2 rounded-full text-xs text-[#3b2e4a] shadow-sm">
-            {toast}
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/90 border border-[#ffe4f2] px-4 py-2 rounded-full text-xs text-[#3b2e4a] shadow-sm flex items-center gap-3">
+            <span>{toast.message}</span>
+            {toast.action && (
+              <button type="button" onClick={undoDelete} className="text-[#ff6fb1] font-bold">
+                {toast.action}
+              </button>
+            )}
           </div>
         )}
 

@@ -22,6 +22,7 @@ const AdminApp = () => {
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditPage, setAuditPage] = useState(1);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [auditSearch, setAuditSearch] = useState('');
 
   const loadSummary = async () => {
     setError('');
@@ -316,6 +317,13 @@ const AdminApp = () => {
                   <button onClick={() => loadAudit(auditPage)} className="pill-soft px-3 py-1 rounded-full">{auditLoading ? '加载中...' : '刷新'}</button>
                 </div>
               </div>
+              <input
+                type="text"
+                value={auditSearch}
+                onChange={(e) => setAuditSearch(e.target.value)}
+                placeholder="搜索管理员/动作/对象"
+                className="mb-3 w-full text-xs bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+              />
               <div className="card-soft-sm p-4 overflow-auto">
                 <table className="w-full text-xs text-left">
                   <thead className="text-[#7b6f8c]">
@@ -328,7 +336,16 @@ const AdminApp = () => {
                     </tr>
                   </thead>
                   <tbody className="text-[#3b2e4a]">
-                    {auditLogs.map((log) => (
+                    {auditLogs.filter((log) => {
+                      const q = auditSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      const hay = [
+                        log.admin_email || '',
+                        log.action || '',
+                        log.target_user_id || ''
+                      ].join(' ').toLowerCase();
+                      return hay.includes(q);
+                    }).map((log) => (
                       <tr key={log.id} className="border-t border-[#ffe4f2]">
                         <td className="py-2">{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>
                         <td className="py-2">{log.admin_email || '-'}</td>
