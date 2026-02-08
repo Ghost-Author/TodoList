@@ -150,9 +150,6 @@ const App = () => {
     });
   }, []);
 
-  const toggleExpand = useCallback((id) => {
-    setExpandedId((prev) => (prev === id ? null : id));
-  }, []);
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
@@ -470,7 +467,7 @@ const App = () => {
               selectedIds={selectedIds}
               toggleTask={toggleTask}
               expandedId={expandedId}
-              toggleExpand={toggleExpand}
+              setExpandedId={setExpandedId}
               priorities={priorities}
               isOverdue={isOverdue}
               deleteTask={deleteTask}
