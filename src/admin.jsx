@@ -253,33 +253,33 @@ const AdminApp = () => {
                 {detailLoading && <div className="text-sm text-[#7b6f8c]">加载中...</div>}
                 {userDetail && (
                   <div className="space-y-3 text-sm text-[#7b6f8c]">
-                    <div><span className=\"font-bold text-[#3b2e4a]\">邮箱：</span>{userDetail.email || '-'}</div>
-                    <div><span className=\"font-bold text-[#3b2e4a]\">创建时间：</span>{userDetail.created_at ? new Date(userDetail.created_at).toLocaleString() : '-'}</div>
-                    <div><span className=\"font-bold text-[#3b2e4a]\">最近登录：</span>{userDetail.last_sign_in_at ? new Date(userDetail.last_sign_in_at).toLocaleString() : '-'}</div>
-                    <div><span className=\"font-bold text-[#3b2e4a]\">邮箱验证：</span>{userDetail.email_confirmed_at ? '已验证' : '未验证'}</div>
-                    <div><span className=\"font-bold text-[#3b2e4a]\">禁用状态：</span>{userDetail.ban_expires_at ? `已禁用（到 ${new Date(userDetail.ban_expires_at).toLocaleString()}）` : '正常'}</div>
+                    <div><span className="font-bold text-[#3b2e4a]">邮箱：</span>{userDetail.email || '-'}</div>
+                    <div><span className="font-bold text-[#3b2e4a]">创建时间：</span>{userDetail.created_at ? new Date(userDetail.created_at).toLocaleString() : '-'}</div>
+                    <div><span className="font-bold text-[#3b2e4a]">最近登录：</span>{userDetail.last_sign_in_at ? new Date(userDetail.last_sign_in_at).toLocaleString() : '-'}</div>
+                    <div><span className="font-bold text-[#3b2e4a]">邮箱验证：</span>{userDetail.email_confirmed_at ? '已验证' : '未验证'}</div>
+                    <div><span className="font-bold text-[#3b2e4a]">禁用状态：</span>{userDetail.ban_expires_at ? `已禁用（到 ${new Date(userDetail.ban_expires_at).toLocaleString()}）` : '正常'}</div>
 
-                    <div className=\"flex gap-2 pt-2\">
+                    <div className="flex gap-2 pt-2">
                       <button
-                        type=\"button\"
+                        type="button"
                         onClick={() => toggleBan(userDetail.id, Boolean(userDetail.ban_expires_at))}
-                        className=\"pill-soft px-3 py-1 rounded-full font-bold\"
+                        className="pill-soft px-3 py-1 rounded-full font-bold"
                       >
                         {userDetail.ban_expires_at ? '解禁' : '禁用'}
                       </button>
                       <button
-                        type=\"button\"
+                        type="button"
                         onClick={() => resetPassword(userDetail.email)}
-                        className=\"pill-soft px-3 py-1 rounded-full font-bold\"
+                        className="pill-soft px-3 py-1 rounded-full font-bold"
                       >
                         重置密码
                       </button>
                     </div>
 
                     {resetLink && (
-                      <div className=\"mt-2 text-xs\">
-                        <div className=\"text-[#3b2e4a] font-bold mb-1\">重置链接（复制给用户）</div>
-                        <div className=\"break-all bg-white/80 p-2 rounded-lg border border-[#ffe4f2]\">{resetLink}</div>
+                      <div className="mt-2 text-xs">
+                        <div className="text-[#3b2e4a] font-bold mb-1">重置链接（复制给用户）</div>
+                        <div className="break-all bg-white/80 p-2 rounded-lg border border-[#ffe4f2]">{resetLink}</div>
                       </div>
                     )}
                   </div>
