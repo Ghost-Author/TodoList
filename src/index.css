@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400..800&family=ZCOOL+KuaiLe&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700&family=ZCOOL+KuaiLe&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,10 +14,89 @@ html {
 }
 
 body {
-  font-family: "Baloo 2", "ZCOOL KuaiLe", "Segoe UI", sans-serif;
-  background: radial-gradient(1200px 800px at 10% -10%, #e6f7ff 0%, transparent 60%),
-    radial-gradient(900px 700px at 110% 10%, #e8fff4 0%, transparent 55%),
-    linear-gradient(180deg, #f5fbff 0%, #f7fff9 100%);
+  font-family: "M PLUS Rounded 1c", "Segoe UI", sans-serif;
+  background: radial-gradient(1100px 700px at 8% -10%, #ffe3f1 0%, transparent 60%),
+    radial-gradient(900px 700px at 105% 5%, #e2f2ff 0%, transparent 55%),
+    radial-gradient(900px 900px at 100% 100%, #e8f7ff 0%, transparent 60%),
+    linear-gradient(180deg, #fff7fb 0%, #f4f8ff 100%);
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  filter: blur(0px);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+body::before {
+  width: 340px;
+  height: 340px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #ffd4e8 0%, #ffdff0 45%, transparent 70%);
+  top: 10vh;
+  left: -120px;
+}
+
+body::after {
+  width: 360px;
+  height: 360px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 60% 40%, #cfe9ff 0%, #dff2ff 45%, transparent 70%);
+  bottom: -140px;
+  right: -120px;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+h1, h2, h3 {
+  font-family: "ZCOOL KuaiLe", "M PLUS Rounded 1c", sans-serif;
+}
+
+.card-soft {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #ffd7ea;
+  box-shadow: 0 22px 50px rgba(233, 189, 214, 0.35);
+  border-radius: 28px;
+  backdrop-filter: blur(6px);
+}
+
+.card-soft-sm {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid #ffd7ea;
+  box-shadow: 0 12px 24px rgba(233, 189, 214, 0.25);
+  border-radius: 22px;
+  backdrop-filter: blur(6px);
+}
+
+.tab-active {
+  background: linear-gradient(135deg, #ff8acb, #8fd3ff);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(255, 138, 203, 0.35);
+}
+
+.tab-inactive {
+  color: #7c6f8e;
+}
+
+.btn-soft {
+  background: linear-gradient(135deg, #ff8acb, #8fd3ff);
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(255, 138, 203, 0.35);
+}
+
+.pill-soft {
+  background: #fff0f8;
+  border: 1px solid #ffd6ea;
+  color: #ff6fb1;
 }
 
 /* Hide scrollbars for horizontal tab list */
