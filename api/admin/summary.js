@@ -20,16 +20,26 @@ export default async function handler(req, res) {
   });
 
   try {
-    const [usersRes, tasksRes, doneRes, catsRes] = await Promise.all([
+    const today = new Date().toISOString().slice(0, 10);
+    const [usersRes, tasksRes, doneRes, catsRes, overdueRes, highRes, activeRes] = await Promise.all([
       supabase.auth.admin.listUsers(),
       supabase.from('tasks').select('id', { count: 'exact', head: true }),
       supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('completed', true),
-      supabase.from('categories').select('id', { count: 'exact', head: true })
+      supabase.from('categories').select('id', { count: 'exact', head: true }),
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).lt('due_date', today).eq('completed', false),
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('priority', 'high').eq('completed', false),
+      supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('completed', false)
     ]);
 
-    if (usersRes.error || tasksRes.error || doneRes.error || catsRes.error) {
+    if (usersRes.error || tasksRes.error || doneRes.error || catsRes.error || overdueRes.error || highRes.error || activeRes.error) {
       return res.status(500).json({
-        error: usersRes.error?.message || tasksRes.error?.message || doneRes.error?.message || catsRes.error?.message
+        error: usersRes.error?.message
+          || tasksRes.error?.message
+          || doneRes.error?.message
+          || catsRes.error?.message
+          || overdueRes.error?.message
+          || highRes.error?.message
+          || activeRes.error?.message
       });
     }
 
@@ -37,7 +47,10 @@ export default async function handler(req, res) {
       userCount: usersRes.data?.users?.length || 0,
       taskCount: tasksRes.count || 0,
       completedCount: doneRes.count || 0,
-      categoryCount: catsRes.count || 0
+      categoryCount: catsRes.count || 0,
+      overdueCount: overdueRes.count || 0,
+      highPriorityCount: highRes.count || 0,
+      activeCount: activeRes.count || 0
     });
   } catch (err) {
     return res.status(500).json({ error: 'Server error' });
