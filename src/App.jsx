@@ -35,8 +35,12 @@ const App = () => {
   const [note, setNote] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState('medium');
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [category, setCategory] = useState('');
   const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('created_desc');
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
@@ -116,6 +120,7 @@ const App = () => {
         dueDate: task.due_date || '',
         priority: task.priority || 'medium',
         category: task.category || '',
+        tags: task.tags || [],
         completed: task.completed,
         createdAt: task.created_at
       }))
@@ -164,9 +169,10 @@ const App = () => {
         due_date: dueDate || null,
         priority,
         category: taskCategory,
+        tags,
         completed: false
       })
-      .select('id, text, note, due_date, priority, category, completed, created_at')
+      .select('id, text, note, due_date, priority, category, tags, completed, created_at')
       .single();
     if (error) return;
     setTasks([
@@ -177,6 +183,7 @@ const App = () => {
         dueDate: data.due_date || '',
         priority: data.priority || 'medium',
         category: data.category || taskCategory,
+        tags: data.tags || [],
         completed: data.completed,
         createdAt: data.created_at
       },
@@ -185,6 +192,8 @@ const App = () => {
     setInput('');
     setNote('');
     setDueDate('');
+    setTags([]);
+    setTagInput('');
   };
 
   const addCategory = async () => {
@@ -342,8 +351,31 @@ const App = () => {
     let result = tasks;
     if (filter === 'active') result = tasks.filter(t => !t.completed);
     if (filter === 'completed') result = tasks.filter(t => t.completed);
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(t => {
+        const hay = [
+          t.text,
+          t.note,
+          t.category,
+          ...(t.tags || [])
+        ].join(' ').toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    const sorter = {
+      created_desc: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+      created_asc: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      due_asc: (a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31'),
+      due_desc: (a, b) => new Date(b.dueDate || '0000-01-01') - new Date(a.dueDate || '0000-01-01'),
+      priority: (a, b) => {
+        const rank = { high: 0, medium: 1, low: 2, none: 3 };
+        return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
+      }
+    }[sortBy];
+    if (sorter) result = [...result].sort(sorter);
     return result;
-  }, [tasks, filter]);
+  }, [tasks, filter, searchQuery, sortBy]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -464,7 +496,7 @@ const App = () => {
       <div className="max-w-4xl mx-auto p-4 md:p-8">
         
         {/* Nav Tabs */}
-        <div className="flex items-center justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div className="card-soft-sm p-1 flex">
             <button onClick={() => setView('tasks')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'tasks' ? 'tab-active' : 'tab-inactive hover:text-[#ff6fb1]'}`}>
               <LayoutGrid className="w-4 h-4" /> 任务清单
@@ -559,6 +591,53 @@ const App = () => {
                       </select>
                     </div>
                   </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1 tracking-wider">标签</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        placeholder="输入标签后回车"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const trimmed = tagInput.trim();
+                            if (trimmed && !tags.includes(trimmed)) {
+                              setTags([...tags, trimmed]);
+                              setTagInput('');
+                            }
+                          }
+                        }}
+                        className="flex-1 text-xs bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trimmed = tagInput.trim();
+                          if (trimmed && !tags.includes(trimmed)) {
+                            setTags([...tags, trimmed]);
+                            setTagInput('');
+                          }
+                        }}
+                        className="pill-soft px-3 rounded-xl text-xs font-bold"
+                      >
+                        添加
+                      </button>
+                    </div>
+                    {tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {tags.map((t) => (
+                          <span key={t} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold flex items-center gap-1">
+                            #{t}
+                            <button type="button" onClick={() => setTags(tags.filter(tag => tag !== t))}>
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -598,13 +677,46 @@ const App = () => {
             </form>
 
             {/* List Controls */}
-            <div className="flex gap-6 border-b border-[#ffe4f2] mb-6 overflow-x-auto no-scrollbar">
-              {['all', 'active', 'completed'].map((f) => (
-                <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors ${filter === f ? 'text-[#ff6fb1]' : 'text-slate-400 hover:text-[#ff6fb1]'}`}>
-                  {f === 'all' ? '全部任务' : f === 'active' ? '进行中' : '已归档'}
-                  {filter === f && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#ff8acb] rounded-full" />}
+            <div className="flex flex-col gap-4 mb-6">
+              <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar">
+                {['all', 'active', 'completed'].map((f) => (
+                  <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors ${filter === f ? 'text-[#ff6fb1]' : 'text-slate-400 hover:text-[#ff6fb1]'}`}>
+                    {f === 'all' ? '全部任务' : f === 'active' ? '进行中' : '已归档'}
+                    {filter === f && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#ff8acb] rounded-full" />}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="搜索任务/备注/分类/标签"
+                  className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                >
+                  <option value="created_desc">按创建时间（新→旧）</option>
+                  <option value="created_asc">按创建时间（旧→新）</option>
+                  <option value="due_asc">按截止日期（近→远）</option>
+                  <option value="due_desc">按截止日期（远→近）</option>
+                  <option value="priority">按优先级</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSortBy('created_desc');
+                    setFilter('all');
+                  }}
+                  className="pill-soft px-4 py-2 rounded-xl text-sm font-bold"
+                >
+                  清除筛选
                 </button>
-              ))}
+              </div>
             </div>
 
             {/* Task Items */}
@@ -622,19 +734,29 @@ const App = () => {
                       </button>
                       
                       <div className="flex-grow min-w-0 cursor-pointer" onClick={() => setExpandedId(expandedId === task.id ? null : task.id)}>
-                        <div className="flex items-center gap-2 mb-1 overflow-hidden">
-                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${priorities[task.priority].bg} ${priorities[task.priority].color} border ${priorities[task.priority].border}`}>
-                            {priorities[task.priority].label}
+                      <div className="flex items-center gap-2 mb-1 overflow-hidden">
+                        <span className={`text-[9px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${priorities[task.priority].bg} ${priorities[task.priority].color} border ${priorities[task.priority].border}`}>
+                          {priorities[task.priority].label}
+                        </span>
+                        {task.dueDate && (
+                          <span className={`text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap ${isOverdue(task.dueDate) && !task.completed ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
+                            <Calendar className="w-3 h-3" /> {task.dueDate}
                           </span>
-                          {task.dueDate && (
-                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap ${isOverdue(task.dueDate) && !task.completed ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
-                              <Calendar className="w-3 h-3" /> {task.dueDate}
-                            </span>
-                          )}
-                          <span className="text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-100">
-                            {task.category}
+                        )}
+                        <span className="text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-100">
+                          {task.category}
+                        </span>
+                        {(task.tags || []).slice(0, 3).map((t) => (
+                          <span key={t} className="text-[9px] px-1.5 py-0.5 rounded font-black pill-soft">
+                            #{t}
                           </span>
-                        </div>
+                        ))}
+                        {(task.tags || []).length > 3 && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-black text-[#7b6f8c] bg-white/70 border border-[#ffe4f2]">
+                            +{(task.tags || []).length - 3}
+                          </span>
+                        )}
+                      </div>
                         <p className={`text-base font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>{task.text}</p>
                       </div>
 

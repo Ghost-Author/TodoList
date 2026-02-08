@@ -1,0 +1,16 @@
+{
+  "name": "云朵清单",
+  "short_name": "云朵清单",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF7FB",
+  "theme_color": "#FF8ACB",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -2,8 +2,9 @@
 
 1. Create a Supabase project.
 2. In the SQL editor, run `supabase_schema.sql`.
-3. Enable Email auth in Supabase Auth settings.
-4. Add environment variables to Vercel and local `.env`:
+3. If you already deployed before, run `supabase_schema_v2.sql` to add tags.
+4. Enable Email auth in Supabase Auth settings.
+5. Add environment variables to Vercel and local `.env`:
 
 ```
 VITE_SUPABASE_URL=your_supabase_project_url
