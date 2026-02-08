@@ -21,7 +21,7 @@ const CaptchaBox = ({
         />
         <button
           type="button"
-          onClick={refreshCaptcha}
+          onClick={() => refreshCaptcha()}
           className="px-2 py-2 rounded-xl bg-white/80 border border-[#ffe4f2] text-[#3b2e4a]"
           title="点击刷新验证码"
         >

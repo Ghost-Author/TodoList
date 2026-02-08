@@ -94,7 +94,7 @@ const App = () => {
   }, []);
 
   const refreshCaptcha = (lengthOverride) => {
-    const length = lengthOverride || (captchaFails >= 3 ? 6 : 5);
+    const length = typeof lengthOverride === 'number' ? lengthOverride : (captchaFails >= 3 ? 6 : 5);
     const { text, image } = generateCaptcha(length);
     setCaptchaText(text);
     setCaptchaImage(image);
