@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://todo-list-one-puce-41.vercel.app/sitemap.xml

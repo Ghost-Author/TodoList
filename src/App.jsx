@@ -26,6 +26,10 @@ const App = () => {
   const [authMode, setAuthMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -50,8 +54,11 @@ const App = () => {
       setSession(data.session);
       setAuthLoading(false);
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecoveryMode(true);
+      }
     });
     return () => {
       mounted = false;
@@ -260,6 +267,72 @@ const App = () => {
     await supabase.auth.signOut();
   };
 
+  const sendResetEmail = async () => {
+    setAuthError('');
+    if (!email.trim()) {
+      setAuthError('请输入邮箱以重置密码');
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: window.location.origin
+    });
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+    setAuthError('已发送重置邮件，请查收');
+  };
+
+  const updatePassword = async () => {
+    setAuthError('');
+    if (!newPassword) {
+      setAuthError('请输入新密码');
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      setAuthError(error.message);
+      return;
+    }
+    setAuthError('密码已更新');
+    setNewPassword('');
+    setRecoveryMode(false);
+  };
+
+  const exportData = async () => {
+    if (!session?.user?.id) return;
+    const userId = session.user.id;
+    const [tasksRes, catsRes] = await Promise.all([
+      supabase.from('tasks').select('*').eq('user_id', userId),
+      supabase.from('categories').select('*').eq('user_id', userId)
+    ]);
+    if (tasksRes.error || catsRes.error) return;
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      tasks: tasksRes.data,
+      categories: catsRes.data
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cloud-todo-export.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const clearAllData = async () => {
+    if (!session?.user?.id) return;
+    const userId = session.user.id;
+    await supabase.from('tasks').delete().eq('user_id', userId);
+    await supabase.from('categories').delete().eq('user_id', userId);
+    setTasks([]);
+    const cats = await ensureDefaultCategories(userId);
+    setCategory(cats[0]?.name || '');
+  };
+
   const isOverdue = (date) => {
     if (!date) return false;
     return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
@@ -319,38 +392,67 @@ const App = () => {
               <Cloud className="w-7 h-7 text-[#ff8acb]" /> 云朵清单
             </h1>
             <p className="text-[#7b6f8c] mb-6">登录后即可同步你的清单。</p>
-            <form onSubmit={handleAuth} className="space-y-4">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="邮箱"
-                className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-              />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="密码"
-                className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-              />
-              {authError && (
-                <div className="text-xs text-[#ff6fb1]">{authError}</div>
-              )}
-              <button type="submit" className="w-full btn-soft py-3 rounded-2xl font-bold transition-all">
-                {authMode === 'signup' ? '注册' : '登录'}
-              </button>
-            </form>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode(authMode === 'signup' ? 'signin' : 'signup');
-                setAuthError('');
-              }}
-              className="mt-4 text-xs text-[#7b6f8c] hover:text-[#ff6fb1]"
-            >
-              {authMode === 'signup' ? '已有账号？去登录' : '没有账号？去注册'}
-            </button>
+            {recoveryMode ? (
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="设置新密码"
+                  className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                />
+                {authError && (
+                  <div className="text-xs text-[#ff6fb1]">{authError}</div>
+                )}
+                <button type="button" onClick={updatePassword} className="w-full btn-soft py-3 rounded-2xl font-bold transition-all">
+                  更新密码
+                </button>
+              </div>
+            ) : (
+              <>
+                <form onSubmit={handleAuth} className="space-y-4">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="邮箱"
+                    className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                  />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="密码"
+                    className="w-full text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                  />
+                  {authError && (
+                    <div className="text-xs text-[#ff6fb1]">{authError}</div>
+                  )}
+                  <button type="submit" className="w-full btn-soft py-3 rounded-2xl font-bold transition-all">
+                    {authMode === 'signup' ? '注册' : '登录'}
+                  </button>
+                </form>
+                <div className="mt-4 flex items-center justify-between text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode(authMode === 'signup' ? 'signin' : 'signup');
+                      setAuthError('');
+                    }}
+                    className="text-[#7b6f8c] hover:text-[#ff6fb1]"
+                  >
+                    {authMode === 'signup' ? '已有账号？去登录' : '没有账号？去注册'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={sendResetEmail}
+                    className="text-[#7b6f8c] hover:text-[#ff6fb1]"
+                  >
+                    忘记密码
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -371,10 +473,21 @@ const App = () => {
               <PieChart className="w-4 h-4" /> 小成就
             </button>
           </div>
-          <button onClick={signOut} className="text-xs font-bold text-[#7b6f8c] hover:text-[#ff6fb1]">
-            退出登录
-          </button>
+          <div className="flex items-center gap-3 text-xs font-bold">
+            <button onClick={() => setShowSettings(true)} className="text-[#7b6f8c] hover:text-[#ff6fb1]">
+              设置
+            </button>
+            <button onClick={signOut} className="text-[#7b6f8c] hover:text-[#ff6fb1]">
+              退出登录
+            </button>
+          </div>
         </div>
+
+        {!session.user.email_confirmed_at && (
+          <div className="card-soft-sm px-4 py-3 mb-6 text-sm text-[#7b6f8c]">
+            你的邮箱尚未验证，请前往邮箱完成验证以确保账号安全。
+          </div>
+        )}
 
         {view === 'tasks' ? (
           <>
@@ -599,6 +712,81 @@ const App = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+            <div className="card-soft w-full max-w-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-[#3b2e4a]">设置</h3>
+                <button onClick={() => setShowSettings(false)} className="text-[#ff9ccc]">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4 text-sm">
+                <div>
+                  <label className="text-xs text-[#7b6f8c]">修改密码</label>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="新密码"
+                      className="flex-1 bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                    />
+                    <button type="button" onClick={updatePassword} className="btn-soft px-4 rounded-xl font-bold">
+                      更新
+                    </button>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={exportData} className="pill-soft px-4 py-2 rounded-xl font-bold">
+                    导出数据
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('确定要清空所有数据吗？此操作不可恢复。')) {
+                        clearAllData();
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl font-bold text-white bg-[#ff7aa8]"
+                  >
+                    清空数据
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPrivacy(true);
+                    setShowSettings(false);
+                  }}
+                  className="text-[#7b6f8c] hover:text-[#ff6fb1] underline"
+                >
+                  查看隐私政策
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPrivacy && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4">
+            <div className="card-soft w-full max-w-2xl p-6 max-h-[80vh] overflow-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-[#3b2e4a]">隐私政策</h3>
+                <button onClick={() => setShowPrivacy(false)} className="text-[#ff9ccc]">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-3 text-sm text-[#7b6f8c] leading-relaxed">
+                <p>云朵清单仅收集账号邮箱与您主动填写的任务内容，用于账号登录与数据同步。</p>
+                <p>数据存储于 Supabase（数据库与认证服务），并通过行级权限控制仅允许账号本人访问。</p>
+                <p>您可以在设置中导出或清空自己的数据。如需注销账号，可联系我们处理。</p>
+                <p>如有疑问请联系：liupggg@gmail.com</p>
               </div>
             </div>
           </div>

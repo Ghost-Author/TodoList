@@ -1,0 +1,13 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#FFF7FB"/>
+  <circle cx="140" cy="120" r="180" fill="#FFD6EA" fill-opacity="0.7"/>
+  <circle cx="1080" cy="120" r="200" fill="#DFF2FF" fill-opacity="0.7"/>
+  <circle cx="1080" cy="560" r="220" fill="#E8F7FF" fill-opacity="0.7"/>
+  <text x="120" y="290" font-family="Quicksand, Nunito, Arial Rounded MT Bold, sans-serif" font-size="72" fill="#3B2E4A" font-weight="700">云朵清单</text>
+  <text x="120" y="360" font-family="Quicksand, Nunito, Arial Rounded MT Bold, sans-serif" font-size="32" fill="#7B6F8C">轻柔可爱的待办清单与习惯管理工具</text>
+  <g transform="translate(860 340)">
+    <rect width="220" height="140" rx="36" fill="#FFFFFF" stroke="#FFD7EA"/>
+    <path d="M40 90C28 90 20 82 20 70C20 58 28 50 40 50C42 40 52 30 68 30C82 30 92 38 98 50C100 50 102 50 106 50C124 50 138 64 138 82C138 100 124 114 106 114H54C46 114 40 108 40 100V90Z" fill="#FF8ACB"/>
+    <path d="M54 100C48 100 44 96 44 90C44 84 48 80 54 80C56 74 62 68 72 68C80 68 86 72 90 78C92 78 94 78 96 78C110 78 120 90 120 102C120 114 110 124 96 124H64C58 124 54 120 54 114V100Z" fill="#8FD3FF" fill-opacity="0.9"/>
+  </g>
+</svg>
