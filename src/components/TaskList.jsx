@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote } from 'lucide-react';
 
 const TaskList = ({
@@ -23,12 +23,47 @@ const TaskList = ({
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {filteredTasks.map(task => (
+  const enableVirtual = !canDrag && !expandedId && filteredTasks.length > 80;
+  const containerRef = useRef(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(560);
+  const ROW_HEIGHT = 120;
+  const OVERSCAN = 6;
+
+  useEffect(() => {
+    if (!enableVirtual) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setViewportHeight(el.clientHeight || 560);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [enableVirtual]);
+
+  const { startIndex, endIndex, topPad, bottomPad } = useMemo(() => {
+    if (!enableVirtual) {
+      return { startIndex: 0, endIndex: filteredTasks.length - 1, topPad: 0, bottomPad: 0 };
+    }
+    const total = filteredTasks.length;
+    const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+    const end = Math.min(
+      total - 1,
+      Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN
+    );
+    const top = start * ROW_HEIGHT;
+    const bottom = Math.max(0, (total - end - 1) * ROW_HEIGHT);
+    return { startIndex: start, endIndex: end, topPad: top, bottomPad: bottom };
+  }, [enableVirtual, filteredTasks.length, scrollTop, viewportHeight]);
+
+  const visibleTasks = enableVirtual
+    ? filteredTasks.slice(startIndex, endIndex + 1)
+    : filteredTasks;
+
+  const renderTask = (task, withMargin) => (
         <div
           key={task.id}
-          className={`group flex flex-col transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}
+          className={`group flex flex-col transition-all duration-300 ${withMargin ? 'mb-4 last:mb-0' : ''} ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}
           draggable={canDrag}
           onDragStart={() => handleDragStart(task.id)}
           onDragOver={(e) => canDrag && e.preventDefault()}
@@ -104,9 +139,23 @@ const TaskList = ({
             </div>
           )}
         </div>
-      ))}
-    </div>
   );
+
+  if (enableVirtual) {
+    return (
+      <div
+        ref={containerRef}
+        className="space-y-4 max-h-[70vh] overflow-auto pr-1"
+        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+      >
+        <div style={{ height: topPad }} />
+        {visibleTasks.map((task) => renderTask(task, true))}
+        <div style={{ height: bottomPad }} />
+      </div>
+    );
+  }
+
+  return <div className="space-y-4">{visibleTasks.map((task) => renderTask(task, false))}</div>;
 };
 
 export default TaskList;
