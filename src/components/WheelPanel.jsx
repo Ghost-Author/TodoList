@@ -207,7 +207,6 @@ const WheelPanel = ({
                 </div>
               </div>
             </div>
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[18px] border-l-transparent border-r-transparent border-b-[#ff8acb]" />
             <button
               type="button"
               onClick={onSpin}
