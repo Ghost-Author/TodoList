@@ -25,6 +25,7 @@ const WheelPanel = ({
   spinning,
   angle,
   result,
+  created,
   onSpin,
   onAddOption,
   onRemoveOption,
@@ -222,9 +223,10 @@ const WheelPanel = ({
             <button
               type="button"
               onClick={() => onCreateTask(result)}
-              className="mt-3 text-xs font-bold text-white bg-[#ff8acb] px-3 py-1.5 rounded-full"
+              disabled={created}
+              className="mt-3 text-xs font-bold text-white bg-[#ff8acb] px-3 py-1.5 rounded-full disabled:opacity-60"
             >
-              一键创建任务
+              {created ? '已创建' : '一键创建任务'}
             </button>
           )}
         </div>

@@ -65,6 +65,7 @@ const App = () => {
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelResult, setWheelResult] = useState('');
+  const [wheelCreated, setWheelCreated] = useState(false);
   const wheelAngleRef = useRef(0);
   const [wheelGroups, setWheelGroups] = useState(['随机', '工作', '生活']);
   const [wheelGroup, setWheelGroup] = useState('随机');
@@ -181,6 +182,7 @@ const App = () => {
 
   useEffect(() => {
     setWheelResult('');
+    setWheelCreated(false);
   }, [wheelGroup]);
 
   const defaultCategories = ['工作', '生活', '学习', '健康', '其他'];
@@ -696,6 +698,7 @@ const App = () => {
     const label = currentWheelOptions[index].label;
     setTimeout(async () => {
       setWheelResult(label);
+      setWheelCreated(false);
       setWheelSpinning(false);
       if (!session?.user?.id) return;
       const { data } = await supabase
@@ -710,7 +713,7 @@ const App = () => {
   };
 
   const createTaskFromWheel = async (label) => {
-    if (!session?.user?.id || !label) return;
+    if (!session?.user?.id || !label || wheelCreated) return;
     const taskCategory = category || categories[0] || '';
     const minOrder = tasks.length ? Math.min(...tasks.map((t) => t.orderIndex ?? 0)) : 0;
     const { data, error } = await supabase
@@ -729,6 +732,7 @@ const App = () => {
       .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
       .single();
     if (error || !data) return;
+    setWheelCreated(true);
     setTasks([
       {
         id: data.id,
@@ -927,16 +931,17 @@ const App = () => {
                 onRenameGroup={renameWheelGroup}
                 onDeleteGroup={deleteWheelGroup}
                 onClearHistory={clearWheelHistory}
-                options={currentWheelOptions}
-                history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
-                spinning={wheelSpinning}
-                angle={wheelAngle}
-                result={wheelResult}
-                onSpin={spinWheel}
-                onAddOption={addWheelOption}
-                onRemoveOption={removeWheelOption}
-                onCreateTask={createTaskFromWheel}
-              />
+              options={currentWheelOptions}
+              history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
+              spinning={wheelSpinning}
+              angle={wheelAngle}
+              result={wheelResult}
+              created={wheelCreated}
+              onSpin={spinWheel}
+              onAddOption={addWheelOption}
+              onRemoveOption={removeWheelOption}
+              onCreateTask={createTaskFromWheel}
+            />
             </div>
 
             <FiltersBar
