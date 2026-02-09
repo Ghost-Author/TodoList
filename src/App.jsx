@@ -11,6 +11,7 @@ import Toast from './components/Toast.jsx';
 import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
+import WheelPanel from './components/WheelPanel.jsx';
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 const prefetchStatsView = () => import('./StatsView.jsx');
 const SettingsModal = React.lazy(() => import('./components/SettingsModal.jsx'));
@@ -59,6 +60,13 @@ const App = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
+  const [wheelOptions, setWheelOptions] = useState([]);
+  const [wheelHistory, setWheelHistory] = useState([]);
+  const [wheelSpinning, setWheelSpinning] = useState(false);
+  const [wheelAngle, setWheelAngle] = useState(0);
+  const [wheelResult, setWheelResult] = useState('');
+  const wheelAngleRef = useRef(0);
+  const defaultWheelOptions = ['整理桌面 5 分钟', '喝一杯水', '伸展一下', '列 3 个小目标', '处理一个小任务', '站起来走一走'];
   
   // --- Auth ---
   useEffect(() => {
@@ -107,7 +115,49 @@ const App = () => {
       setTasks([]);
       setCategories([]);
       setCategory('');
+      setWheelOptions([]);
+      setWheelHistory([]);
+      setWheelResult('');
     }
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const userId = session.user.id;
+    let mounted = true;
+
+    const loadWheel = async () => {
+      const [optRes, histRes] = await Promise.all([
+        supabase
+          .from('wheel_options')
+          .select('id, label, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('wheel_history')
+          .select('id, label, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5)
+      ]);
+      if (!mounted) return;
+      if (optRes.data && optRes.data.length > 0) {
+        setWheelOptions(optRes.data);
+      } else {
+        const { data: seeded } = await supabase
+          .from('wheel_options')
+          .insert(defaultWheelOptions.map((label) => ({ user_id: userId, label })))
+          .select('id, label, created_at')
+          .order('created_at', { ascending: true });
+        if (seeded && mounted) setWheelOptions(seeded);
+      }
+      if (histRes.data) setWheelHistory(histRes.data);
+    };
+
+    loadWheel();
+    return () => {
+      mounted = false;
+    };
   }, [session]);
 
   useEffect(() => {
@@ -519,6 +569,53 @@ const App = () => {
     setCategory(cats[0]?.name || '');
   };
 
+  const addWheelOption = async (label) => {
+    if (!session?.user?.id) return;
+    const { data, error } = await supabase
+      .from('wheel_options')
+      .insert({ user_id: session.user.id, label })
+      .select('id, label, created_at')
+      .single();
+    if (error || !data) return;
+    setWheelOptions((prev) => [...prev, data]);
+  };
+
+  const removeWheelOption = async (id) => {
+    if (!session?.user?.id) return;
+    const { error } = await supabase
+      .from('wheel_options')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id);
+    if (error) return;
+    setWheelOptions((prev) => prev.filter((opt) => opt.id !== id));
+  };
+
+  const spinWheel = async () => {
+    if (wheelSpinning || wheelOptions.length === 0) return;
+    const count = wheelOptions.length;
+    const index = Math.floor(Math.random() * count);
+    const segment = 360 / count;
+    const target = 360 * 4 + (360 - (index * segment + segment / 2));
+    wheelAngleRef.current = (wheelAngleRef.current + target) % 3600;
+    setWheelSpinning(true);
+    setWheelAngle(wheelAngleRef.current);
+    const label = wheelOptions[index].label;
+    setTimeout(async () => {
+      setWheelResult(label);
+      setWheelSpinning(false);
+      if (!session?.user?.id) return;
+      const { data } = await supabase
+        .from('wheel_history')
+        .insert({ user_id: session.user.id, label })
+        .select('id, label, created_at')
+        .single();
+      if (data) {
+        setWheelHistory((prev) => [data, ...prev].slice(0, 5));
+      }
+    }, 2600);
+  };
+
   const isOverdue = (date) => {
     if (!date) return false;
     return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
@@ -689,6 +786,17 @@ const App = () => {
               setTags={setTags}
               tagInput={tagInput}
               setTagInput={setTagInput}
+            />
+
+            <WheelPanel
+              options={wheelOptions}
+              history={wheelHistory}
+              spinning={wheelSpinning}
+              angle={wheelAngle}
+              result={wheelResult}
+              onSpin={spinWheel}
+              onAddOption={addWheelOption}
+              onRemoveOption={removeWheelOption}
             />
 
             <FiltersBar

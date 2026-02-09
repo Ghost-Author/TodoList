@@ -4,6 +4,8 @@
 2. In the SQL editor, run `supabase_schema.sql`.
 3. If you already deployed before, run `supabase_schema_v2.sql` to add tags.
 4. Run `supabase_schema_v3.sql` to add manual ordering.
+5. Run `supabase_schema_v4.sql` to add admin audit log.
+6. Run `supabase_schema_v5.sql` to add “不知道想干什么”转盘表。
 5. Enable Email auth in Supabase Auth settings.
 6. Add environment variables to Vercel and local `.env`:
 
