@@ -66,7 +66,7 @@ const App = () => {
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelResult, setWheelResult] = useState('');
   const wheelAngleRef = useRef(0);
-  const wheelGroups = ['随机', '工作', '生活'];
+  const [wheelGroups, setWheelGroups] = useState(['随机', '工作', '生活']);
   const [wheelGroup, setWheelGroup] = useState('随机');
   const defaultWheelOptions = ['整理桌面 5 分钟', '喝一杯水', '伸展一下', '列 3 个小目标', '处理一个小任务', '站起来走一走'];
   
@@ -129,7 +129,12 @@ const App = () => {
     let mounted = true;
 
     const loadWheel = async () => {
-      const [optRes, histRes] = await Promise.all([
+      const [groupRes, optRes, histRes] = await Promise.all([
+        supabase
+          .from('wheel_groups')
+          .select('id, name, created_at')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: true }),
         supabase
           .from('wheel_options')
           .select('id, label, group_name, created_at')
@@ -142,6 +147,10 @@ const App = () => {
           .order('created_at', { ascending: false })
           .limit(5)
       ]);
+      if (groupRes.data && groupRes.data.length > 0) {
+        const names = groupRes.data.map((g) => g.name);
+        setWheelGroups(['随机', ...names.filter((n) => n !== '随机')]);
+      }
       if (!mounted) return;
       if (optRes.data && optRes.data.length > 0) {
         setWheelOptions(optRes.data);
@@ -586,6 +595,79 @@ const App = () => {
     setWheelOptions((prev) => [...prev, data]);
   };
 
+  const addWheelGroup = async (name) => {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === '随机') return;
+    if (wheelGroups.includes(trimmed)) return;
+    if (!session?.user?.id) return;
+    const { data, error } = await supabase
+      .from('wheel_groups')
+      .insert({ user_id: session.user.id, name: trimmed })
+      .select('id, name, created_at')
+      .single();
+    if (error || !data) return;
+    setWheelGroups((prev) => [...prev, data.name]);
+    setWheelGroup(data.name);
+  };
+
+  const renameWheelGroup = async (oldName, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === '随机') return;
+    if (oldName === '随机') return;
+    if (wheelGroups.includes(trimmed) && trimmed !== oldName) return;
+    if (!session?.user?.id) return;
+    const { error } = await supabase
+      .from('wheel_groups')
+      .update({ name: trimmed })
+      .eq('user_id', session.user.id)
+      .eq('name', oldName);
+    if (error) return;
+    await supabase
+      .from('wheel_options')
+      .update({ group_name: trimmed })
+      .eq('user_id', session.user.id)
+      .eq('group_name', oldName);
+    await supabase
+      .from('wheel_history')
+      .update({ group_name: trimmed })
+      .eq('user_id', session.user.id)
+      .eq('group_name', oldName);
+    setWheelGroups((prev) => prev.map((g) => (g === oldName ? trimmed : g)));
+    if (wheelGroup === oldName) setWheelGroup(trimmed);
+  };
+
+  const deleteWheelGroup = async (name) => {
+    if (name === '随机') return;
+    if (!session?.user?.id) return;
+    await supabase
+      .from('wheel_groups')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('name', name);
+    await supabase
+      .from('wheel_options')
+      .update({ group_name: '随机' })
+      .eq('user_id', session.user.id)
+      .eq('group_name', name);
+    await supabase
+      .from('wheel_history')
+      .update({ group_name: '随机' })
+      .eq('user_id', session.user.id)
+      .eq('group_name', name);
+    setWheelGroups((prev) => prev.filter((g) => g !== name));
+    if (wheelGroup === name) setWheelGroup('随机');
+  };
+
+  const clearWheelHistory = async () => {
+    if (!session?.user?.id) return;
+    await supabase
+      .from('wheel_history')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('group_name', wheelGroup);
+    setWheelHistory((prev) => prev.filter((h) => h.group_name !== wheelGroup));
+  };
+
   const removeWheelOption = async (id) => {
     if (!session?.user?.id) return;
     const { error } = await supabase
@@ -840,8 +922,12 @@ const App = () => {
               groups={wheelGroups}
               currentGroup={wheelGroup}
               onGroupChange={setWheelGroup}
+              onAddGroup={addWheelGroup}
+              onRenameGroup={renameWheelGroup}
+              onDeleteGroup={deleteWheelGroup}
+              onClearHistory={clearWheelHistory}
               options={currentWheelOptions}
-              history={wheelHistory}
+              history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
               spinning={wheelSpinning}
               angle={wheelAngle}
               result={wheelResult}

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Dice5, Plus, X, Sparkles } from 'lucide-react';
+import { Dice5, Plus, X, Sparkles, Edit2, Trash2 } from 'lucide-react';
 
 const DEFAULT_COLORS = [
   '#ffd6e8',
@@ -16,6 +16,10 @@ const WheelPanel = ({
   groups,
   currentGroup,
   onGroupChange,
+  onAddGroup,
+  onRenameGroup,
+  onDeleteGroup,
+  onClearHistory,
   options,
   history,
   spinning,
@@ -27,6 +31,9 @@ const WheelPanel = ({
   onCreateTask
 }) => {
   const [newOption, setNewOption] = useState('');
+  const [newGroup, setNewGroup] = useState('');
+  const [editingGroup, setEditingGroup] = useState(null);
+  const [editingName, setEditingName] = useState('');
 
   const gradient = useMemo(() => {
     if (!options.length) return 'conic-gradient(#f3f4f6 0 360deg)';
@@ -59,22 +66,100 @@ const WheelPanel = ({
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         {groups.map((g) => (
-          <button
-            key={g}
-            type="button"
-            onClick={() => onGroupChange(g)}
-            className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
-              currentGroup === g
-                ? 'bg-[#ff8acb] text-white border-[#ff8acb]'
-                : 'bg-white/80 text-[#7b6f8c] border-[#ffe4f2]'
-            }`}
-          >
-            {g}
-          </button>
+          <div key={g} className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onGroupChange(g)}
+              className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+                currentGroup === g
+                  ? 'bg-[#ff8acb] text-white border-[#ff8acb]'
+                  : 'bg-white/80 text-[#7b6f8c] border-[#ffe4f2]'
+              }`}
+            >
+              {g}
+            </button>
+            {g !== '随机' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingGroup(g);
+                    setEditingName(g);
+                  }}
+                  className="text-[#7b6f8c] hover:text-[#ff6fb1]"
+                  title="重命名"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteGroup(g)}
+                  className="text-[#7b6f8c] hover:text-red-500"
+                  title="删除分组"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </>
+            )}
+          </div>
         ))}
+        <div className="flex items-center gap-2 ml-2">
+          <input
+            type="text"
+            value={newGroup}
+            onChange={(e) => setNewGroup(e.target.value)}
+            placeholder="新增分组"
+            className="text-xs bg-white/80 rounded-full px-3 py-1 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+          />
+          <button
+            type="button"
+            className="text-xs font-bold text-white bg-[#ff8acb] px-3 py-1 rounded-full"
+            onClick={() => {
+              const val = newGroup.trim();
+              if (!val) return;
+              onAddGroup(val);
+              setNewGroup('');
+            }}
+          >
+            新建
+          </button>
+        </div>
       </div>
+
+      {editingGroup && (
+        <div className="mb-4 flex items-center gap-2 text-xs bg-white/80 border border-[#ffe4f2] rounded-xl px-3 py-2">
+          <span className="text-[#7b6f8c]">重命名分组：</span>
+          <input
+            type="text"
+            value={editingName}
+            onChange={(e) => setEditingName(e.target.value)}
+            className="flex-1 text-xs bg-transparent outline-none"
+          />
+          <button
+            type="button"
+            className="text-xs font-bold text-white bg-[#ff8acb] px-2 py-1 rounded-full"
+            onClick={() => {
+              onRenameGroup(editingGroup, editingName);
+              setEditingGroup(null);
+              setEditingName('');
+            }}
+          >
+            保存
+          </button>
+          <button
+            type="button"
+            className="text-xs text-[#7b6f8c]"
+            onClick={() => {
+              setEditingGroup(null);
+              setEditingName('');
+            }}
+          >
+            取消
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
         <div className="flex flex-col items-center">
@@ -154,7 +239,16 @@ const WheelPanel = ({
           </div>
 
           <div>
-            <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest mb-2">最近 5 次结果</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest">最近 5 次结果</div>
+              <button
+                type="button"
+                onClick={onClearHistory}
+                className="text-[10px] text-[#7b6f8c] hover:text-[#ff6fb1]"
+              >
+                清空当前分组
+              </button>
+            </div>
             <div className="space-y-2">
               {history.length === 0 && (
                 <div className="text-xs text-slate-400">还没有转动记录</div>
