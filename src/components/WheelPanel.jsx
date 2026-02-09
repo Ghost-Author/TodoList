@@ -13,6 +13,9 @@ const DEFAULT_COLORS = [
 ];
 
 const WheelPanel = ({
+  groups,
+  currentGroup,
+  onGroupChange,
   options,
   history,
   spinning,
@@ -20,7 +23,8 @@ const WheelPanel = ({
   result,
   onSpin,
   onAddOption,
-  onRemoveOption
+  onRemoveOption,
+  onCreateTask
 }) => {
   const [newOption, setNewOption] = useState('');
 
@@ -55,6 +59,23 @@ const WheelPanel = ({
         </button>
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-4">
+        {groups.map((g) => (
+          <button
+            key={g}
+            type="button"
+            onClick={() => onGroupChange(g)}
+            className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+              currentGroup === g
+                ? 'bg-[#ff8acb] text-white border-[#ff8acb]'
+                : 'bg-white/80 text-[#7b6f8c] border-[#ffe4f2]'
+            }`}
+          >
+            {g}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6">
         <div className="flex flex-col items-center">
           <div className="relative w-56 h-56">
@@ -79,6 +100,15 @@ const WheelPanel = ({
           <div className="mt-4 text-[11px] text-[#7b6f8c] flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> 结果仅提示，不会自动创建任务
           </div>
+          {result && (
+            <button
+              type="button"
+              onClick={() => onCreateTask(result)}
+              className="mt-3 text-xs font-bold text-white bg-[#ff8acb] px-3 py-1.5 rounded-full"
+            >
+              一键创建任务
+            </button>
+          )}
         </div>
 
         <div className="space-y-4">

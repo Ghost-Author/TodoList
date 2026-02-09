@@ -66,6 +66,8 @@ const App = () => {
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelResult, setWheelResult] = useState('');
   const wheelAngleRef = useRef(0);
+  const wheelGroups = ['随机', '工作', '生活'];
+  const [wheelGroup, setWheelGroup] = useState('随机');
   const defaultWheelOptions = ['整理桌面 5 分钟', '喝一杯水', '伸展一下', '列 3 个小目标', '处理一个小任务', '站起来走一走'];
   
   // --- Auth ---
@@ -130,12 +132,12 @@ const App = () => {
       const [optRes, histRes] = await Promise.all([
         supabase
           .from('wheel_options')
-          .select('id, label, created_at')
+          .select('id, label, group_name, created_at')
           .eq('user_id', userId)
           .order('created_at', { ascending: true }),
         supabase
           .from('wheel_history')
-          .select('id, label, created_at')
+          .select('id, label, group_name, created_at')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(5)
@@ -146,8 +148,8 @@ const App = () => {
       } else {
         const { data: seeded } = await supabase
           .from('wheel_options')
-          .insert(defaultWheelOptions.map((label) => ({ user_id: userId, label })))
-          .select('id, label, created_at')
+          .insert(defaultWheelOptions.map((label) => ({ user_id: userId, label, group_name: '随机' })))
+          .select('id, label, group_name, created_at')
           .order('created_at', { ascending: true });
         if (seeded && mounted) setWheelOptions(seeded);
       }
@@ -167,6 +169,10 @@ const App = () => {
     }, 800);
     return () => clearTimeout(timer);
   }, [view]);
+
+  useEffect(() => {
+    setWheelResult('');
+  }, [wheelGroup]);
 
   const defaultCategories = ['工作', '生活', '学习', '健康', '其他'];
 
@@ -573,8 +579,8 @@ const App = () => {
     if (!session?.user?.id) return;
     const { data, error } = await supabase
       .from('wheel_options')
-      .insert({ user_id: session.user.id, label })
-      .select('id, label, created_at')
+      .insert({ user_id: session.user.id, label, group_name: wheelGroup })
+      .select('id, label, group_name, created_at')
       .single();
     if (error || !data) return;
     setWheelOptions((prev) => [...prev, data]);
@@ -591,29 +597,71 @@ const App = () => {
     setWheelOptions((prev) => prev.filter((opt) => opt.id !== id));
   };
 
+  const currentWheelOptions = useMemo(
+    () => wheelOptions.filter((opt) => (opt.group_name || '随机') === wheelGroup),
+    [wheelOptions, wheelGroup]
+  );
+
   const spinWheel = async () => {
-    if (wheelSpinning || wheelOptions.length === 0) return;
-    const count = wheelOptions.length;
+    if (wheelSpinning || currentWheelOptions.length === 0) return;
+    const count = currentWheelOptions.length;
     const index = Math.floor(Math.random() * count);
     const segment = 360 / count;
     const target = 360 * 4 + (360 - (index * segment + segment / 2));
     wheelAngleRef.current = (wheelAngleRef.current + target) % 3600;
     setWheelSpinning(true);
     setWheelAngle(wheelAngleRef.current);
-    const label = wheelOptions[index].label;
+    const label = currentWheelOptions[index].label;
     setTimeout(async () => {
       setWheelResult(label);
       setWheelSpinning(false);
       if (!session?.user?.id) return;
       const { data } = await supabase
         .from('wheel_history')
-        .insert({ user_id: session.user.id, label })
-        .select('id, label, created_at')
+        .insert({ user_id: session.user.id, label, group_name: wheelGroup })
+        .select('id, label, group_name, created_at')
         .single();
       if (data) {
         setWheelHistory((prev) => [data, ...prev].slice(0, 5));
       }
     }, 2600);
+  };
+
+  const createTaskFromWheel = async (label) => {
+    if (!session?.user?.id || !label) return;
+    const taskCategory = category || categories[0] || '';
+    const minOrder = tasks.length ? Math.min(...tasks.map((t) => t.orderIndex ?? 0)) : 0;
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        user_id: session.user.id,
+        text: label,
+        note: '',
+        due_date: null,
+        priority,
+        category: taskCategory,
+        tags: [],
+        order_index: minOrder - 1,
+        completed: false
+      })
+      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
+      .single();
+    if (error || !data) return;
+    setTasks([
+      {
+        id: data.id,
+        text: data.text,
+        note: data.note || '',
+        dueDate: data.due_date || '',
+        priority: data.priority || 'medium',
+        category: data.category || taskCategory,
+        tags: data.tags || [],
+        orderIndex: data.order_index ?? (minOrder - 1),
+        completed: data.completed,
+        createdAt: data.created_at
+      },
+      ...tasks
+    ]);
   };
 
   const isOverdue = (date) => {
@@ -789,7 +837,10 @@ const App = () => {
             />
 
             <WheelPanel
-              options={wheelOptions}
+              groups={wheelGroups}
+              currentGroup={wheelGroup}
+              onGroupChange={setWheelGroup}
+              options={currentWheelOptions}
               history={wheelHistory}
               spinning={wheelSpinning}
               angle={wheelAngle}
@@ -797,6 +848,7 @@ const App = () => {
               onSpin={spinWheel}
               onAddOption={addWheelOption}
               onRemoveOption={removeWheelOption}
+              onCreateTask={createTaskFromWheel}
             />
 
             <FiltersBar
