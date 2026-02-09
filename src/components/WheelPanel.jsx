@@ -180,11 +180,17 @@ const WheelPanel = ({
                   }}
                 >
                   <span
-                    className="font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/70 border border-[#ffe4f2] truncate"
+                    className="font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/70 border border-[#ffe4f2] text-center"
                     style={{
                       transform: 'translateY(-78px) rotate(-90deg)',
                       fontSize: `${fontSize}px`,
-                      maxWidth: `${maxWidth}px`
+                      maxWidth: `${maxWidth}px`,
+                      lineHeight: 1.15,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
                     }}
                     title={opt.label}
                   >

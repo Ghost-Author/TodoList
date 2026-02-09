@@ -918,24 +918,26 @@ const App = () => {
               setTagInput={setTagInput}
             />
 
-            <WheelPanel
-              groups={wheelGroups}
-              currentGroup={wheelGroup}
-              onGroupChange={setWheelGroup}
-              onAddGroup={addWheelGroup}
-              onRenameGroup={renameWheelGroup}
-              onDeleteGroup={deleteWheelGroup}
-              onClearHistory={clearWheelHistory}
-              options={currentWheelOptions}
-              history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
-              spinning={wheelSpinning}
-              angle={wheelAngle}
-              result={wheelResult}
-              onSpin={spinWheel}
-              onAddOption={addWheelOption}
-              onRemoveOption={removeWheelOption}
-              onCreateTask={createTaskFromWheel}
-            />
+            <div className="mt-2 mb-6">
+              <WheelPanel
+                groups={wheelGroups}
+                currentGroup={wheelGroup}
+                onGroupChange={setWheelGroup}
+                onAddGroup={addWheelGroup}
+                onRenameGroup={renameWheelGroup}
+                onDeleteGroup={deleteWheelGroup}
+                onClearHistory={clearWheelHistory}
+                options={currentWheelOptions}
+                history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
+                spinning={wheelSpinning}
+                angle={wheelAngle}
+                result={wheelResult}
+                onSpin={spinWheel}
+                onAddOption={addWheelOption}
+                onRemoveOption={removeWheelOption}
+                onCreateTask={createTaskFromWheel}
+              />
+            </div>
 
             <FiltersBar
               filter={filter}
