@@ -167,6 +167,9 @@ const WheelPanel = ({
             {options.map((opt, idx) => {
               const step = 360 / options.length;
               const deg = idx * step + step / 2;
+              const len = opt.label.length;
+              const fontSize = len > 16 ? 7 : len > 12 ? 8 : len > 8 ? 9 : 10;
+              const maxWidth = len > 16 ? 60 : len > 12 ? 68 : len > 8 ? 76 : 86;
               return (
                 <div
                   key={opt.id}
@@ -177,8 +180,12 @@ const WheelPanel = ({
                   }}
                 >
                   <span
-                    className="text-[10px] font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/70 border border-[#ffe4f2] max-w-[80px] truncate"
-                    style={{ transform: 'translateY(-78px) rotate(-90deg)' }}
+                    className="font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/70 border border-[#ffe4f2] truncate"
+                    style={{
+                      transform: 'translateY(-78px) rotate(-90deg)',
+                      fontSize: `${fontSize}px`,
+                      maxWidth: `${maxWidth}px`
+                    }}
                     title={opt.label}
                   >
                     {opt.label}
