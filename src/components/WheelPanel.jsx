@@ -170,7 +170,7 @@ const WheelPanel = ({
               const deg = idx * step + step / 2;
               const len = opt.label.length;
               const fontSize = len > 16 ? 7 : len > 12 ? 8 : len > 8 ? 9 : 10;
-              const maxWidth = len > 16 ? 60 : len > 12 ? 68 : len > 8 ? 76 : 86;
+              const maxWidth = len > 16 ? 52 : len > 12 ? 60 : len > 8 ? 68 : 76;
               return (
                 <div
                   key={opt.id}
@@ -183,7 +183,7 @@ const WheelPanel = ({
                   <span
                     className="font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/70 border border-[#ffe4f2] text-center"
                     style={{
-                      transform: 'translateY(-78px) rotate(-90deg)',
+                      transform: 'translateY(-60px) rotate(-90deg)',
                       fontSize: `${fontSize}px`,
                       maxWidth: `${maxWidth}px`,
                       lineHeight: 1.15,
