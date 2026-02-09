@@ -12,6 +12,7 @@ import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
+const prefetchStatsView = () => import('./StatsView.jsx');
 const SettingsModal = React.lazy(() => import('./components/SettingsModal.jsx'));
 const PrivacyModal = React.lazy(() => import('./components/PrivacyModal.jsx'));
 const EmailVerifyBanner = React.lazy(() => import('./components/EmailVerifyBanner.jsx'));
@@ -108,6 +109,14 @@ const App = () => {
       setCategory('');
     }
   }, [session]);
+
+  useEffect(() => {
+    if (view !== 'tasks') return;
+    const timer = setTimeout(() => {
+      prefetchStatsView();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [view]);
 
   const defaultCategories = ['工作', '生活', '学习', '健康', '其他'];
 
