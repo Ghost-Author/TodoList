@@ -56,14 +56,6 @@ const WheelPanel = ({
           </h3>
           <p className="text-xs text-[#7b6f8c] mt-1">随机给自己一个小行动，轻松开始。</p>
         </div>
-        <button
-          type="button"
-          onClick={onSpin}
-          disabled={spinning || options.length === 0}
-          className="btn-soft px-4 py-2 rounded-2xl text-sm font-bold disabled:opacity-60"
-        >
-          {spinning ? '转盘中…' : '开始转'}
-        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2 mb-4">
@@ -172,6 +164,28 @@ const WheelPanel = ({
                 transition: spinning ? 'transform 2.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
               }}
             />
+            {options.map((opt, idx) => {
+              const step = 360 / options.length;
+              const deg = idx * step + step / 2;
+              return (
+                <div
+                  key={opt.id}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  style={{
+                    transform: `rotate(${deg + angle}deg)`,
+                    transition: spinning ? 'transform 2.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
+                  }}
+                >
+                  <span
+                    className="text-[10px] font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/70 border border-[#ffe4f2] max-w-[80px] truncate"
+                    style={{ transform: 'translateY(-78px) rotate(-90deg)' }}
+                    title={opt.label}
+                  >
+                    {opt.label}
+                  </span>
+                </div>
+              );
+            })}
             <div className="absolute inset-6 rounded-full bg-white/80 border border-[#ffe4f2] flex items-center justify-center text-center px-4">
               <div>
                 <div className="text-[10px] font-black text-[#7b6f8c] uppercase tracking-[0.2em]">今日灵感</div>
@@ -181,6 +195,13 @@ const WheelPanel = ({
               </div>
             </div>
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-r-[10px] border-b-[18px] border-l-transparent border-r-transparent border-b-[#ff8acb]" />
+            <button
+              type="button"
+              onClick={onSpin}
+              disabled={spinning || options.length === 0}
+              className="absolute inset-6 rounded-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              aria-label="点击转动转盘"
+            />
           </div>
           <div className="mt-4 text-[11px] text-[#7b6f8c] flex items-center gap-1">
             <Sparkles className="w-3 h-3" /> 结果仅提示，不会自动创建任务
