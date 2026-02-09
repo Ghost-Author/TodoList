@@ -8,13 +8,13 @@ import { supabase } from './supabaseClient';
 import { generateCaptcha } from './utils/captcha.js';
 import AuthPanel from './components/AuthPanel.jsx';
 import Toast from './components/Toast.jsx';
-import EmailVerifyBanner from './components/EmailVerifyBanner.jsx';
-import SettingsModal from './components/SettingsModal.jsx';
-import PrivacyModal from './components/PrivacyModal.jsx';
 import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
+const SettingsModal = React.lazy(() => import('./components/SettingsModal.jsx'));
+const PrivacyModal = React.lazy(() => import('./components/PrivacyModal.jsx'));
+const EmailVerifyBanner = React.lazy(() => import('./components/EmailVerifyBanner.jsx'));
 
 const App = () => {
   // --- State Management ---
@@ -641,7 +641,9 @@ const App = () => {
           </div>
         </div>
 
-        <EmailVerifyBanner show={!session.user.email_confirmed_at} />
+        <Suspense fallback={null}>
+          <EmailVerifyBanner show={!session.user.email_confirmed_at} />
+        </Suspense>
 
         {view === 'tasks' ? (
           <>
@@ -715,21 +717,23 @@ const App = () => {
           </Suspense>
         )}
 
-        <SettingsModal
-          show={showSettings}
-          onClose={() => setShowSettings(false)}
-          newPassword={newPassword}
-          setNewPassword={setNewPassword}
-          updatePassword={updatePassword}
-          exportData={exportData}
-          clearAllData={clearAllData}
-          openPrivacy={() => {
-            setShowPrivacy(true);
-            setShowSettings(false);
-          }}
-        />
+        <Suspense fallback={null}>
+          <SettingsModal
+            show={showSettings}
+            onClose={() => setShowSettings(false)}
+            newPassword={newPassword}
+            setNewPassword={setNewPassword}
+            updatePassword={updatePassword}
+            exportData={exportData}
+            clearAllData={clearAllData}
+            openPrivacy={() => {
+              setShowPrivacy(true);
+              setShowSettings(false);
+            }}
+          />
 
-        <PrivacyModal show={showPrivacy} onClose={() => setShowPrivacy(false)} />
+          <PrivacyModal show={showPrivacy} onClose={() => setShowPrivacy(false)} />
+        </Suspense>
 
         <Toast toast={toast} onAction={undoDelete} />
 
