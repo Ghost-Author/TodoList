@@ -5,6 +5,8 @@ const TaskForm = ({
   addTask,
   taskInputRef,
   taskSubmitting,
+  hasTaskDraft,
+  clearTaskDraft,
   input,
   setInput,
   note,
@@ -171,13 +173,23 @@ const TaskForm = ({
       )}
 
       <div className="flex justify-end pt-2 border-t border-slate-50">
-        <button
-          type="submit"
-          disabled={taskSubmitting || !input.trim()}
-          className="w-full md:w-auto btn-soft px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <Plus className="w-5 h-5" /> {taskSubmitting ? '提交中...' : '确认录入任务'}
-        </button>
+        <div className="w-full md:w-auto flex gap-2">
+          <button
+            type="button"
+            disabled={!hasTaskDraft || taskSubmitting}
+            onClick={clearTaskDraft}
+            className="pill-soft px-4 py-3.5 rounded-2xl text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            清空草稿
+          </button>
+          <button
+            type="submit"
+            disabled={taskSubmitting || !input.trim()}
+            className="w-full md:w-auto btn-soft px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-5 h-5" /> {taskSubmitting ? '提交中...' : '确认录入任务'}
+          </button>
+        </div>
       </div>
     </form>
   );

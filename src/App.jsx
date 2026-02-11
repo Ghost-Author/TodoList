@@ -40,6 +40,7 @@ const App = () => {
   const loadMoreAnchorRef = useRef(null);
   const lastAutoLoadAtRef = useRef(0);
   const taskInputRef = useRef(null);
+  const draftLoadedUserRef = useRef('');
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -163,6 +164,7 @@ const App = () => {
     setCategory('');
     setExpandedId(null);
     resetBoardState();
+    draftLoadedUserRef.current = '';
   }, [session, setTasks, setCategories, resetBoardState]);
 
   useEffect(() => {
@@ -182,6 +184,55 @@ const App = () => {
     const timer = setTimeout(() => taskInputRef.current?.focus(), 80);
     return () => clearTimeout(timer);
   }, [session, view]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    if (draftLoadedUserRef.current === userId) return;
+    draftLoadedUserRef.current = userId;
+
+    try {
+      const raw = localStorage.getItem(`cloud_todo_draft:${userId}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.input === 'string') setInput(parsed.input);
+      if (typeof parsed.note === 'string') setNote(parsed.note);
+      if (typeof parsed.dueDate === 'string') setDueDate(parsed.dueDate);
+      if (typeof parsed.priority === 'string') setPriority(parsed.priority);
+      if (Array.isArray(parsed.tags)) setTags(parsed.tags.map((v) => String(v)).slice(0, 20));
+      if (typeof parsed.category === 'string') setCategory(parsed.category);
+      setToast({ message: '已恢复上次草稿' });
+      setTimeout(() => setToast(null), 1400);
+    } catch {
+      localStorage.removeItem(`cloud_todo_draft:${userId}`);
+    }
+  }, [session, setCategory]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const key = `cloud_todo_draft:${userId}`;
+    const hasDraft = Boolean(
+      input.trim() || note.trim() || dueDate || (tags && tags.length > 0) || category
+    );
+    try {
+      if (!hasDraft) {
+        localStorage.removeItem(key);
+        return;
+      }
+      const payload = {
+        input,
+        note,
+        dueDate,
+        priority,
+        tags,
+        category
+      };
+      localStorage.setItem(key, JSON.stringify(payload));
+    } catch {
+      // Ignore localStorage failures (private mode / quota exceeded).
+    }
+  }, [session, input, note, dueDate, priority, tags, category]);
 
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
@@ -222,6 +273,31 @@ const App = () => {
     } finally {
       setAddTaskLoading(false);
     }
+  };
+
+  const hasTaskDraft = Boolean(
+    input.trim() || note.trim() || dueDate || (tags && tags.length > 0) || category
+  );
+
+  const clearTaskDraft = () => {
+    const userId = session?.user?.id;
+    if (userId) {
+      try {
+        localStorage.removeItem(`cloud_todo_draft:${userId}`);
+      } catch {
+        // Ignore localStorage failures.
+      }
+    }
+    setInput('');
+    setNote('');
+    setDueDate('');
+    setPriority('medium');
+    setTags([]);
+    setTagInput('');
+    setCategory(categories[0] || '');
+    setToast({ message: '草稿已清空' });
+    setTimeout(() => setToast(null), 1200);
+    setTimeout(() => taskInputRef.current?.focus(), 0);
   };
 
   const addCategory = async () => {
@@ -486,6 +562,8 @@ const App = () => {
               addTask={addTask}
               taskInputRef={taskInputRef}
               taskSubmitting={addTaskLoading}
+              hasTaskDraft={hasTaskDraft}
+              clearTaskDraft={clearTaskDraft}
               input={input}
               setInput={setInput}
               note={note}
