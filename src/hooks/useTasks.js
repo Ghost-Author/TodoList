@@ -111,7 +111,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       completed: data.completed,
       createdAt: data.created_at
     };
-    setTasks([newTask, ...tasks]);
+    setTasks((prev) => [newTask, ...prev]);
     return newTask;
   };
 
@@ -123,7 +123,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       .select('name')
       .single();
     if (error) return null;
-    setCategories([...categories, data.name]);
+    setCategories((prev) => [...prev, data.name]);
     return data.name;
   };
 
@@ -150,7 +150,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       .eq('id', id)
       .eq('user_id', session.user.id);
     if (error) return false;
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
     return true;
   };
 
@@ -163,7 +163,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       .eq('id', id)
       .eq('user_id', session.user.id);
     if (error) return null;
-    setTasks(tasks.filter(t => t.id !== id));
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     return target || null;
   };
 
@@ -175,7 +175,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       .in('id', ids)
       .eq('user_id', session.user.id);
     if (error) return false;
-    setTasks(tasks.map(t => ids.includes(t.id) ? { ...t, completed } : t));
+    setTasks((prev) => prev.map((t) => (ids.includes(t.id) ? { ...t, completed } : t)));
     return true;
   };
 
@@ -188,7 +188,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       .in('id', ids)
       .eq('user_id', session.user.id);
     if (error) return null;
-    setTasks(tasks.filter(t => !ids.includes(t.id)));
+    setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
     return deleted;
   };
 
@@ -239,8 +239,11 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
   const clearAllData = async () => {
     if (!session?.user?.id) return false;
     const userId = session.user.id;
-    await supabase.from('tasks').delete().eq('user_id', userId);
-    await supabase.from('categories').delete().eq('user_id', userId);
+    const [tasksRes, catsRes] = await Promise.all([
+      supabase.from('tasks').delete().eq('user_id', userId),
+      supabase.from('categories').delete().eq('user_id', userId)
+    ]);
+    if (tasksRes.error || catsRes.error) return false;
     setTasks([]);
     const cats = await ensureDefaultCategories(userId);
     setCategory(cats[0]?.name || '');

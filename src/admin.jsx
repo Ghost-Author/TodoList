@@ -153,7 +153,7 @@ const AdminApp = () => {
     if (tab !== 'users') return;
     if (!secret.trim()) return;
     loadUsers(1);
-  }, [tab, secret]);
+  }, [tab]);
 
   return (
     <div className="min-h-screen text-slate-900 pb-24">
