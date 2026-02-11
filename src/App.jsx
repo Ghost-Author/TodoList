@@ -62,6 +62,7 @@ const App = () => {
   const [addTaskLoading, setAddTaskLoading] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
   const [taskDensity, setTaskDensity] = useState('cozy');
+  const [showBackTop, setShowBackTop] = useState(false);
 
   const {
     session,
@@ -191,6 +192,15 @@ const App = () => {
     const timer = setTimeout(() => taskInputRef.current?.focus(), 80);
     return () => clearTimeout(timer);
   }, [session, view]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setShowBackTop(window.scrollY > 520);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -800,6 +810,17 @@ const App = () => {
         <div className="mt-16 text-center">
           <p className="text-[#ff9ccc] text-[10px] font-black uppercase tracking-[0.3em]">Soft Focus · Sweet Progress</p>
         </div>
+
+        {showBackTop && (
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="fixed right-5 bottom-6 md:right-8 md:bottom-8 z-40 pill-soft px-3 py-2 rounded-full text-[11px] font-black shadow-[0_10px_24px_rgba(255,138,203,0.3)]"
+            aria-label="回到顶部"
+          >
+            回到顶部
+          </button>
+        )}
       </div>
     </div>
   );
