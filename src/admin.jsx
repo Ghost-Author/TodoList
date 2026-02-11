@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { initSentry, Sentry } from './sentry.js';
@@ -42,6 +42,9 @@ const AdminApp = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [usersExporting, setUsersExporting] = useState(false);
   const [auditExporting, setAuditExporting] = useState(false);
+  const usersReqSeqRef = useRef(0);
+  const auditReqSeqRef = useRef(0);
+  const detailReqSeqRef = useRef(0);
 
   const handleRequestError = (err) => {
     const message = err?.message || '请求失败';
@@ -66,19 +69,23 @@ const AdminApp = () => {
   };
 
   const loadUsers = async (targetPage = 1, targetQuery = usersQuery) => {
+    const seq = ++usersReqSeqRef.current;
     setError('');
     setRequestId('');
     setUsersLoading(true);
     try {
       const api = createAdminClient(secret);
       const json = await api.getUsers(targetPage, USERS_PER_PAGE, targetQuery);
+      if (seq !== usersReqSeqRef.current) return;
       setUsers(json.users || []);
       setPage(targetPage);
       setUsersTotal(Number.isFinite(json.total) ? json.total : null);
       setUsersHasMore(Boolean(json.has_more));
     } catch (err) {
+      if (seq !== usersReqSeqRef.current) return;
       handleRequestError(err);
     } finally {
+      if (seq !== usersReqSeqRef.current) return;
       setUsersLoading(false);
     }
   };
@@ -155,19 +162,23 @@ const AdminApp = () => {
   };
 
   const loadAudit = async (targetPage = 1, targetQuery = auditQuery) => {
+    const seq = ++auditReqSeqRef.current;
     setError('');
     setRequestId('');
     setAuditLoading(true);
     try {
       const api = createAdminClient(secret);
       const json = await api.getAudit(targetPage, AUDIT_PER_PAGE, targetQuery);
+      if (seq !== auditReqSeqRef.current) return;
       setAuditLogs(json.logs || []);
       setAuditPage(targetPage);
       setAuditTotal(Number.isFinite(json.total) ? json.total : null);
       setAuditHasMore(Boolean(json.has_more));
     } catch (err) {
+      if (seq !== auditReqSeqRef.current) return;
       handleRequestError(err);
     } finally {
+      if (seq !== auditReqSeqRef.current) return;
       setAuditLoading(false);
     }
   };
@@ -234,6 +245,7 @@ const AdminApp = () => {
   };
 
   const loadUserDetail = async (id) => {
+    const seq = ++detailReqSeqRef.current;
     setDetailLoading(true);
     setResetLink('');
     setUserTasks([]);
@@ -241,14 +253,26 @@ const AdminApp = () => {
     try {
       const api = createAdminClient(secret);
       const json = await api.getUser(id);
+      if (seq !== detailReqSeqRef.current) return;
       setUserDetail(json);
       const tasksJson = await api.getUserTasks(id);
+      if (seq !== detailReqSeqRef.current) return;
       setUserTasks(tasksJson.tasks || []);
     } catch (err) {
+      if (seq !== detailReqSeqRef.current) return;
       handleRequestError(err);
     } finally {
+      if (seq !== detailReqSeqRef.current) return;
       setDetailLoading(false);
     }
+  };
+
+  const closeUserDetail = () => {
+    detailReqSeqRef.current += 1;
+    setSelectedUser(null);
+    setUserDetail(null);
+    setResetLink('');
+    setDetailLoading(false);
   };
 
   const toggleBan = async (id, isBanned) => {
@@ -370,11 +394,7 @@ const AdminApp = () => {
 
           <UserDetailModal
             selectedUser={selectedUser}
-            onClose={() => {
-              setSelectedUser(null);
-              setUserDetail(null);
-              setResetLink('');
-            }}
+            onClose={closeUserDetail}
             detailLoading={detailLoading}
             userDetail={userDetail}
             banReason={banReason}
