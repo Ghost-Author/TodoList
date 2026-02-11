@@ -28,16 +28,25 @@ const AdminApp = () => {
   const [auditPage, setAuditPage] = useState(1);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditSearch, setAuditSearch] = useState('');
+  const [requestId, setRequestId] = useState('');
+
+  const handleRequestError = (err) => {
+    const message = err?.message || '请求失败';
+    setError(message);
+    const matched = message.match(/request_id:\s*([^)]+)/i);
+    setRequestId(matched?.[1]?.trim() || '');
+  };
 
   const loadSummary = async () => {
     setError('');
+    setRequestId('');
     setLoading(true);
     try {
       const api = createAdminClient(secret);
       const json = await api.getSummary();
       setData(json);
     } catch (err) {
-      setError(err.message || '请求失败');
+      handleRequestError(err);
     } finally {
       setLoading(false);
     }
@@ -45,6 +54,7 @@ const AdminApp = () => {
 
   const loadUsers = async (targetPage = 1) => {
     setError('');
+    setRequestId('');
     setUsersLoading(true);
     try {
       const api = createAdminClient(secret);
@@ -52,7 +62,7 @@ const AdminApp = () => {
       setUsers(json.users || []);
       setPage(targetPage);
     } catch (err) {
-      setError(err.message || '请求失败');
+      handleRequestError(err);
     } finally {
       setUsersLoading(false);
     }
@@ -79,6 +89,7 @@ const AdminApp = () => {
 
   const loadAudit = async (targetPage = 1) => {
     setError('');
+    setRequestId('');
     setAuditLoading(true);
     try {
       const api = createAdminClient(secret);
@@ -86,7 +97,7 @@ const AdminApp = () => {
       setAuditLogs(json.logs || []);
       setAuditPage(targetPage);
     } catch (err) {
-      setError(err.message || '请求失败');
+      handleRequestError(err);
     } finally {
       setAuditLoading(false);
     }
@@ -96,6 +107,7 @@ const AdminApp = () => {
     setDetailLoading(true);
     setResetLink('');
     setUserTasks([]);
+    setRequestId('');
     try {
       const api = createAdminClient(secret);
       const json = await api.getUser(id);
@@ -103,7 +115,7 @@ const AdminApp = () => {
       const tasksJson = await api.getUserTasks(id);
       setUserTasks(tasksJson.tasks || []);
     } catch (err) {
-      setError(err.message || '请求失败');
+      handleRequestError(err);
     } finally {
       setDetailLoading(false);
     }
@@ -111,6 +123,7 @@ const AdminApp = () => {
 
   const toggleBan = async (id, isBanned) => {
     setError('');
+    setRequestId('');
     try {
       const api = createAdminClient(secret);
       const json = isBanned
@@ -119,19 +132,20 @@ const AdminApp = () => {
       setUserDetail((prev) => prev ? { ...prev, ban_expires_at: json.ban_expires_at } : prev);
       setBanReason('');
     } catch (err) {
-      setError(err.message || '请求失败');
+      handleRequestError(err);
     }
   };
 
   const resetPassword = async (email) => {
     setError('');
+    setRequestId('');
     setResetLink('');
     try {
       const api = createAdminClient(secret);
       const json = await api.resetPassword(email);
       setResetLink(json.actionLink || '');
     } catch (err) {
-      setError(err.message || '请求失败');
+      handleRequestError(err);
     }
   };
 
@@ -154,6 +168,7 @@ const AdminApp = () => {
             </button>
           </div>
           {error && <div className="mt-3 text-xs text-[#ff6fb1]">{error}</div>}
+          {requestId && <div className="mt-2 text-[10px] text-[#7b6f8c]">request_id: {requestId}</div>}
 
           <div className="mt-6 flex gap-2 text-xs font-bold">
             <button onClick={() => setTab('summary')} className={tab === 'summary' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
