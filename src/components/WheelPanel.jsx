@@ -126,7 +126,9 @@ const WheelPanel = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onDeleteGroup(g)}
+                    onClick={async () => {
+                      await onDeleteGroup(g);
+                    }}
                     className="text-[#7b6f8c] hover:text-red-500"
                     title="删除分组"
                   >
@@ -147,11 +149,13 @@ const WheelPanel = ({
             <button
               type="button"
               className="text-xs font-bold text-white bg-[#ff8acb] px-3 py-1 rounded-full shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
-              onClick={() => {
+              onClick={async () => {
                 const val = newGroup.trim();
                 if (!val) return;
-                onAddGroup(val);
-                setNewGroup('');
+                const ok = await onAddGroup(val);
+                if (ok !== false) {
+                  setNewGroup('');
+                }
               }}
             >
               新建
@@ -171,10 +175,12 @@ const WheelPanel = ({
             <button
               type="button"
               className="text-xs font-bold text-white bg-[#ff8acb] px-2 py-1 rounded-full"
-              onClick={() => {
-                onRenameGroup(editingGroup, editingName);
-                setEditingGroup(null);
-                setEditingName('');
+              onClick={async () => {
+                const ok = await onRenameGroup(editingGroup, editingName);
+                if (ok !== false) {
+                  setEditingGroup(null);
+                  setEditingName('');
+                }
               }}
             >
               保存
@@ -299,11 +305,13 @@ const WheelPanel = ({
                 <button
                   type="button"
                   className="px-3 rounded-xl bg-[#ff8acb] text-white shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
-                  onClick={() => {
+                  onClick={async () => {
                     const val = newOption.trim();
                     if (!val) return;
-                    onAddOption(val);
-                    setNewOption('');
+                    const ok = await onAddOption(val);
+                    if (ok !== false) {
+                      setNewOption('');
+                    }
                   }}
                   title="添加选项"
                 >
@@ -317,7 +325,9 @@ const WheelPanel = ({
                     {opt.label}
                     <button
                       type="button"
-                      onClick={() => onRemoveOption(opt.id)}
+                      onClick={async () => {
+                        await onRemoveOption(opt.id);
+                      }}
                       className="text-[#ff6fb1]"
                       title="删除"
                     >
@@ -333,7 +343,9 @@ const WheelPanel = ({
                 <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest">最近 5 次结果</div>
                 <button
                   type="button"
-                  onClick={onClearHistory}
+                  onClick={async () => {
+                    await onClearHistory();
+                  }}
                   className="text-[10px] text-[#7b6f8c] hover:text-[#ff6fb1]"
                 >
                   清空当前分组

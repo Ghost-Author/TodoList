@@ -129,109 +129,128 @@ export const useWheel = ({ session, createTask, priority, category }) => {
   );
 
   const addWheelOption = async (label) => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) return false;
     const { data, error } = await supabase
       .from('wheel_options')
       .insert({ user_id: session.user.id, label, group_name: wheelGroup })
       .select('id, label, group_name, created_at')
       .single();
-    if (error || !data) return;
+    if (error || !data) return false;
     setWheelOptions((prev) => [...prev, data]);
+    return true;
   };
 
   const removeWheelOption = async (id) => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) return false;
     const { error } = await supabase
       .from('wheel_options')
       .delete()
       .eq('id', id)
       .eq('user_id', session.user.id);
-    if (error) return;
+    if (error) return false;
     setWheelOptions((prev) => prev.filter((opt) => opt.id !== id));
+    return true;
   };
 
   const addWheelGroup = async (name) => {
     const trimmed = name.trim();
-    if (!trimmed || trimmed === '随机') return;
-    if (wheelGroups.includes(trimmed)) return;
-    if (!session?.user?.id) return;
+    if (!trimmed || trimmed === '随机') return false;
+    if (wheelGroups.includes(trimmed)) return false;
+    if (!session?.user?.id) return false;
 
     const { data, error } = await supabase
       .from('wheel_groups')
       .insert({ user_id: session.user.id, name: trimmed })
       .select('id, name, created_at')
       .single();
-    if (error || !data) return;
+    if (error || !data) return false;
 
     setWheelGroups((prev) => [...prev, data.name]);
     setWheelGroup(data.name);
+    return true;
   };
 
   const renameWheelGroup = async (oldName, newName) => {
     const trimmed = newName.trim();
-    if (!trimmed || trimmed === '随机') return;
-    if (oldName === '随机') return;
-    if (wheelGroups.includes(trimmed) && trimmed !== oldName) return;
-    if (!session?.user?.id) return;
+    if (!trimmed || trimmed === '随机') return false;
+    if (oldName === '随机') return false;
+    if (wheelGroups.includes(trimmed) && trimmed !== oldName) return false;
+    if (!session?.user?.id) return false;
 
-    const { error } = await supabase
+    const { error: groupError } = await supabase
       .from('wheel_groups')
       .update({ name: trimmed })
       .eq('user_id', session.user.id)
       .eq('name', oldName);
-    if (error) return;
+    if (groupError) return false;
 
-    await supabase
+    const { error: optionError } = await supabase
       .from('wheel_options')
       .update({ group_name: trimmed })
       .eq('user_id', session.user.id)
       .eq('group_name', oldName);
-    await supabase
+    const { error: historyError } = await supabase
       .from('wheel_history')
       .update({ group_name: trimmed })
       .eq('user_id', session.user.id)
       .eq('group_name', oldName);
+
+    if (optionError || historyError) {
+      await supabase
+        .from('wheel_groups')
+        .update({ name: oldName })
+        .eq('user_id', session.user.id)
+        .eq('name', trimmed);
+      return false;
+    }
 
     setWheelGroups((prev) => prev.map((g) => (g === oldName ? trimmed : g)));
     if (wheelGroup === oldName) {
       setWheelGroup(trimmed);
     }
+    return true;
   };
 
   const deleteWheelGroup = async (name) => {
-    if (name === '随机') return;
-    if (!session?.user?.id) return;
+    if (name === '随机') return false;
+    if (!session?.user?.id) return false;
 
-    await supabase
-      .from('wheel_groups')
-      .delete()
-      .eq('user_id', session.user.id)
-      .eq('name', name);
-    await supabase
+    const { error: optionError } = await supabase
       .from('wheel_options')
       .update({ group_name: '随机' })
       .eq('user_id', session.user.id)
       .eq('group_name', name);
-    await supabase
+    const { error: historyError } = await supabase
       .from('wheel_history')
       .update({ group_name: '随机' })
       .eq('user_id', session.user.id)
       .eq('group_name', name);
+    if (optionError || historyError) return false;
+
+    const { error: groupError } = await supabase
+      .from('wheel_groups')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('name', name);
+    if (groupError) return false;
 
     setWheelGroups((prev) => prev.filter((g) => g !== name));
     if (wheelGroup === name) {
       setWheelGroup('随机');
     }
+    return true;
   };
 
   const clearWheelHistory = async () => {
-    if (!session?.user?.id) return;
-    await supabase
+    if (!session?.user?.id) return false;
+    const { error } = await supabase
       .from('wheel_history')
       .delete()
       .eq('user_id', session.user.id)
       .eq('group_name', wheelGroup);
+    if (error) return false;
     setWheelHistory((prev) => prev.filter((h) => h.group_name !== wheelGroup));
+    return true;
   };
 
   const spinWheel = async () => {

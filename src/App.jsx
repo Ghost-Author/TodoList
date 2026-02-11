@@ -311,6 +311,15 @@ const App = () => {
     resetBoardState();
   };
 
+  const runWheelAction = async (action, failedMessage) => {
+    const ok = await action();
+    if (!ok) {
+      setToast({ message: failedMessage });
+      setTimeout(() => setToast(null), 1800);
+    }
+    return ok;
+  };
+
   const isOverdue = (date) => {
     if (!date) return false;
     return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
@@ -473,10 +482,10 @@ const App = () => {
                 groups={wheelGroups}
                 currentGroup={wheelGroup}
                 onGroupChange={setWheelGroup}
-                onAddGroup={addWheelGroup}
-                onRenameGroup={renameWheelGroup}
-                onDeleteGroup={deleteWheelGroup}
-                onClearHistory={clearWheelHistory}
+                onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
+                onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
+                onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
+                onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
                 options={currentWheelOptions}
                 history={currentWheelHistory}
                 spinning={wheelSpinning}
@@ -484,8 +493,8 @@ const App = () => {
                 result={wheelResult}
                 created={wheelCreated}
                 onSpin={spinWheel}
-                onAddOption={addWheelOption}
-                onRemoveOption={removeWheelOption}
+                onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
+                onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
                 onCreateTask={createTaskFromWheel}
               />
             </div>
