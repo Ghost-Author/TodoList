@@ -6,6 +6,7 @@ const TaskList = ({
   emptyMode,
   onResetFilters,
   categories,
+  searchQuery,
   groupCompleted,
   toggleSelect,
   selectedIds,
@@ -32,6 +33,7 @@ const TaskList = ({
     tags: []
   });
   const [editTagInput, setEditTagInput] = useState('');
+  const normalizedQuery = searchQuery.trim();
 
   if (filteredTasks.length === 0) {
     const isFilteredEmpty = emptyMode === 'filtered';
@@ -78,6 +80,25 @@ const TaskList = ({
     if (editDraft.tags.includes(val)) return;
     setEditDraft((prev) => ({ ...prev, tags: [...prev.tags, val] }));
     setEditTagInput('');
+  };
+
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const renderHighlighted = (text, className = '') => {
+    const raw = String(text || '');
+    if (!normalizedQuery) return <span className={className}>{raw}</span>;
+    const matcher = new RegExp(`(${escapeRegExp(normalizedQuery)})`, 'ig');
+    const needle = normalizedQuery.toLowerCase();
+    const parts = raw.split(matcher);
+    return (
+      <span className={className}>
+        {parts.map((part, idx) => (
+          part.toLowerCase() === needle
+            ? <mark key={`${part}-${idx}`} className="bg-[#ffe597] text-[#3b2e4a] rounded px-0.5">{part}</mark>
+            : <React.Fragment key={`${part}-${idx}`}>{part}</React.Fragment>
+        ))}
+      </span>
+    );
   };
 
   const saveEdit = async (taskId) => {
@@ -137,7 +158,7 @@ const TaskList = ({
                 )}
               </div>
               <p className={`text-base font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>
-                {task.text}
+                {renderHighlighted(task.text)}
               </p>
             </div>
 
@@ -267,7 +288,7 @@ const TaskList = ({
                       </button>
                     </div>
                     <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-                      {task.note || '暂无备注内容'}
+                      {task.note ? renderHighlighted(task.note) : '暂无备注内容'}
                     </p>
                     <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                       <span className="text-[10px] font-medium text-slate-400">录入时间: {new Date(task.createdAt).toLocaleString()}</span>

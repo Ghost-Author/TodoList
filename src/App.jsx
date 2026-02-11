@@ -708,6 +708,7 @@ const App = () => {
               emptyMode={emptyMode}
               onResetFilters={resetTaskFilters}
               categories={categories}
+              searchQuery={searchQuery}
               groupCompleted={filter === 'all' && !searchQuery.trim()}
               toggleSelect={toggleSelect}
               selectedIds={selectedIds}
