@@ -3,6 +3,8 @@ import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyN
 
 const TaskList = ({
   filteredTasks,
+  emptyMode,
+  onResetFilters,
   toggleSelect,
   selectedIds,
   toggleTask,
@@ -16,9 +18,21 @@ const TaskList = ({
   handleDrop
 }) => {
   if (filteredTasks.length === 0) {
+    const isFilteredEmpty = emptyMode === 'filtered';
     return (
       <div className="py-20 text-center bg-white/70 rounded-3xl border border-dashed border-[#ffd7ea]">
-        <p className="text-slate-400 text-sm">清单空空如也，给自己一个拥抱吧</p>
+        <p className="text-slate-400 text-sm">
+          {isFilteredEmpty ? '没有匹配任务，试试调整筛选条件' : '清单空空如也，给自己一个拥抱吧'}
+        </p>
+        {isFilteredEmpty && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="mt-3 pill-soft px-3 py-1 rounded-full text-xs font-bold"
+          >
+            一键清空筛选
+          </button>
+        )}
       </div>
     );
   }

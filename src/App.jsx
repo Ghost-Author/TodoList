@@ -486,6 +486,16 @@ const App = () => {
     return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
   };
 
+  const resetTaskFilters = () => {
+    setSearchQuery('');
+    setSortBy('created_desc');
+    setFilter('all');
+  };
+
+  const emptyMode = tasks.length > 0 && filteredTasks.length === 0 && (filter !== 'all' || searchQuery.trim())
+    ? 'filtered'
+    : 'all';
+
   const displayedTasks = useMemo(() => {
     if (canDrag) return filteredTasks;
     return filteredTasks.slice(0, visibleCount);
@@ -682,6 +692,8 @@ const App = () => {
 
             <TaskList
               filteredTasks={displayedTasks}
+              emptyMode={emptyMode}
+              onResetFilters={resetTaskFilters}
               toggleSelect={toggleSelect}
               selectedIds={selectedIds}
               toggleTask={toggleTask}
@@ -704,11 +716,20 @@ const App = () => {
               )}
             </div>
             {hasMoreTasks && (
-              <div
-                ref={loadMoreAnchorRef}
-                className="h-10 mt-2 text-[11px] text-[#7b6f8c] flex items-center justify-center"
-              >
-                正在等待滚动触底...
+              <div className="mt-2 flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 30, filteredTasks.length))}
+                  className="pill-soft px-3 py-1 rounded-full text-[11px] font-bold"
+                >
+                  手动加载更多
+                </button>
+                <div
+                  ref={loadMoreAnchorRef}
+                  className="h-8 text-[11px] text-[#7b6f8c] flex items-center justify-center"
+                >
+                  也可继续下滑自动加载
+                </div>
               </div>
             )}
           </>
