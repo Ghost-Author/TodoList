@@ -716,7 +716,7 @@ const App = () => {
               )}
             </div>
             {hasMoreTasks && (
-              <div className="mt-2 flex flex-col items-center gap-2">
+              <div className="surface-soft mt-2 px-4 py-3 flex flex-col items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setVisibleCount((prev) => Math.min(prev + 30, filteredTasks.length))}
@@ -726,7 +726,7 @@ const App = () => {
                 </button>
                 <div
                   ref={loadMoreAnchorRef}
-                  className="h-8 text-[11px] text-[#7b6f8c] flex items-center justify-center"
+                  className="h-6 text-[11px] text-[#7b6f8c] flex items-center justify-center"
                 >
                   也可继续下滑自动加载
                 </div>

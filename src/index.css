@@ -97,6 +97,41 @@ h1, h2, h3 {
   color: #ff6fb1;
 }
 
+.surface-soft {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 253, 0.82));
+  border: 1px solid #ffe0ef;
+  border-radius: 22px;
+  box-shadow: 0 12px 28px rgba(238, 196, 220, 0.24);
+  backdrop-filter: blur(6px);
+}
+
+.task-card-soft {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.94), rgba(252, 248, 255, 0.84));
+  border: 1px solid #ffe2f0;
+  border-radius: 20px;
+  box-shadow: 0 10px 24px rgba(237, 193, 218, 0.22);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.task-card-soft:hover {
+  transform: translateY(-2px);
+  border-color: #ffc9e3;
+  box-shadow: 0 14px 30px rgba(238, 184, 214, 0.28);
+}
+
+.task-card-done {
+  background: linear-gradient(165deg, rgba(244, 241, 248, 0.78), rgba(247, 245, 251, 0.72));
+  border: 1px solid #e8deef;
+  border-radius: 20px;
+  opacity: 0.72;
+}
+
+.empty-soft {
+  background: linear-gradient(180deg, rgba(255, 252, 255, 0.92), rgba(248, 245, 255, 0.82));
+  border: 1px dashed #ffd7ea;
+  border-radius: 28px;
+}
+
 /* Hide scrollbars for horizontal tab list */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

@@ -20,7 +20,7 @@ const TaskList = ({
   if (filteredTasks.length === 0) {
     const isFilteredEmpty = emptyMode === 'filtered';
     return (
-      <div className="py-20 text-center bg-white/70 rounded-3xl border border-dashed border-[#ffd7ea]">
+      <div className="empty-soft py-20 text-center">
         <p className="text-slate-400 text-sm">
           {isFilteredEmpty ? '没有匹配任务，试试调整筛选条件' : '清单空空如也，给自己一个拥抱吧'}
         </p>
@@ -40,7 +40,7 @@ const TaskList = ({
   const renderTask = (task) => (
         <div
           key={task.id}
-          className={`group flex flex-col transition-all duration-300 ${task.completed ? 'bg-slate-100/50 border-slate-200 opacity-60 rounded-2xl' : 'card-soft-sm'}`}
+          className={`group flex flex-col transition-all duration-300 ${task.completed ? 'task-card-done' : 'task-card-soft'}`}
           draggable={canDrag}
           onDragStart={() => handleDragStart(task.id)}
           onDragOver={(e) => canDrag && e.preventDefault()}

@@ -19,8 +19,8 @@ const FiltersBar = ({
   const noFiltered = !filteredCount;
 
   return (
-    <div className="flex flex-col gap-4 mb-6">
-      <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar">
+    <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
+      <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar pb-1">
         {['all', 'active', 'completed'].map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors ${filter === f ? 'text-[#ff6fb1]' : 'text-slate-400 hover:text-[#ff6fb1]'}`}>
             {f === 'all' ? '全部任务' : f === 'active' ? '进行中' : '已归档'}
@@ -34,12 +34,12 @@ const FiltersBar = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="搜索任务/备注/分类/标签"
-          className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+          className="w-full text-sm bg-white/82 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
         />
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+          className="w-full text-sm bg-white/82 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
         >
           <option value="manual">手动排序</option>
           <option value="created_desc">按创建时间（新→旧）</option>
@@ -60,7 +60,7 @@ const FiltersBar = ({
           清除筛选
         </button>
       </div>
-      <div className="flex flex-wrap gap-2 text-xs font-bold">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
         <span className="pill-soft px-3 py-1 rounded-full text-[#7b6f8c]">
           已选 {selectedCount || 0} 条
         </span>
@@ -108,7 +108,7 @@ const FiltersBar = ({
         >
           批量删除
         </button>
-        <span className="text-[10px] text-[#7b6f8c] self-center">
+        <span className="text-[10px] text-[#7b6f8c] self-center ml-1">
           {canDrag ? '拖动任务可手动排序' : '切换到手动排序且清空筛选后可拖动'}
         </span>
       </div>
