@@ -6,6 +6,7 @@ const TaskList = ({
   emptyMode,
   onResetFilters,
   categories,
+  groupCompleted,
   toggleSelect,
   selectedIds,
   toggleTask,
@@ -21,6 +22,7 @@ const TaskList = ({
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [completedCollapsed, setCompletedCollapsed] = useState(true);
   const [editDraft, setEditDraft] = useState({
     input: '',
     note: '',
@@ -285,8 +287,42 @@ const TaskList = ({
           )}
         </div>
   );
+  if (!groupCompleted) {
+    return <div className="space-y-4">{filteredTasks.map((task) => renderTask(task))}</div>;
+  }
 
-  return <div className="space-y-4">{filteredTasks.map((task) => renderTask(task))}</div>;
+  const activeTasks = filteredTasks.filter((task) => !task.completed);
+  const completedTasks = filteredTasks.filter((task) => task.completed);
+
+  return (
+    <div className="space-y-4">
+      {activeTasks.length > 0 && activeTasks.map((task) => renderTask(task))}
+
+      {completedTasks.length > 0 && (
+        <div className="surface-soft p-3">
+          <button
+            type="button"
+            onClick={() => setCompletedCollapsed((prev) => !prev)}
+            className="w-full flex items-center justify-between text-left px-2 py-1"
+          >
+            <span className="text-xs font-black text-[#7b6f8c]">
+              已完成任务 ({completedTasks.length})
+            </span>
+            {completedCollapsed ? (
+              <ChevronDown className="w-4 h-4 text-[#7b6f8c]" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-[#7b6f8c]" />
+            )}
+          </button>
+          {!completedCollapsed && (
+            <div className="mt-2 space-y-3">
+              {completedTasks.map((task) => renderTask(task))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default TaskList;
