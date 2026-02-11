@@ -676,6 +676,8 @@ const App = () => {
               bulkComplete={bulkComplete}
               bulkDelete={bulkDelete}
               canDrag={canDrag}
+              selectedCount={selectedIds.size}
+              filteredCount={filteredTasks.length}
             />
 
             <TaskList

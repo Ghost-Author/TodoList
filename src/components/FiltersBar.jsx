@@ -11,8 +11,13 @@ const FiltersBar = ({
   clearSelection,
   bulkComplete,
   bulkDelete,
-  canDrag
+  canDrag,
+  selectedCount,
+  filteredCount
 }) => {
+  const noSelection = !selectedCount;
+  const noFiltered = !filteredCount;
+
   return (
     <div className="flex flex-col gap-4 mb-6">
       <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar">
@@ -56,26 +61,50 @@ const FiltersBar = ({
         </button>
       </div>
       <div className="flex flex-wrap gap-2 text-xs font-bold">
-        <button type="button" onClick={selectAllFiltered} className="pill-soft px-3 py-1 rounded-full">
+        <span className="pill-soft px-3 py-1 rounded-full text-[#7b6f8c]">
+          已选 {selectedCount || 0} 条
+        </span>
+        <button
+          type="button"
+          onClick={selectAllFiltered}
+          disabled={noFiltered}
+          className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           全选当前
         </button>
-        <button type="button" onClick={clearSelection} className="pill-soft px-3 py-1 rounded-full">
+        <button
+          type="button"
+          onClick={clearSelection}
+          disabled={noSelection}
+          className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           取消选择
         </button>
-        <button type="button" onClick={() => bulkComplete(true)} className="pill-soft px-3 py-1 rounded-full">
+        <button
+          type="button"
+          onClick={() => bulkComplete(true)}
+          disabled={noSelection}
+          className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           标记完成
         </button>
-        <button type="button" onClick={() => bulkComplete(false)} className="pill-soft px-3 py-1 rounded-full">
+        <button
+          type="button"
+          onClick={() => bulkComplete(false)}
+          disabled={noSelection}
+          className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           标记未完成
         </button>
         <button
           type="button"
+          disabled={noSelection}
           onClick={() => {
             if (window.confirm('确定要删除所选任务吗？')) {
               bulkDelete();
             }
           }}
-          className="px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8]"
+          className="px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           批量删除
         </button>
