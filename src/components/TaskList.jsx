@@ -112,6 +112,18 @@ const TaskList = ({
     }
   };
 
+  const handleEditHotkey = (e, taskId) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelEdit();
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      void saveEdit(taskId);
+    }
+  };
+
   const getDueMeta = (dueDate, completed) => {
     if (!dueDate) return null;
     const today = new Date();
@@ -236,12 +248,14 @@ const TaskList = ({
                       type="text"
                       value={editDraft.input}
                       onChange={(e) => setEditDraft((prev) => ({ ...prev, input: e.target.value }))}
+                      onKeyDown={(e) => handleEditHotkey(e, task.id)}
                       className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                       placeholder="任务标题"
                     />
                     <textarea
                       value={editDraft.note}
                       onChange={(e) => setEditDraft((prev) => ({ ...prev, note: e.target.value }))}
+                      onKeyDown={(e) => handleEditHotkey(e, task.id)}
                       className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] min-h-[88px] resize-none"
                       placeholder="详细备注"
                     />
@@ -280,6 +294,9 @@ const TaskList = ({
                         value={editTagInput}
                         onChange={(e) => setEditTagInput(e.target.value)}
                         onKeyDown={(e) => {
+                          handleEditHotkey(e, task.id);
+                          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') return;
+                          if (e.key === 'Escape') return;
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             addEditTag();
@@ -304,6 +321,9 @@ const TaskList = ({
                         ))}
                       </div>
                     )}
+                    <div className="text-[10px] text-slate-400">
+                      快捷键：`Ctrl/Cmd + Enter` 保存，`Esc` 取消
+                    </div>
                   </div>
                 ) : (
                   <>
