@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, useRef } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import {
   LayoutGrid,
   Cloud,
@@ -48,6 +48,7 @@ const App = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_desc');
+  const [visibleCount, setVisibleCount] = useState(30);
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
@@ -167,6 +168,10 @@ const App = () => {
     }, 800);
     return () => clearTimeout(timer);
   }, [view]);
+
+  useEffect(() => {
+    setVisibleCount(30);
+  }, [filter, searchQuery, sortBy, view]);
 
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
@@ -309,6 +314,13 @@ const App = () => {
     if (!date) return false;
     return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
   };
+
+  const displayedTasks = useMemo(() => {
+    if (canDrag) return filteredTasks;
+    return filteredTasks.slice(0, visibleCount);
+  }, [canDrag, filteredTasks, visibleCount]);
+
+  const hasMoreTasks = !canDrag && filteredTasks.length > visibleCount;
 
   if (!supabase) {
     return (
@@ -469,7 +481,7 @@ const App = () => {
             />
 
             <TaskList
-              filteredTasks={filteredTasks}
+              filteredTasks={displayedTasks}
               toggleSelect={toggleSelect}
               selectedIds={selectedIds}
               toggleTask={toggleTask}
@@ -482,6 +494,21 @@ const App = () => {
               handleDragStart={handleDragStart}
               handleDrop={handleDrop}
             />
+
+            <div className="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <p className="text-[11px] text-[#7b6f8c]">
+                当前显示 {displayedTasks.length} / {filteredTasks.length} 条任务
+              </p>
+              {hasMoreTasks && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 30)}
+                  className="self-start md:self-auto text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.30)]"
+                >
+                  加载更多
+                </button>
+              )}
+            </div>
           </>
         ) : (
           <Suspense fallback={<div className="text-sm text-[#7b6f8c]">加载统计中...</div>}>
