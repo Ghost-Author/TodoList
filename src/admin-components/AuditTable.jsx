@@ -3,28 +3,62 @@ import React from 'react';
 const AuditTable = ({
   auditLogs,
   auditPage,
+  auditTotal,
+  auditPerPage,
+  auditHasMore,
   auditSearch,
   setAuditSearch,
   loadAudit,
+  applyAuditSearch,
+  clearAuditSearch,
   auditLoading
 }) => {
+  const totalPages = Number.isFinite(auditTotal)
+    ? Math.max(1, Math.ceil(auditTotal / Math.max(auditPerPage || 1, 1)))
+    : null;
+
   return (
     <div className="mt-6">
       <div className="flex items-center justify-between mb-3 text-xs text-[#7b6f8c]">
-        <span>第 {auditPage} 页</span>
+        <span>
+          第 {auditPage} 页
+          {Number.isFinite(auditTotal) ? ` · 共 ${auditTotal} 条` : ''}
+          {totalPages ? ` · 共 ${totalPages} 页` : ''}
+        </span>
         <div className="flex gap-2">
-          <button onClick={() => loadAudit(Math.max(auditPage - 1, 1))} className="pill-soft px-3 py-1 rounded-full">上一页</button>
-          <button onClick={() => loadAudit(auditPage + 1)} className="pill-soft px-3 py-1 rounded-full">下一页</button>
+          <button
+            onClick={() => loadAudit(Math.max(auditPage - 1, 1))}
+            disabled={auditPage <= 1}
+            className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            上一页
+          </button>
+          <button
+            onClick={() => loadAudit(auditPage + 1)}
+            disabled={!auditHasMore}
+            className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            下一页
+          </button>
           <button onClick={() => loadAudit(auditPage)} className="pill-soft px-3 py-1 rounded-full">{auditLoading ? '加载中...' : '刷新'}</button>
         </div>
       </div>
-      <input
-        type="text"
-        value={auditSearch}
-        onChange={(e) => setAuditSearch(e.target.value)}
-        placeholder="搜索管理员/动作/对象"
-        className="mb-3 w-full text-xs bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-      />
+      <div className="mb-3 flex flex-col gap-2">
+        <input
+          type="text"
+          value={auditSearch}
+          onChange={(e) => setAuditSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') applyAuditSearch();
+          }}
+          placeholder="搜索管理员/动作/对象/备注"
+          className="w-full text-xs bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+        />
+        <div className="flex gap-2">
+          <button type="button" onClick={applyAuditSearch} className="pill-soft px-3 py-1 rounded-full text-xs">搜索</button>
+          <button type="button" onClick={clearAuditSearch} className="pill-soft px-3 py-1 rounded-full text-xs">清空搜索</button>
+        </div>
+      </div>
       <div className="card-soft-sm p-4 overflow-auto">
         <table className="w-full text-xs text-left">
           <thead className="text-[#7b6f8c]">
@@ -37,16 +71,7 @@ const AuditTable = ({
             </tr>
           </thead>
           <tbody className="text-[#3b2e4a]">
-            {auditLogs.filter((log) => {
-              const q = auditSearch.trim().toLowerCase();
-              if (!q) return true;
-              const hay = [
-                log.admin_email || '',
-                log.action || '',
-                log.target_user_id || ''
-              ].join(' ').toLowerCase();
-              return hay.includes(q);
-            }).map((log) => (
+            {auditLogs.map((log) => (
               <tr key={log.id} className="border-t border-[#ffe4f2]">
                 <td className="py-2">{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>
                 <td className="py-2">{log.admin_email || '-'}</td>

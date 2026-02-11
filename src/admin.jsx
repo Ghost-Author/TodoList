@@ -9,6 +9,7 @@ import AuditTable from './admin-components/AuditTable.jsx';
 import UserDetailModal from './admin-components/UserDetailModal.jsx';
 
 const USERS_PER_PAGE = 20;
+const AUDIT_PER_PAGE = 20;
 
 const AdminApp = () => {
   const [secret, setSecret] = useState('');
@@ -30,10 +31,15 @@ const AdminApp = () => {
   const [userTasks, setUserTasks] = useState([]);
   const [banReason, setBanReason] = useState('');
   const [auditLogs, setAuditLogs] = useState([]);
+  const [auditTotal, setAuditTotal] = useState(null);
+  const [auditHasMore, setAuditHasMore] = useState(false);
   const [auditPage, setAuditPage] = useState(1);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditSearch, setAuditSearch] = useState('');
+  const [auditQuery, setAuditQuery] = useState('');
   const [requestId, setRequestId] = useState('');
+  const [banLoading, setBanLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleRequestError = (err) => {
     const message = err?.message || '请求失败';
@@ -106,20 +112,34 @@ const AdminApp = () => {
     URL.revokeObjectURL(url);
   };
 
-  const loadAudit = async (targetPage = 1) => {
+  const loadAudit = async (targetPage = 1, targetQuery = auditQuery) => {
     setError('');
     setRequestId('');
     setAuditLoading(true);
     try {
       const api = createAdminClient(secret);
-      const json = await api.getAudit(targetPage, 20);
+      const json = await api.getAudit(targetPage, AUDIT_PER_PAGE, targetQuery);
       setAuditLogs(json.logs || []);
       setAuditPage(targetPage);
+      setAuditTotal(Number.isFinite(json.total) ? json.total : null);
+      setAuditHasMore(Boolean(json.has_more));
     } catch (err) {
       handleRequestError(err);
     } finally {
       setAuditLoading(false);
     }
+  };
+
+  const applyAuditSearch = async () => {
+    const q = auditSearch.trim();
+    setAuditQuery(q);
+    await loadAudit(1, q);
+  };
+
+  const clearAuditSearch = async () => {
+    setAuditSearch('');
+    setAuditQuery('');
+    await loadAudit(1, '');
   };
 
   const loadUserDetail = async (id) => {
@@ -143,6 +163,7 @@ const AdminApp = () => {
   const toggleBan = async (id, isBanned) => {
     setError('');
     setRequestId('');
+    setBanLoading(true);
     try {
       const api = createAdminClient(secret);
       const json = isBanned
@@ -152,6 +173,8 @@ const AdminApp = () => {
       setBanReason('');
     } catch (err) {
       handleRequestError(err);
+    } finally {
+      setBanLoading(false);
     }
   };
 
@@ -159,12 +182,15 @@ const AdminApp = () => {
     setError('');
     setRequestId('');
     setResetLink('');
+    setResetLoading(true);
     try {
       const api = createAdminClient(secret);
       const json = await api.resetPassword(email);
       setResetLink(json.actionLink || '');
     } catch (err) {
       handleRequestError(err);
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -188,7 +214,7 @@ const AdminApp = () => {
               placeholder="Admin Secret"
               className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
             />
-            <button onClick={() => (tab === 'summary' ? loadSummary() : tab === 'users' ? loadUsers(page, usersQuery) : loadAudit(auditPage))} className="btn-soft px-6 rounded-xl font-bold">
+            <button onClick={() => (tab === 'summary' ? loadSummary() : tab === 'users' ? loadUsers(page, usersQuery) : loadAudit(auditPage, auditQuery))} className="btn-soft px-6 rounded-xl font-bold">
               {loading || usersLoading || auditLoading ? '加载中...' : '查看'}
             </button>
           </div>
@@ -202,7 +228,7 @@ const AdminApp = () => {
             <button onClick={() => setTab('users')} className={tab === 'users' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
               用户列表
             </button>
-            <button onClick={() => { setTab('audit'); loadAudit(1); }} className={tab === 'audit' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
+            <button onClick={() => { setTab('audit'); loadAudit(1, auditQuery); }} className={tab === 'audit' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
               操作审计
             </button>
           </div>
@@ -234,9 +260,14 @@ const AdminApp = () => {
             <AuditTable
               auditLogs={auditLogs}
               auditPage={auditPage}
+              auditTotal={auditTotal}
+              auditPerPage={AUDIT_PER_PAGE}
+              auditHasMore={auditHasMore}
               auditSearch={auditSearch}
               setAuditSearch={setAuditSearch}
               loadAudit={loadAudit}
+              applyAuditSearch={applyAuditSearch}
+              clearAuditSearch={clearAuditSearch}
               auditLoading={auditLoading}
             />
           )}
@@ -253,7 +284,9 @@ const AdminApp = () => {
             banReason={banReason}
             setBanReason={setBanReason}
             toggleBan={toggleBan}
+            banLoading={banLoading}
             resetPassword={resetPassword}
+            resetLoading={resetLoading}
             resetLink={resetLink}
             userTasks={userTasks}
           />

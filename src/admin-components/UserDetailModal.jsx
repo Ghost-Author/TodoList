@@ -8,7 +8,9 @@ const UserDetailModal = ({
   banReason,
   setBanReason,
   toggleBan,
+  banLoading,
   resetPassword,
+  resetLoading,
   resetLink,
   userTasks
 }) => {
@@ -28,6 +30,7 @@ const UserDetailModal = ({
         </div>
 
         {detailLoading && <div className="text-sm text-[#7b6f8c]">加载中...</div>}
+        {!detailLoading && !userDetail && <div className="text-sm text-[#7b6f8c]">未获取到用户详情</div>}
         {userDetail && (
           <div className="space-y-3 text-sm text-[#7b6f8c]">
             <div><span className="font-bold text-[#3b2e4a]">邮箱：</span>{userDetail.email || '-'}</div>
@@ -47,22 +50,36 @@ const UserDetailModal = ({
               <button
                 type="button"
                 onClick={() => toggleBan(userDetail.id, Boolean(userDetail.ban_expires_at))}
-                className="pill-soft px-3 py-1 rounded-full font-bold"
+                disabled={banLoading || resetLoading}
+                className="pill-soft px-3 py-1 rounded-full font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {userDetail.ban_expires_at ? '解禁' : '禁用'}
+                {banLoading ? '处理中...' : (userDetail.ban_expires_at ? '解禁' : '禁用')}
               </button>
               <button
                 type="button"
                 onClick={() => resetPassword(userDetail.email)}
-                className="pill-soft px-3 py-1 rounded-full font-bold"
+                disabled={banLoading || resetLoading}
+                className="pill-soft px-3 py-1 rounded-full font-bold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                重置密码
+                {resetLoading ? '生成中...' : '重置密码'}
               </button>
             </div>
 
             {resetLink && (
               <div className="mt-2 text-xs">
-                <div className="text-[#3b2e4a] font-bold mb-1">重置链接（复制给用户）</div>
+                <div className="text-[#3b2e4a] font-bold mb-1 flex items-center justify-between gap-2">
+                  <span>重置链接（复制给用户）</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!navigator.clipboard?.writeText) return;
+                      navigator.clipboard.writeText(resetLink).catch(() => {});
+                    }}
+                    className="pill-soft px-2 py-1 rounded-full text-[10px]"
+                  >
+                    复制
+                  </button>
+                </div>
                 <div className="break-all bg-white/80 p-2 rounded-lg border border-[#ffe4f2]">{resetLink}</div>
               </div>
             )}
