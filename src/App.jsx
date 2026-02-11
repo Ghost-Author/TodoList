@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useDeferredValue, Suspense, useRef } from 'react';
+import React, { useState, useEffect, Suspense, useRef } from 'react';
 import {
   LayoutGrid,
   Cloud,
@@ -9,6 +9,7 @@ import { generateCaptcha } from './utils/captcha.js';
 import { useAuth } from './hooks/useAuth.js';
 import { useTasks } from './hooks/useTasks.js';
 import { useWheel } from './hooks/useWheel.js';
+import { useTaskBoard } from './hooks/useTaskBoard.js';
 import AuthPanel from './components/AuthPanel.jsx';
 import Toast from './components/Toast.jsx';
 import TaskForm from './components/TaskForm.jsx';
@@ -31,7 +32,6 @@ const App = () => {
   const [captchaText, setCaptchaText] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
   const [captchaImage, setCaptchaImage] = useState('');
-  const [dragId, setDragId] = useState(null);
   const [captchaFails, setCaptchaFails] = useState(0);
   const [captchaLockUntil, setCaptchaLockUntil] = useState(0);
   const [toast, setToast] = useState(null);
@@ -48,7 +48,6 @@ const App = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_desc');
-  const [selectedIds, setSelectedIds] = useState(new Set());
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
@@ -108,9 +107,31 @@ const App = () => {
     resetWheelData
   } = useWheel({ session, createTask, priority, category });
 
+  const {
+    filteredTasks,
+    selectedIds,
+    canDrag,
+    toggleSelect,
+    clearSelection,
+    selectAllFiltered,
+    handleDragStart,
+    handleDrop,
+    resetBoardState
+  } = useTaskBoard({
+    tasks,
+    setTasks,
+    filter,
+    searchQuery,
+    sortBy,
+    saveOrder,
+    onOrderSaved: () => {
+      setToast({ message: '排序已保存' });
+      setTimeout(() => setToast(null), 1500);
+    }
+  });
+
   const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map((v) => v.trim()).filter(Boolean);
   const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
-  const deferredQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
     document.title = '云朵清单';
@@ -135,9 +156,9 @@ const App = () => {
     setTasks([]);
     setCategories([]);
     setCategory('');
-    setSelectedIds(new Set());
     setExpandedId(null);
-  }, [session, setTasks, setCategories]);
+    resetBoardState();
+  }, [session, setTasks, setCategories, resetBoardState]);
 
   useEffect(() => {
     if (view !== 'tasks') return;
@@ -184,47 +205,6 @@ const App = () => {
     }, 6000);
   };
 
-  const toggleSelect = (id) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const clearSelection = () => setSelectedIds(new Set());
-
-  const filteredTasks = useMemo(() => {
-    let result = tasks;
-    if (filter === 'active') result = tasks.filter((t) => !t.completed);
-    if (filter === 'completed') result = tasks.filter((t) => t.completed);
-    if (deferredQuery.trim()) {
-      const q = deferredQuery.trim().toLowerCase();
-      result = result.filter((t) => {
-        const hay = [t.text, t.note, t.category, ...(t.tags || [])].join(' ').toLowerCase();
-        return hay.includes(q);
-      });
-    }
-    const sorter = {
-      manual: (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0),
-      created_desc: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-      created_asc: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-      due_asc: (a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31'),
-      due_desc: (a, b) => new Date(b.dueDate || '0000-01-01') - new Date(a.dueDate || '0000-01-01'),
-      priority: (a, b) => {
-        const rank = { high: 0, medium: 1, low: 2, none: 3 };
-        return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
-      }
-    }[sortBy];
-    if (sorter) result = [...result].sort(sorter);
-    return result;
-  }, [tasks, filter, deferredQuery, sortBy]);
-
-  const selectAllFiltered = () => {
-    setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
-  };
-
   const bulkComplete = async (completed) => {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
@@ -258,33 +238,6 @@ const App = () => {
     setUndoData(null);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => setToast(null), 2000);
-  };
-
-  const canDrag = filter === 'all' && !searchQuery.trim() && sortBy === 'manual';
-
-  const handleDragStart = (id) => {
-    if (!canDrag) return;
-    setDragId(id);
-  };
-
-  const handleDrop = async (targetId) => {
-    if (!canDrag || !dragId || dragId === targetId) return;
-    const ordered = [...tasks].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
-    const fromIndex = ordered.findIndex((t) => t.id === dragId);
-    const toIndex = ordered.findIndex((t) => t.id === targetId);
-    if (fromIndex < 0 || toIndex < 0) return;
-
-    const [moved] = ordered.splice(fromIndex, 1);
-    ordered.splice(toIndex, 0, moved);
-    const updated = ordered.map((t, idx) => ({ ...t, orderIndex: idx }));
-    setTasks(updated);
-    setDragId(null);
-
-    const ok = await saveOrder(updated);
-    if (ok) {
-      setToast({ message: '排序已保存' });
-      setTimeout(() => setToast(null), 1500);
-    }
   };
 
   const handleAuth = async (e) => {
@@ -349,6 +302,7 @@ const App = () => {
     const ok = await clearAllDataCore();
     if (!ok) return;
     resetWheelData();
+    resetBoardState();
   };
 
   const isOverdue = (date) => {
