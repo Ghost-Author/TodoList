@@ -508,6 +508,13 @@ const App = () => {
   const emptyMode = tasks.length > 0 && filteredTasks.length === 0 && (filter !== 'all' || searchQuery.trim())
     ? 'filtered'
     : 'all';
+  const taskCounts = useMemo(() => {
+    const all = tasks.length;
+    const active = tasks.filter((t) => !t.completed).length;
+    const completed = tasks.filter((t) => t.completed).length;
+    const overdue = tasks.filter((t) => t.dueDate && !t.completed && isOverdue(t.dueDate)).length;
+    return { all, active, completed, overdue };
+  }, [tasks]);
 
   const displayedTasks = useMemo(() => {
     if (canDrag) return filteredTasks;
@@ -690,6 +697,7 @@ const App = () => {
             <FiltersBar
               filter={filter}
               setFilter={setFilter}
+              taskCounts={taskCounts}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}
