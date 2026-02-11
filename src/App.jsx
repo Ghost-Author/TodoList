@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useMemo, useDeferredValue, Suspense, useRef } from 'react';
-import { 
+import {
   LayoutGrid,
   Cloud,
   PieChart
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { generateCaptcha } from './utils/captcha.js';
+import { useAuth } from './hooks/useAuth.js';
+import { useTasks } from './hooks/useTasks.js';
 import AuthPanel from './components/AuthPanel.jsx';
 import Toast from './components/Toast.jsx';
 import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
 import WheelPanel from './components/WheelPanel.jsx';
+
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 const prefetchStatsView = () => import('./StatsView.jsx');
 const SettingsModal = React.lazy(() => import('./components/SettingsModal.jsx'));
@@ -19,17 +22,9 @@ const PrivacyModal = React.lazy(() => import('./components/PrivacyModal.jsx'));
 const EmailVerifyBanner = React.lazy(() => import('./components/EmailVerifyBanner.jsx'));
 
 const App = () => {
-  // --- State Management ---
-  const [tasks, setTasks] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authError, setAuthError] = useState('');
-  const [authMode, setAuthMode] = useState('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [recoveryMode, setRecoveryMode] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [captchaText, setCaptchaText] = useState('');
@@ -52,14 +47,12 @@ const App = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('created_desc');
-  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map(v => v.trim()).filter(Boolean);
-  const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
-  const deferredQuery = useDeferredValue(searchQuery);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [view, setView] = useState('tasks');
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
+
   const [wheelOptions, setWheelOptions] = useState([]);
   const [wheelHistory, setWheelHistory] = useState([]);
   const [wheelSpinning, setWheelSpinning] = useState(false);
@@ -70,30 +63,42 @@ const App = () => {
   const [wheelGroups, setWheelGroups] = useState(['随机', '工作', '生活']);
   const [wheelGroup, setWheelGroup] = useState('随机');
   const defaultWheelOptions = ['整理桌面 5 分钟', '喝一杯水', '伸展一下', '列 3 个小目标', '处理一个小任务', '站起来走一走'];
-  
-  // --- Auth ---
-  useEffect(() => {
-    if (!supabase) {
-      setAuthLoading(false);
-      return undefined;
-    }
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      setAuthLoading(false);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      setSession(nextSession);
-      if (event === 'PASSWORD_RECOVERY') {
-        setRecoveryMode(true);
-      }
-    });
-    return () => {
-      mounted = false;
-      listener?.subscription?.unsubscribe();
-    };
-  }, []);
+
+  const {
+    session,
+    authLoading,
+    authError,
+    setAuthError,
+    authMode,
+    setAuthMode,
+    recoveryMode,
+    handleAuth: authHandleAuth,
+    signOut,
+    sendResetEmail: authSendResetEmail,
+    updatePassword: authUpdatePassword
+  } = useAuth();
+
+  const {
+    tasks,
+    setTasks,
+    categories,
+    setCategories,
+    addTask: createTask,
+    addCategory: createCategory,
+    removeCategory,
+    toggleTask,
+    deleteTask: removeTask,
+    bulkComplete: bulkCompleteTasks,
+    bulkDelete: bulkDeleteTasks,
+    saveOrder,
+    exportData: exportDataPayload,
+    clearAllData: clearAllDataCore,
+    stats
+  } = useTasks({ session, category, setCategory, setAuthError });
+
+  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '').split(',').map((v) => v.trim()).filter(Boolean);
+  const isAdmin = session?.user?.email && adminEmails.includes(session.user.email);
+  const deferredQuery = useDeferredValue(searchQuery);
 
   useEffect(() => {
     document.title = '云朵清单';
@@ -114,15 +119,16 @@ const App = () => {
   };
 
   useEffect(() => {
-    if (!session) {
-      setTasks([]);
-      setCategories([]);
-      setCategory('');
-      setWheelOptions([]);
-      setWheelHistory([]);
-      setWheelResult('');
-    }
-  }, [session]);
+    if (session?.user?.id) return;
+    setTasks([]);
+    setCategories([]);
+    setCategory('');
+    setSelectedIds(new Set());
+    setExpandedId(null);
+    setWheelOptions([]);
+    setWheelHistory([]);
+    setWheelResult('');
+  }, [session, setTasks, setCategories]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -148,11 +154,14 @@ const App = () => {
           .order('created_at', { ascending: false })
           .limit(5)
       ]);
+
       if (groupRes.data && groupRes.data.length > 0) {
         const names = groupRes.data.map((g) => g.name);
         setWheelGroups(['随机', ...names.filter((n) => n !== '随机')]);
       }
+
       if (!mounted) return;
+
       if (optRes.data && optRes.data.length > 0) {
         setWheelOptions(optRes.data);
       } else {
@@ -163,10 +172,11 @@ const App = () => {
           .order('created_at', { ascending: true });
         if (seeded && mounted) setWheelOptions(seeded);
       }
+
       if (histRes.data) setWheelHistory(histRes.data);
     };
 
-    loadWheel();
+    void loadWheel();
     return () => {
       mounted = false;
     };
@@ -175,7 +185,7 @@ const App = () => {
   useEffect(() => {
     if (view !== 'tasks') return;
     const timer = setTimeout(() => {
-      prefetchStatsView();
+      void prefetchStatsView();
     }, 800);
     return () => clearTimeout(timer);
   }, [view]);
@@ -185,74 +195,6 @@ const App = () => {
     setWheelCreated(false);
   }, [wheelGroup]);
 
-  const defaultCategories = ['工作', '生活', '学习', '健康', '其他'];
-
-  const ensureDefaultCategories = async (userId) => {
-    const { data: existing, error } = await supabase
-      .from('categories')
-      .select('id, name')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true });
-    if (error) throw error;
-    if (existing.length > 0) {
-      setCategories(existing.map((c) => c.name));
-      return existing;
-    }
-    const { data: inserted, error: insertError } = await supabase
-      .from('categories')
-      .insert(defaultCategories.map((name) => ({ name, user_id: userId })))
-      .select('id, name')
-      .order('created_at', { ascending: true });
-    if (insertError) throw insertError;
-    setCategories(inserted.map((c) => c.name));
-    return inserted;
-  };
-
-  const loadTasks = async (userId) => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
-      .eq('user_id', userId)
-      .order('order_index', { ascending: true })
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    setTasks(
-      data.map((task) => ({
-        id: task.id,
-        text: task.text,
-        note: task.note || '',
-        dueDate: task.due_date || '',
-        priority: task.priority || 'medium',
-        category: task.category || '',
-        tags: task.tags || [],
-        orderIndex: task.order_index ?? 0,
-        completed: task.completed,
-        createdAt: task.created_at
-      }))
-    );
-  };
-
-  useEffect(() => {
-    if (!supabase || !session?.user?.id) return;
-    const userId = session.user.id;
-    Promise.all([ensureDefaultCategories(userId), loadTasks(userId)])
-      .then(([cats]) => {
-        if (!category && cats.length > 0) {
-          setCategory(cats[0].name);
-        }
-      })
-      .catch(() => {
-        // keep UI usable even if remote load fails
-      });
-  }, [session]);
-
-  useEffect(() => {
-    if (!category && categories.length > 0) {
-      setCategory(categories[0]);
-    }
-  }, [categories, category]);
-
-  // --- Task & Category Logic ---
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
     medium: { label: '重要不紧急', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
@@ -262,41 +204,8 @@ const App = () => {
 
   const addTask = async (e) => {
     e.preventDefault();
-    const trimmedInput = input.trim();
-    if (!trimmedInput || !session?.user?.id) return;
-    const taskCategory = category || categories[0] || '';
-    const minOrder = tasks.length ? Math.min(...tasks.map((t) => t.orderIndex ?? 0)) : 0;
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        user_id: session.user.id,
-        text: trimmedInput,
-        note: note.trim(),
-        due_date: dueDate || null,
-        priority,
-        category: taskCategory,
-        tags,
-        order_index: minOrder - 1,
-        completed: false
-      })
-      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
-      .single();
-    if (error) return;
-    setTasks([
-      {
-        id: data.id,
-        text: data.text,
-        note: data.note || '',
-        dueDate: data.due_date || '',
-        priority: data.priority || 'medium',
-        category: data.category || taskCategory,
-        tags: data.tags || [],
-        orderIndex: data.order_index ?? (minOrder - 1),
-        completed: data.completed,
-        createdAt: data.created_at
-      },
-      ...tasks
-    ]);
+    const created = await createTask({ input, note, dueDate, priority, category, tags });
+    if (!created) return;
     setInput('');
     setNote('');
     setDueDate('');
@@ -305,62 +214,22 @@ const App = () => {
   };
 
   const addCategory = async () => {
-    const trimmed = newCatInput.trim();
-    if (!trimmed || categories.includes(trimmed) || !session?.user?.id) return;
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({ name: trimmed, user_id: session.user.id })
-      .select('name')
-      .single();
-    if (error) return;
-    setCategories([...categories, data.name]);
-    setNewCatInput('');
-  };
-
-  const removeCategory = async (cat) => {
-    if (categories.length <= 1 || !session?.user?.id) return;
-    const { error } = await supabase
-      .from('categories')
-      .delete()
-      .eq('user_id', session.user.id)
-      .eq('name', cat);
-    if (error) return;
-    const next = categories.filter(c => c !== cat);
-    setCategories(next);
-    if (category === cat) setCategory(next[0] || '');
-  };
-
-  const toggleTask = async (id) => {
-    const target = tasks.find(t => t.id === id);
-    if (!target || !session?.user?.id) return;
-    const { error } = await supabase
-      .from('tasks')
-      .update({ completed: !target.completed })
-      .eq('id', id)
-      .eq('user_id', session.user.id);
-    if (error) return;
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+    const created = await createCategory(newCatInput);
+    if (created) {
+      setNewCatInput('');
+    }
   };
 
   const deleteTask = async (id) => {
-    if (!session?.user?.id) return;
-    const target = tasks.find((t) => t.id === id);
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', session.user.id);
-    if (error) return;
-    setTasks(tasks.filter(t => t.id !== id));
-    if (target) {
-      setUndoData([target]);
-      setToast({ message: '已删除 1 条任务', action: '撤销' });
-      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = setTimeout(() => {
-        setUndoData(null);
-        setToast(null);
-      }, 6000);
-    }
+    const target = await removeTask(id);
+    if (!target) return;
+    setUndoData([target]);
+    setToast({ message: '已删除 1 条任务', action: '撤销' });
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => {
+      setUndoData(null);
+      setToast(null);
+    }, 6000);
   };
 
   const toggleSelect = (id) => {
@@ -374,44 +243,56 @@ const App = () => {
 
   const clearSelection = () => setSelectedIds(new Set());
 
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+    if (filter === 'active') result = tasks.filter((t) => !t.completed);
+    if (filter === 'completed') result = tasks.filter((t) => t.completed);
+    if (deferredQuery.trim()) {
+      const q = deferredQuery.trim().toLowerCase();
+      result = result.filter((t) => {
+        const hay = [t.text, t.note, t.category, ...(t.tags || [])].join(' ').toLowerCase();
+        return hay.includes(q);
+      });
+    }
+    const sorter = {
+      manual: (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0),
+      created_desc: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+      created_asc: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      due_asc: (a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31'),
+      due_desc: (a, b) => new Date(b.dueDate || '0000-01-01') - new Date(a.dueDate || '0000-01-01'),
+      priority: (a, b) => {
+        const rank = { high: 0, medium: 1, low: 2, none: 3 };
+        return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
+      }
+    }[sortBy];
+    if (sorter) result = [...result].sort(sorter);
+    return result;
+  }, [tasks, filter, deferredQuery, sortBy]);
+
   const selectAllFiltered = () => {
     setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
   };
 
   const bulkComplete = async (completed) => {
-    if (!session?.user?.id || selectedIds.size === 0) return;
+    if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
-    const { error } = await supabase
-      .from('tasks')
-      .update({ completed })
-      .in('id', ids)
-      .eq('user_id', session.user.id);
-    if (error) return;
-    setTasks(tasks.map(t => selectedIds.has(t.id) ? { ...t, completed } : t));
-    clearSelection();
+    const ok = await bulkCompleteTasks(ids, completed);
+    if (ok) clearSelection();
   };
 
   const bulkDelete = async () => {
-    if (!session?.user?.id || selectedIds.size === 0) return;
+    if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
-    const deleted = tasks.filter((t) => selectedIds.has(t.id));
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .in('id', ids)
-      .eq('user_id', session.user.id);
-    if (error) return;
-    setTasks(tasks.filter(t => !selectedIds.has(t.id)));
+    const deleted = await bulkDeleteTasks(ids);
+    if (!deleted || deleted.length === 0) return;
     clearSelection();
-    if (deleted.length) {
-      setUndoData(deleted);
-      setToast({ message: `已删除 ${deleted.length} 条任务`, action: '撤销' });
-      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-      undoTimerRef.current = setTimeout(() => {
-        setUndoData(null);
-        setToast(null);
-      }, 6000);
-    }
+    setUndoData(deleted);
+    setToast({ message: `已删除 ${deleted.length} 条任务`, action: '撤销' });
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => {
+      setUndoData(null);
+      setToast(null);
+    }, 6000);
   };
 
   const undoDelete = async () => {
@@ -454,16 +335,15 @@ const App = () => {
     const fromIndex = ordered.findIndex((t) => t.id === dragId);
     const toIndex = ordered.findIndex((t) => t.id === targetId);
     if (fromIndex < 0 || toIndex < 0) return;
+
     const [moved] = ordered.splice(fromIndex, 1);
     ordered.splice(toIndex, 0, moved);
     const updated = ordered.map((t, idx) => ({ ...t, orderIndex: idx }));
     setTasks(updated);
     setDragId(null);
-    if (!session?.user?.id) return;
-    const { error } = await supabase
-      .from('tasks')
-      .upsert(updated.map((t) => ({ id: t.id, user_id: session.user.id, order_index: t.orderIndex })), { onConflict: 'id' });
-    if (!error) {
+
+    const ok = await saveOrder(updated);
+    if (ok) {
       setToast({ message: '排序已保存' });
       setTimeout(() => setToast(null), 1500);
     }
@@ -472,99 +352,50 @@ const App = () => {
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError('');
+
     if (captchaLockUntil > Date.now()) {
       setAuthError('验证码错误次数过多，请稍后再试');
       return;
     }
-    if (!email.trim() || !password) {
-      setAuthError('请输入邮箱和密码');
-      return;
-    }
-    if (captchaInput.trim().toUpperCase() !== captchaText) {
-      setAuthError('验证码不正确');
+
+    const captchaOk = captchaInput.trim().toUpperCase() === captchaText;
+    const onCaptchaFail = () => {
       const next = captchaFails + 1;
       setCaptchaFails(next);
       if (next >= 5) {
         setCaptchaLockUntil(Date.now() + 60 * 1000);
       }
       refreshCaptcha(next >= 3 ? 6 : 5);
-      return;
-    }
-    setCaptchaFails(0);
-    try {
-      if (authMode === 'signup') {
-        const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password
-        });
-        if (error) {
-          setAuthError(error.message);
-          return;
-        }
-        setAuthError('注册成功，请检查邮箱完成验证后登录');
-        setAuthMode('signin');
-        return;
-      }
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
-      if (error) setAuthError(error.message);
-    } finally {
-      // One-time captcha: always refresh after submit
-      refreshCaptcha();
-    }
-  };
+    };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
+    if (captchaOk) {
+      setCaptchaFails(0);
+    }
+
+    await authHandleAuth({
+      email,
+      password,
+      captchaOk,
+      onCaptchaFail,
+      onCaptchaUsed: captchaOk ? () => refreshCaptcha() : undefined
+    });
   };
 
   const sendResetEmail = async () => {
-    setAuthError('');
-    if (!email.trim()) {
-      setAuthError('请输入邮箱以重置密码');
-      return;
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: window.location.origin
-    });
-    if (error) {
-      setAuthError(error.message);
-      return;
-    }
-    setAuthError('已发送重置邮件，请查收');
+    await authSendResetEmail(email);
   };
 
   const updatePassword = async () => {
-    setAuthError('');
-    if (!newPassword) {
-      setAuthError('请输入新密码');
-      return;
+    const ok = await authUpdatePassword(newPassword);
+    if (ok) {
+      setNewPassword('');
     }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      setAuthError(error.message);
-      return;
-    }
-    setAuthError('密码已更新');
-    setNewPassword('');
-    setRecoveryMode(false);
   };
 
   const exportData = async () => {
-    if (!session?.user?.id) return;
-    const userId = session.user.id;
-    const [tasksRes, catsRes] = await Promise.all([
-      supabase.from('tasks').select('*').eq('user_id', userId),
-      supabase.from('categories').select('*').eq('user_id', userId)
-    ]);
-    if (tasksRes.error || catsRes.error) return;
-    const payload = {
-      exportedAt: new Date().toISOString(),
-      tasks: tasksRes.data,
-      categories: catsRes.data
-    };
+    const payload = await exportDataPayload();
+    if (!payload) return;
+
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -577,13 +408,12 @@ const App = () => {
   };
 
   const clearAllData = async () => {
-    if (!session?.user?.id) return;
-    const userId = session.user.id;
-    await supabase.from('tasks').delete().eq('user_id', userId);
-    await supabase.from('categories').delete().eq('user_id', userId);
-    setTasks([]);
-    const cats = await ensureDefaultCategories(userId);
-    setCategory(cats[0]?.name || '');
+    const ok = await clearAllDataCore();
+    if (!ok) return;
+    setWheelOptions([]);
+    setWheelHistory([]);
+    setWheelResult('');
+    setWheelCreated(false);
   };
 
   const addWheelOption = async (label) => {
@@ -618,12 +448,14 @@ const App = () => {
     if (oldName === '随机') return;
     if (wheelGroups.includes(trimmed) && trimmed !== oldName) return;
     if (!session?.user?.id) return;
+
     const { error } = await supabase
       .from('wheel_groups')
       .update({ name: trimmed })
       .eq('user_id', session.user.id)
       .eq('name', oldName);
     if (error) return;
+
     await supabase
       .from('wheel_options')
       .update({ group_name: trimmed })
@@ -634,6 +466,7 @@ const App = () => {
       .update({ group_name: trimmed })
       .eq('user_id', session.user.id)
       .eq('group_name', oldName);
+
     setWheelGroups((prev) => prev.map((g) => (g === oldName ? trimmed : g)));
     if (wheelGroup === oldName) setWheelGroup(trimmed);
   };
@@ -641,6 +474,7 @@ const App = () => {
   const deleteWheelGroup = async (name) => {
     if (name === '随机') return;
     if (!session?.user?.id) return;
+
     await supabase
       .from('wheel_groups')
       .delete()
@@ -656,6 +490,7 @@ const App = () => {
       .update({ group_name: '随机' })
       .eq('user_id', session.user.id)
       .eq('group_name', name);
+
     setWheelGroups((prev) => prev.filter((g) => g !== name));
     if (wheelGroup === name) setWheelGroup('随机');
   };
@@ -695,6 +530,7 @@ const App = () => {
     wheelAngleRef.current = (wheelAngleRef.current + target) % 3600;
     setWheelSpinning(true);
     setWheelAngle(wheelAngleRef.current);
+
     const label = currentWheelOptions[index].label;
     setTimeout(async () => {
       setWheelResult(label);
@@ -713,90 +549,23 @@ const App = () => {
   };
 
   const createTaskFromWheel = async (label) => {
-    if (!session?.user?.id || !label || wheelCreated) return;
-    const taskCategory = category || categories[0] || '';
-    const minOrder = tasks.length ? Math.min(...tasks.map((t) => t.orderIndex ?? 0)) : 0;
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        user_id: session.user.id,
-        text: label,
-        note: '',
-        due_date: null,
-        priority,
-        category: taskCategory,
-        tags: [],
-        order_index: minOrder - 1,
-        completed: false
-      })
-      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
-      .single();
-    if (error || !data) return;
+    if (!label || wheelCreated) return;
+    const created = await createTask({
+      input: label,
+      note: '',
+      dueDate: '',
+      priority,
+      category,
+      tags: []
+    });
+    if (!created) return;
     setWheelCreated(true);
-    setTasks([
-      {
-        id: data.id,
-        text: data.text,
-        note: data.note || '',
-        dueDate: data.due_date || '',
-        priority: data.priority || 'medium',
-        category: data.category || taskCategory,
-        tags: data.tags || [],
-        orderIndex: data.order_index ?? (minOrder - 1),
-        completed: data.completed,
-        createdAt: data.created_at
-      },
-      ...tasks
-    ]);
   };
 
   const isOverdue = (date) => {
     if (!date) return false;
     return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
   };
-
-  const filteredTasks = useMemo(() => {
-    let result = tasks;
-    if (filter === 'active') result = tasks.filter(t => !t.completed);
-    if (filter === 'completed') result = tasks.filter(t => t.completed);
-    if (deferredQuery.trim()) {
-      const q = deferredQuery.trim().toLowerCase();
-      result = result.filter(t => {
-        const hay = [
-          t.text,
-          t.note,
-          t.category,
-          ...(t.tags || [])
-        ].join(' ').toLowerCase();
-        return hay.includes(q);
-      });
-    }
-    const sorter = {
-      manual: (a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0),
-      created_desc: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
-      created_asc: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-      due_asc: (a, b) => new Date(a.dueDate || '9999-12-31') - new Date(b.dueDate || '9999-12-31'),
-      due_desc: (a, b) => new Date(b.dueDate || '0000-01-01') - new Date(a.dueDate || '0000-01-01'),
-      priority: (a, b) => {
-        const rank = { high: 0, medium: 1, low: 2, none: 3 };
-        return (rank[a.priority] ?? 9) - (rank[b.priority] ?? 9);
-      }
-    }[sortBy];
-    if (sorter) result = [...result].sort(sorter);
-    return result;
-  }, [tasks, filter, deferredQuery, sortBy]);
-
-  const stats = useMemo(() => {
-    const total = tasks.length;
-    const completed = tasks.filter(t => t.completed).length;
-    const highPriority = tasks.filter(t => t.priority === 'high' && !t.completed).length;
-    const catData = categories.map(cat => ({
-      name: cat,
-      count: tasks.filter(t => t.category === cat).length,
-      done: tasks.filter(t => t.category === cat && t.completed).length
-    }));
-    return { total, completed, highPriority, catData };
-  }, [tasks, categories]);
 
   if (!supabase) {
     return (
@@ -855,8 +624,6 @@ const App = () => {
   return (
     <div className="min-h-screen text-slate-900 pb-24">
       <div className="max-w-4xl mx-auto p-4 md:p-8">
-        
-        {/* Nav Tabs */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
           <div className="card-soft-sm p-1 flex">
             <button onClick={() => setView('tasks')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'tasks' ? 'tab-active' : 'tab-inactive hover:text-[#ff6fb1]'}`}>
@@ -931,17 +698,17 @@ const App = () => {
                 onRenameGroup={renameWheelGroup}
                 onDeleteGroup={deleteWheelGroup}
                 onClearHistory={clearWheelHistory}
-              options={currentWheelOptions}
-              history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
-              spinning={wheelSpinning}
-              angle={wheelAngle}
-              result={wheelResult}
-              created={wheelCreated}
-              onSpin={spinWheel}
-              onAddOption={addWheelOption}
-              onRemoveOption={removeWheelOption}
-              onCreateTask={createTaskFromWheel}
-            />
+                options={currentWheelOptions}
+                history={wheelHistory.filter((h) => (h.group_name || '随机') === wheelGroup)}
+                spinning={wheelSpinning}
+                angle={wheelAngle}
+                result={wheelResult}
+                created={wheelCreated}
+                onSpin={spinWheel}
+                onAddOption={addWheelOption}
+                onRemoveOption={removeWheelOption}
+                onCreateTask={createTaskFromWheel}
+              />
             </div>
 
             <FiltersBar
@@ -1002,7 +769,6 @@ const App = () => {
         <div className="mt-16 text-center">
           <p className="text-[#ff9ccc] text-[10px] font-black uppercase tracking-[0.3em]">Soft Focus · Sweet Progress</p>
         </div>
-
       </div>
     </div>
   );
