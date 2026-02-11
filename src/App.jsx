@@ -113,7 +113,7 @@ const App = () => {
     spinWheel,
     createTaskFromWheel,
     clearWheelData
-  } = useWheel({ session, createTask, priority, category });
+  } = useWheel({ session, createTask, priority, category, dueDate, note, tags });
 
   const {
     filteredTasks,

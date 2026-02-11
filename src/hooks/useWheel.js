@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 const DEFAULT_GROUPS = ['随机', '工作', '生活'];
 const DEFAULT_OPTIONS = ['整理桌面 5 分钟', '喝一杯水', '伸展一下', '列 3 个小目标', '处理一个小任务', '站起来走一走'];
 
-export const useWheel = ({ session, createTask, priority, category }) => {
+export const useWheel = ({ session, createTask, priority, category, dueDate, note, tags }) => {
   const [wheelOptions, setWheelOptions] = useState([]);
   const [wheelHistory, setWheelHistory] = useState([]);
   const [wheelSpinning, setWheelSpinning] = useState(false);
@@ -286,13 +286,15 @@ export const useWheel = ({ session, createTask, priority, category }) => {
   const createTaskFromWheel = async (label) => {
     if (!label || wheelCreated) return;
 
+    const mergedTags = Array.from(new Set([...(Array.isArray(tags) ? tags : []), '转盘']));
+
     const created = await createTask({
       input: label,
-      note: '',
-      dueDate: '',
+      note: String(note || '').trim(),
+      dueDate: dueDate || '',
       priority,
       category,
-      tags: []
+      tags: mergedTags
     });
     if (!created) return;
 
