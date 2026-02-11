@@ -14,7 +14,6 @@ const TaskList = ({
   expandedId,
   setExpandedId,
   priorities,
-  isOverdue,
   deleteTask,
   editTask,
   canDrag,
@@ -112,6 +111,24 @@ const TaskList = ({
     }
   };
 
+  const getDueMeta = (dueDate, completed) => {
+    if (!dueDate) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    if (Number.isNaN(due.getTime())) return { label: dueDate, tone: 'normal' };
+    due.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+    if (!completed && diffDays < 0) {
+      return { label: `逾期 ${Math.abs(diffDays)} 天`, tone: 'overdue' };
+    }
+    if (diffDays === 0) return { label: '今天截止', tone: completed ? 'normal' : 'today' };
+    if (diffDays === 1) return { label: '明天截止', tone: completed ? 'normal' : 'soon' };
+    if (diffDays > 1) return { label: `${diffDays} 天后`, tone: 'normal' };
+    return { label: dueDate, tone: 'normal' };
+  };
+
   const renderTask = (task) => (
         <div
           key={task.id}
@@ -138,11 +155,25 @@ const TaskList = ({
                 <span className={`text-[9px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${priorities[task.priority].bg} ${priorities[task.priority].color} border ${priorities[task.priority].border}`}>
                   {priorities[task.priority].label}
                 </span>
-                {task.dueDate && (
-                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap ${isOverdue(task.dueDate) && !task.completed ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'}`}>
-                    <Calendar className="w-3 h-3" /> {task.dueDate}
-                  </span>
-                )}
+                {task.dueDate && (() => {
+                  const meta = getDueMeta(task.dueDate, task.completed);
+                  const dueTone = meta?.tone || 'normal';
+                  const dueClass = dueTone === 'overdue'
+                    ? 'bg-red-100 text-red-600'
+                    : dueTone === 'today'
+                      ? 'bg-amber-100 text-amber-600'
+                      : dueTone === 'soon'
+                        ? 'bg-orange-100 text-orange-600'
+                        : 'bg-slate-100 text-slate-500';
+                  return (
+                    <span
+                      className={`text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 whitespace-nowrap ${dueClass}`}
+                      title={task.dueDate}
+                    >
+                      <Calendar className="w-3 h-3" /> {meta?.label || task.dueDate}
+                    </span>
+                  );
+                })()}
                 <span className="text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-100">
                   {task.category}
                 </span>
@@ -301,6 +332,11 @@ const TaskList = ({
                 {editingId !== task.id && (
                   <div className="mt-2 text-[10px] text-slate-400">
                     标签：{(task.tags || []).length > 0 ? task.tags.join(' / ') : '无'}
+                  </div>
+                )}
+                {editingId !== task.id && task.dueDate && (
+                  <div className="mt-1 text-[10px] text-slate-400">
+                    截止日期：{task.dueDate}
                   </div>
                 )}
               </div>

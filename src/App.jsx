@@ -725,7 +725,6 @@ const App = () => {
               expandedId={expandedId}
               setExpandedId={setExpandedId}
               priorities={priorities}
-              isOverdue={isOverdue}
               deleteTask={deleteTask}
               editTask={editTask}
               canDrag={canDrag}
