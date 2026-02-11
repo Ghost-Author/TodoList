@@ -11,6 +11,9 @@ const AuditTable = ({
   loadAudit,
   applyAuditSearch,
   clearAuditSearch,
+  exportAuditCurrent,
+  exportAuditAll,
+  auditExporting,
   auditLoading
 }) => {
   const totalPages = Number.isFinite(auditTotal)
@@ -41,6 +44,14 @@ const AuditTable = ({
             下一页
           </button>
           <button onClick={() => loadAudit(auditPage)} className="pill-soft px-3 py-1 rounded-full">{auditLoading ? '加载中...' : '刷新'}</button>
+          <button onClick={exportAuditCurrent} className="pill-soft px-3 py-1 rounded-full">导出本页</button>
+          <button
+            onClick={exportAuditAll}
+            disabled={auditExporting}
+            className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {auditExporting ? '导出中...' : '导出全部结果'}
+          </button>
         </div>
       </div>
       <div className="mb-3 flex flex-col gap-2">

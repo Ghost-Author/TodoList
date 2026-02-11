@@ -40,6 +40,8 @@ const AdminApp = () => {
   const [requestId, setRequestId] = useState('');
   const [banLoading, setBanLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [usersExporting, setUsersExporting] = useState(false);
+  const [auditExporting, setAuditExporting] = useState(false);
 
   const handleRequestError = (err) => {
     const message = err?.message || '请求失败';
@@ -93,23 +95,63 @@ const AdminApp = () => {
     await loadUsers(1, '');
   };
 
-  const exportUsers = () => {
+  const toCsv = (rows, header) => (
+    [header.join(','), ...rows.map((r) => header.map((k) => `"${String(r[k] ?? '').replace(/\"/g, '""')}"`).join(','))].join('\n')
+  );
+
+  const downloadCsv = (filename, csv) => {
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportUsersCurrent = () => {
     const rows = users.map((u) => ({
       email: u.email || '',
       created_at: u.created_at || '',
       last_sign_in_at: u.last_sign_in_at || ''
     }));
     const header = ['email', 'created_at', 'last_sign_in_at'];
-    const csv = [header.join(','), ...rows.map(r => header.map(k => `"${String(r[k]).replace(/\"/g, '""')}"`).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `users_page_${page}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadCsv(`users_page_${page}.csv`, toCsv(rows, header));
+  };
+
+  const exportUsersAll = async () => {
+    setError('');
+    setRequestId('');
+    setUsersExporting(true);
+    try {
+      const api = createAdminClient(secret);
+      const q = usersQuery;
+      const perPage = 100;
+      let targetPage = 1;
+      let all = [];
+
+      while (true) {
+        const json = await api.getUsers(targetPage, perPage, q);
+        const rows = (json.users || []).map((u) => ({
+          email: u.email || '',
+          created_at: u.created_at || '',
+          last_sign_in_at: u.last_sign_in_at || ''
+        }));
+        all = all.concat(rows);
+        if (!json.has_more || targetPage >= 1000) break;
+        targetPage += 1;
+      }
+
+      const header = ['email', 'created_at', 'last_sign_in_at'];
+      const suffix = q ? `search_${encodeURIComponent(q).slice(0, 24)}` : 'all';
+      downloadCsv(`users_${suffix}.csv`, toCsv(all, header));
+    } catch (err) {
+      handleRequestError(err);
+    } finally {
+      setUsersExporting(false);
+    }
   };
 
   const loadAudit = async (targetPage = 1, targetQuery = auditQuery) => {
@@ -140,6 +182,55 @@ const AdminApp = () => {
     setAuditSearch('');
     setAuditQuery('');
     await loadAudit(1, '');
+  };
+
+  const exportAuditCurrent = () => {
+    const rows = auditLogs.map((log) => ({
+      created_at: log.created_at || '',
+      admin_email: log.admin_email || '',
+      action: log.action || '',
+      target_user_id: log.target_user_id || '',
+      reason: log.detail?.reason || '',
+      email: log.detail?.email || ''
+    }));
+    const header = ['created_at', 'admin_email', 'action', 'target_user_id', 'reason', 'email'];
+    downloadCsv(`audit_page_${auditPage}.csv`, toCsv(rows, header));
+  };
+
+  const exportAuditAll = async () => {
+    setError('');
+    setRequestId('');
+    setAuditExporting(true);
+    try {
+      const api = createAdminClient(secret);
+      const q = auditQuery;
+      const perPage = 100;
+      let targetPage = 1;
+      let all = [];
+
+      while (true) {
+        const json = await api.getAudit(targetPage, perPage, q);
+        const rows = (json.logs || []).map((log) => ({
+          created_at: log.created_at || '',
+          admin_email: log.admin_email || '',
+          action: log.action || '',
+          target_user_id: log.target_user_id || '',
+          reason: log.detail?.reason || '',
+          email: log.detail?.email || ''
+        }));
+        all = all.concat(rows);
+        if (!json.has_more || targetPage >= 1000) break;
+        targetPage += 1;
+      }
+
+      const header = ['created_at', 'admin_email', 'action', 'target_user_id', 'reason', 'email'];
+      const suffix = q ? `search_${encodeURIComponent(q).slice(0, 24)}` : 'all';
+      downloadCsv(`audit_${suffix}.csv`, toCsv(all, header));
+    } catch (err) {
+      handleRequestError(err);
+    } finally {
+      setAuditExporting(false);
+    }
   };
 
   const loadUserDetail = async (id) => {
@@ -247,7 +338,9 @@ const AdminApp = () => {
               loadUsers={loadUsers}
               applyUserSearch={applyUserSearch}
               clearUserSearch={clearUserSearch}
-              exportUsers={exportUsers}
+              exportUsersCurrent={exportUsersCurrent}
+              exportUsersAll={exportUsersAll}
+              usersExporting={usersExporting}
               onDetail={(u) => {
                 setSelectedUser(u);
                 loadUserDetail(u.id);
@@ -268,6 +361,9 @@ const AdminApp = () => {
               loadAudit={loadAudit}
               applyAuditSearch={applyAuditSearch}
               clearAuditSearch={clearAuditSearch}
+              exportAuditCurrent={exportAuditCurrent}
+              exportAuditAll={exportAuditAll}
+              auditExporting={auditExporting}
               auditLoading={auditLoading}
             />
           )}

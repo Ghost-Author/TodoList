@@ -11,7 +11,9 @@ const UsersTable = ({
   loadUsers,
   applyUserSearch,
   clearUserSearch,
-  exportUsers,
+  exportUsersCurrent,
+  exportUsersAll,
+  usersExporting,
   onDetail,
   usersLoading
 }) => {
@@ -42,7 +44,14 @@ const UsersTable = ({
           >
             下一页
           </button>
-          <button onClick={exportUsers} className="pill-soft px-3 py-1 rounded-full">导出本页</button>
+          <button onClick={exportUsersCurrent} className="pill-soft px-3 py-1 rounded-full">导出本页</button>
+          <button
+            onClick={exportUsersAll}
+            disabled={usersExporting}
+            className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {usersExporting ? '导出中...' : '导出全部结果'}
+          </button>
         </div>
       </div>
       <input
