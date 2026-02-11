@@ -196,7 +196,7 @@ const FiltersBar = ({
           批量删除
         </button>
         <span className="text-[10px] text-[#7b6f8c] self-center ml-1">
-          {canDrag ? '拖动任务可手动排序' : '切换到手动排序且清空筛选后可拖动'}
+          {canDrag ? '拖动任务可手动排序 · Shift+点击可范围选择' : '切换到手动排序且清空筛选后可拖动 · Shift+点击可范围选择'}
         </span>
       </div>
     </div>

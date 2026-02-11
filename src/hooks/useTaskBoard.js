@@ -12,6 +12,7 @@ export const useTaskBoard = ({
   const deferredQuery = useDeferredValue(searchQuery);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [dragId, setDragId] = useState(null);
+  const [lastSelectedId, setLastSelectedId] = useState(null);
 
   const isOverdueDate = (value) => {
     if (!value) return false;
@@ -52,19 +53,39 @@ export const useTaskBoard = ({
 
   const canDrag = filter === 'all' && !searchQuery.trim() && sortBy === 'manual';
 
-  const toggleSelect = useCallback((id) => {
+  const toggleSelect = useCallback((id, opts = {}) => {
+    const { shiftKey = false, orderedIds = [] } = opts;
     setSelectedIds((prev) => {
       const next = new Set(prev);
+      if (
+        shiftKey
+        && lastSelectedId
+        && Array.isArray(orderedIds)
+        && orderedIds.length > 1
+      ) {
+        const start = orderedIds.indexOf(lastSelectedId);
+        const end = orderedIds.indexOf(id);
+        if (start >= 0 && end >= 0) {
+          const [from, to] = start < end ? [start, end] : [end, start];
+          orderedIds.slice(from, to + 1).forEach((taskId) => next.add(taskId));
+          return next;
+        }
+      }
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }, []);
+    setLastSelectedId(id);
+  }, [lastSelectedId]);
 
-  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setLastSelectedId(null);
+  }, []);
 
   const selectAllFiltered = useCallback(() => {
     setSelectedIds(new Set(filteredTasks.map((t) => t.id)));
+    setLastSelectedId(filteredTasks[0]?.id || null);
   }, [filteredTasks]);
 
   const handleDragStart = useCallback((id) => {
@@ -94,6 +115,7 @@ export const useTaskBoard = ({
   const resetBoardState = useCallback(() => {
     setSelectedIds(new Set());
     setDragId(null);
+    setLastSelectedId(null);
   }, []);
 
   return {
