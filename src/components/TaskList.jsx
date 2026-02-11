@@ -126,6 +126,29 @@ const TaskList = ({
     }
   };
 
+  const toDateInput = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const setEditDueDateQuick = (kind) => {
+    if (kind === 'clear') {
+      setEditDraft((prev) => ({ ...prev, dueDate: '' }));
+      return;
+    }
+    const d = new Date();
+    if (kind === 'tomorrow') {
+      d.setDate(d.getDate() + 1);
+    } else if (kind === 'weekend') {
+      const day = d.getDay();
+      const delta = day === 0 ? 0 : (6 - day);
+      d.setDate(d.getDate() + delta);
+    }
+    setEditDraft((prev) => ({ ...prev, dueDate: toDateInput(d) }));
+  };
+
   const getDueMeta = (dueDate, completed) => {
     if (!dueDate) return null;
     const today = new Date();
@@ -272,6 +295,12 @@ const TaskList = ({
                         onChange={(e) => setEditDraft((prev) => ({ ...prev, dueDate: e.target.value }))}
                         className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                       />
+                      <div className="md:col-span-3 flex flex-wrap gap-2">
+                        <button type="button" onClick={() => setEditDueDateQuick('today')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">今天</button>
+                        <button type="button" onClick={() => setEditDueDateQuick('tomorrow')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">明天</button>
+                        <button type="button" onClick={() => setEditDueDateQuick('weekend')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">本周末</button>
+                        <button type="button" onClick={() => setEditDueDateQuick('clear')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">清空</button>
+                      </div>
                       <select
                         value={editDraft.priority}
                         onChange={(e) => setEditDraft((prev) => ({ ...prev, priority: e.target.value }))}
