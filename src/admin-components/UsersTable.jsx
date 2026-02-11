@@ -10,6 +10,8 @@ const UsersTable = ({
   onDetail,
   usersLoading
 }) => {
+  const filteredUsers = users.filter((u) => (u.email || '').toLowerCase().includes(userSearch.trim().toLowerCase()));
+
   return (
     <div className="mt-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3 text-xs text-[#7b6f8c]">
@@ -38,7 +40,7 @@ const UsersTable = ({
             </tr>
           </thead>
           <tbody className="text-[#3b2e4a]">
-            {users.filter((u) => (u.email || '').toLowerCase().includes(userSearch.trim().toLowerCase())).map((u) => (
+            {filteredUsers.map((u) => (
               <tr key={u.id} className="border-t border-[#ffe4f2]">
                 <td className="py-2">{u.email || '-'}</td>
                 <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
@@ -57,6 +59,11 @@ const UsersTable = ({
             {users.length === 0 && !usersLoading && (
               <tr>
                 <td className="py-4 text-[#7b6f8c]" colSpan="4">暂无数据</td>
+              </tr>
+            )}
+            {users.length > 0 && filteredUsers.length === 0 && !usersLoading && (
+              <tr>
+                <td className="py-4 text-[#7b6f8c]" colSpan="4">没有匹配的邮箱，请清空搜索条件</td>
               </tr>
             )}
           </tbody>

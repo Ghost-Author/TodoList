@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import { initSentry, Sentry } from './sentry.js';
@@ -148,6 +148,12 @@ const AdminApp = () => {
       handleRequestError(err);
     }
   };
+
+  useEffect(() => {
+    if (tab !== 'users') return;
+    if (!secret.trim()) return;
+    loadUsers(1);
+  }, [tab, secret]);
 
   return (
     <div className="min-h-screen text-slate-900 pb-24">
