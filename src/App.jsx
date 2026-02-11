@@ -81,6 +81,7 @@ const App = () => {
     bulkComplete: bulkCompleteTasks,
     bulkDelete: bulkDeleteTasks,
     saveOrder,
+    restoreTasks,
     exportData: exportDataPayload,
     clearAllData: clearAllDataCore,
     stats
@@ -247,23 +248,9 @@ const App = () => {
   };
 
   const undoDelete = async () => {
-    if (!undoData || !session?.user?.id) return;
-    const payload = undoData.map((t) => ({
-      id: t.id,
-      user_id: session.user.id,
-      text: t.text,
-      note: t.note,
-      due_date: t.dueDate || null,
-      priority: t.priority,
-      category: t.category,
-      tags: t.tags || [],
-      order_index: t.orderIndex ?? 0,
-      completed: t.completed,
-      created_at: t.createdAt
-    }));
-    const { error } = await supabase.from('tasks').insert(payload);
-    if (!error) {
-      setTasks((prev) => [...undoData, ...prev]);
+    if (!undoData) return;
+    const ok = await restoreTasks(undoData);
+    if (ok) {
       setToast({ message: '已撤销删除' });
     } else {
       setToast({ message: '撤销失败' });

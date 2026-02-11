@@ -39,6 +39,23 @@ const applyRateLimit = (key, maxRequests, windowMs) => {
   return true;
 };
 
+const createRequestId = () => {
+  if (typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return crypto.randomBytes(16).toString('hex');
+};
+
+export const sendJson = (res, status, payload, requestId) => {
+  if (requestId) {
+    res.setHeader('x-request-id', requestId);
+  }
+  return res.status(status).json({
+    ...payload,
+    ...(requestId ? { request_id: requestId } : {})
+  });
+};
+
 export const parsePositiveInt = (value, defaultValue, min = 1, max = 100) => {
   const parsed = Number.parseInt(String(value ?? defaultValue), 10);
   if (Number.isNaN(parsed)) return defaultValue;
@@ -49,6 +66,9 @@ export const isValidUuid = (value) => UUID_RE.test(String(value || ''));
 export const isValidEmail = (value) => EMAIL_RE.test(String(value || ''));
 
 export const requireAdmin = (req, res, options = {}) => {
+  const requestId = createRequestId();
+  res.setHeader('x-request-id', requestId);
+
   const {
     method,
     limit = 90,
@@ -57,25 +77,25 @@ export const requireAdmin = (req, res, options = {}) => {
   } = options;
 
   if (method && req.method !== method) {
-    res.status(405).json({ error: 'Method not allowed' });
+    sendJson(res, 405, { error: 'Method not allowed' }, requestId);
     return null;
   }
 
   if (!supabaseUrl || !serviceRoleKey || !adminSecret) {
-    res.status(500).json({ error: 'Server missing admin credentials' });
+    sendJson(res, 500, { error: 'Server missing admin credentials' }, requestId);
     return null;
   }
 
   const ip = getClientIp(req);
   const key = `${scope}:${ip}`;
   if (!applyRateLimit(key, limit, windowMs)) {
-    res.status(429).json({ error: 'Too many requests' });
+    sendJson(res, 429, { error: 'Too many requests' }, requestId);
     return null;
   }
 
   const incomingSecret = String(req.headers['x-admin-secret'] || '');
   if (!safeCompare(incomingSecret, adminSecret)) {
-    res.status(401).json({ error: 'Unauthorized' });
+    sendJson(res, 401, { error: 'Unauthorized' }, requestId);
     return null;
   }
 
@@ -85,6 +105,7 @@ export const requireAdmin = (req, res, options = {}) => {
 
   return {
     supabase,
+    requestId,
     actor: {
       ip,
       userAgent: String(req.headers['user-agent'] || '').slice(0, 200)

@@ -1,15 +1,15 @@
-import { isValidEmail, requireAdmin, writeAdminAudit } from './_utils.js';
+import { isValidEmail, requireAdmin, sendJson, writeAdminAudit } from './_utils.js';
 
 export default async function handler(req, res) {
   const auth = requireAdmin(req, res, { method: 'POST', scope: 'reset-write', limit: 20 });
   if (!auth) return;
 
-  const { supabase, actor } = auth;
+  const { supabase, actor, requestId } = auth;
   const { email } = req.body || {};
   const normalizedEmail = String(email || '').trim().toLowerCase();
 
   if (!isValidEmail(normalizedEmail)) {
-    return res.status(400).json({ error: 'Invalid email' });
+    return sendJson(res, 400, { error: 'Invalid email' }, requestId);
   }
 
   try {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
       }
     });
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return sendJson(res, 500, { error: error.message }, requestId);
     }
 
     await writeAdminAudit(supabase, actor, {
@@ -29,10 +29,10 @@ export default async function handler(req, res) {
       detail: { email: normalizedEmail, source: 'admin_secret' }
     });
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       actionLink: data?.properties?.action_link || data?.action_link || null
-    });
+    }, requestId);
   } catch {
-    return res.status(500).json({ error: 'Server error' });
+    return sendJson(res, 500, { error: 'Server error' }, requestId);
   }
 }

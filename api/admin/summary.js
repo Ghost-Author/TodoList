@@ -1,10 +1,10 @@
-import { countAllUsers, requireAdmin } from './_utils.js';
+import { countAllUsers, requireAdmin, sendJson } from './_utils.js';
 
 export default async function handler(req, res) {
   const auth = requireAdmin(req, res, { method: 'POST', scope: 'summary-read', limit: 90 });
   if (!auth) return;
 
-  const { supabase } = auth;
+  const { supabase, requestId } = auth;
 
   try {
     const today = new Date().toISOString().slice(0, 10);
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       || highRes.error
       || activeRes.error
     ) {
-      return res.status(500).json({
+      return sendJson(res, 500, {
         error: usersRes.error?.message
           || tasksRes.error?.message
           || doneRes.error?.message
@@ -35,10 +35,10 @@ export default async function handler(req, res) {
           || overdueRes.error?.message
           || highRes.error?.message
           || activeRes.error?.message
-      });
+      }, requestId);
     }
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       userCount: usersRes.count || 0,
       taskCount: tasksRes.count || 0,
       completedCount: doneRes.count || 0,
@@ -46,8 +46,8 @@ export default async function handler(req, res) {
       overdueCount: overdueRes.count || 0,
       highPriorityCount: highRes.count || 0,
       activeCount: activeRes.count || 0
-    });
+    }, requestId);
   } catch {
-    return res.status(500).json({ error: 'Server error' });
+    return sendJson(res, 500, { error: 'Server error' }, requestId);
   }
 }

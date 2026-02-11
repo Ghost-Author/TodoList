@@ -1,22 +1,22 @@
-import { isValidUuid, requireAdmin, writeAdminAudit } from './_utils.js';
+import { isValidUuid, requireAdmin, sendJson, writeAdminAudit } from './_utils.js';
 
 export default async function handler(req, res) {
   const auth = requireAdmin(req, res, { method: 'POST', scope: 'ban-write', limit: 40 });
   if (!auth) return;
 
-  const { supabase, actor } = auth;
+  const { supabase, actor, requestId } = auth;
   const { id, action, reason } = req.body || {};
   const normalizedAction = String(action || '').trim();
   const normalizedReason = String(reason || '').trim();
 
   if (!isValidUuid(id)) {
-    return res.status(400).json({ error: 'Invalid user id' });
+    return sendJson(res, 400, { error: 'Invalid user id' }, requestId);
   }
   if (normalizedAction !== 'ban' && normalizedAction !== 'unban') {
-    return res.status(400).json({ error: 'Invalid action' });
+    return sendJson(res, 400, { error: 'Invalid action' }, requestId);
   }
   if (normalizedReason.length > 500) {
-    return res.status(400).json({ error: 'Reason too long' });
+    return sendJson(res, 400, { error: 'Reason too long' }, requestId);
   }
 
   const banDuration = normalizedAction === 'ban' ? '100y' : 'none';
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       ban_duration: banDuration
     });
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return sendJson(res, 500, { error: error.message }, requestId);
     }
 
     await writeAdminAudit(supabase, actor, {
@@ -35,11 +35,11 @@ export default async function handler(req, res) {
       detail: { reason: normalizedReason || null, source: 'admin_secret' }
     });
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       id: data?.user?.id,
       ban_expires_at: data?.user?.ban_expires_at || null
-    });
+    }, requestId);
   } catch {
-    return res.status(500).json({ error: 'Server error' });
+    return sendJson(res, 500, { error: 'Server error' }, requestId);
   }
 }

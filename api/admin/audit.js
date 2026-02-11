@@ -1,10 +1,10 @@
-import { parsePositiveInt, requireAdmin } from './_utils.js';
+import { parsePositiveInt, requireAdmin, sendJson } from './_utils.js';
 
 export default async function handler(req, res) {
   const auth = requireAdmin(req, res, { method: 'GET', scope: 'audit-read', limit: 120 });
   if (!auth) return;
 
-  const { supabase } = auth;
+  const { supabase, requestId } = auth;
   const page = parsePositiveInt(req.query.page, 1, 1, 10_000);
   const perPage = parsePositiveInt(req.query.per_page, 20, 1, 100);
   const from = (page - 1) * perPage;
@@ -17,10 +17,10 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false })
       .range(from, to);
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return sendJson(res, 500, { error: error.message }, requestId);
     }
-    return res.status(200).json({ logs: data || [], page, perPage });
+    return sendJson(res, 200, { logs: data || [], page, perPage }, requestId);
   } catch {
-    return res.status(500).json({ error: 'Server error' });
+    return sendJson(res, 500, { error: 'Server error' }, requestId);
   }
 }

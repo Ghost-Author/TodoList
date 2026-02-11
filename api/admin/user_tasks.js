@@ -1,13 +1,13 @@
-import { isValidUuid, requireAdmin } from './_utils.js';
+import { isValidUuid, requireAdmin, sendJson } from './_utils.js';
 
 export default async function handler(req, res) {
   const auth = requireAdmin(req, res, { method: 'GET', scope: 'user-tasks-read', limit: 120 });
   if (!auth) return;
 
-  const { supabase } = auth;
+  const { supabase, requestId } = auth;
   const userId = String(req.query.id || '').trim();
   if (!isValidUuid(userId)) {
-    return res.status(400).json({ error: 'Invalid user id' });
+    return sendJson(res, 400, { error: 'Invalid user id' }, requestId);
   }
 
   try {
@@ -18,10 +18,10 @@ export default async function handler(req, res) {
       .order('created_at', { ascending: false })
       .limit(20);
     if (error) {
-      return res.status(500).json({ error: error.message });
+      return sendJson(res, 500, { error: error.message }, requestId);
     }
-    return res.status(200).json({ tasks: data || [] });
+    return sendJson(res, 200, { tasks: data || [] }, requestId);
   } catch {
-    return res.status(500).json({ error: 'Server error' });
+    return sendJson(res, 500, { error: 'Server error' }, requestId);
   }
 }

@@ -11,8 +11,18 @@ export const createAdminClient = (secret) => {
 
   const request = async (url, options = {}) => {
     const res = await fetch(url, { ...options, headers });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || '请求失败');
+    const requestId = res.headers.get('x-request-id');
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+    if (!res.ok) {
+      const id = json?.request_id || requestId;
+      const message = json?.error || '请求失败';
+      throw new Error(id ? `${message} (request_id: ${id})` : message);
+    }
     return json;
   };
 

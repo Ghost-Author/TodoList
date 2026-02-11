@@ -200,6 +200,27 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     return !error;
   };
 
+  const restoreTasks = async (deletedTasks) => {
+    if (!session?.user?.id || !Array.isArray(deletedTasks) || deletedTasks.length === 0) return false;
+    const payload = deletedTasks.map((t) => ({
+      id: t.id,
+      user_id: session.user.id,
+      text: t.text,
+      note: t.note,
+      due_date: t.dueDate || null,
+      priority: t.priority,
+      category: t.category,
+      tags: t.tags || [],
+      order_index: t.orderIndex ?? 0,
+      completed: t.completed,
+      created_at: t.createdAt
+    }));
+    const { error } = await supabase.from('tasks').insert(payload);
+    if (error) return false;
+    setTasks((prev) => [...deletedTasks, ...prev]);
+    return true;
+  };
+
   const exportData = async () => {
     if (!session?.user?.id) return null;
     const userId = session.user.id;
@@ -251,6 +272,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     bulkComplete,
     bulkDelete,
     saveOrder,
+    restoreTasks,
     exportData,
     clearAllData,
     stats
