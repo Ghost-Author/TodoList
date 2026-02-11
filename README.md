@@ -54,6 +54,7 @@ VITE_SENTRY_DSN=
    - `supabase_schema_v5.sql`（转盘基础表）
    - `supabase_schema_v6.sql`（转盘分组字段）
    - `supabase_schema_v7.sql`（转盘分组表）
+   - `supabase_schema_v8.sql`（查询性能索引）
 
 ## Demo 数据
 1. 先注册 demo 账号

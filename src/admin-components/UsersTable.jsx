@@ -3,22 +3,33 @@ import React from 'react';
 const UsersTable = ({
   users,
   page,
+  usersTotal,
+  usersHasMore,
   userSearch,
   setUserSearch,
   loadUsers,
+  applyUserSearch,
+  clearUserSearch,
   exportUsers,
   onDetail,
   usersLoading
 }) => {
-  const filteredUsers = users.filter((u) => (u.email || '').toLowerCase().includes(userSearch.trim().toLowerCase()));
-
   return (
     <div className="mt-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3 text-xs text-[#7b6f8c]">
-        <span>第 {page} 页</span>
+        <span>
+          第 {page} 页
+          {Number.isFinite(usersTotal) ? ` · 共 ${usersTotal} 位用户` : ''}
+        </span>
         <div className="flex gap-2">
           <button onClick={() => loadUsers(Math.max(page - 1, 1))} className="pill-soft px-3 py-1 rounded-full">上一页</button>
-          <button onClick={() => loadUsers(page + 1)} className="pill-soft px-3 py-1 rounded-full">下一页</button>
+          <button
+            onClick={() => loadUsers(page + 1)}
+            disabled={!usersHasMore}
+            className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            下一页
+          </button>
           <button onClick={exportUsers} className="pill-soft px-3 py-1 rounded-full">导出本页</button>
         </div>
       </div>
@@ -26,9 +37,30 @@ const UsersTable = ({
         type="text"
         value={userSearch}
         onChange={(e) => setUserSearch(e.target.value)}
-        placeholder="搜索邮箱"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            applyUserSearch();
+          }
+        }}
+        placeholder="搜索邮箱（回车触发服务端搜索）"
         className="mb-3 w-full text-xs bg-white/80 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
       />
+      <div className="mb-3 flex gap-2">
+        <button
+          type="button"
+          onClick={applyUserSearch}
+          className="pill-soft px-3 py-1 rounded-full text-xs"
+        >
+          搜索
+        </button>
+        <button
+          type="button"
+          onClick={clearUserSearch}
+          className="pill-soft px-3 py-1 rounded-full text-xs"
+        >
+          清空搜索
+        </button>
+      </div>
       <div className="card-soft-sm p-4 overflow-auto">
         <table className="w-full text-xs text-left">
           <thead className="text-[#7b6f8c]">
@@ -40,7 +72,7 @@ const UsersTable = ({
             </tr>
           </thead>
           <tbody className="text-[#3b2e4a]">
-            {filteredUsers.map((u) => (
+            {users.map((u) => (
               <tr key={u.id} className="border-t border-[#ffe4f2]">
                 <td className="py-2">{u.email || '-'}</td>
                 <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
@@ -59,11 +91,6 @@ const UsersTable = ({
             {users.length === 0 && !usersLoading && (
               <tr>
                 <td className="py-4 text-[#7b6f8c]" colSpan="4">暂无数据</td>
-              </tr>
-            )}
-            {users.length > 0 && filteredUsers.length === 0 && !usersLoading && (
-              <tr>
-                <td className="py-4 text-[#7b6f8c]" colSpan="4">没有匹配的邮箱，请清空搜索条件</td>
               </tr>
             )}
           </tbody>

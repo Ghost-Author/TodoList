@@ -15,6 +15,8 @@ const AdminApp = () => {
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('summary');
   const [users, setUsers] = useState([]);
+  const [usersTotal, setUsersTotal] = useState(null);
+  const [usersHasMore, setUsersHasMore] = useState(false);
   const [page, setPage] = useState(1);
   const [usersLoading, setUsersLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -22,6 +24,7 @@ const AdminApp = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [resetLink, setResetLink] = useState('');
   const [userSearch, setUserSearch] = useState('');
+  const [usersQuery, setUsersQuery] = useState('');
   const [userTasks, setUserTasks] = useState([]);
   const [banReason, setBanReason] = useState('');
   const [auditLogs, setAuditLogs] = useState([]);
@@ -52,20 +55,34 @@ const AdminApp = () => {
     }
   };
 
-  const loadUsers = async (targetPage = 1) => {
+  const loadUsers = async (targetPage = 1, targetQuery = usersQuery) => {
     setError('');
     setRequestId('');
     setUsersLoading(true);
     try {
       const api = createAdminClient(secret);
-      const json = await api.getUsers(targetPage, 20);
+      const json = await api.getUsers(targetPage, 20, targetQuery);
       setUsers(json.users || []);
       setPage(targetPage);
+      setUsersTotal(Number.isFinite(json.total) ? json.total : null);
+      setUsersHasMore(Boolean(json.has_more));
     } catch (err) {
       handleRequestError(err);
     } finally {
       setUsersLoading(false);
     }
+  };
+
+  const applyUserSearch = async () => {
+    const q = userSearch.trim();
+    setUsersQuery(q);
+    await loadUsers(1, q);
+  };
+
+  const clearUserSearch = async () => {
+    setUserSearch('');
+    setUsersQuery('');
+    await loadUsers(1, '');
   };
 
   const exportUsers = () => {
@@ -152,7 +169,7 @@ const AdminApp = () => {
   useEffect(() => {
     if (tab !== 'users') return;
     if (!secret.trim()) return;
-    loadUsers(1);
+    loadUsers(1, usersQuery);
   }, [tab]);
 
   return (
@@ -169,7 +186,7 @@ const AdminApp = () => {
               placeholder="Admin Secret"
               className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
             />
-            <button onClick={() => (tab === 'summary' ? loadSummary() : tab === 'users' ? loadUsers(page) : loadAudit(auditPage))} className="btn-soft px-6 rounded-xl font-bold">
+            <button onClick={() => (tab === 'summary' ? loadSummary() : tab === 'users' ? loadUsers(page, usersQuery) : loadAudit(auditPage))} className="btn-soft px-6 rounded-xl font-bold">
               {loading || usersLoading || auditLoading ? '加载中...' : '查看'}
             </button>
           </div>
@@ -194,9 +211,13 @@ const AdminApp = () => {
             <UsersTable
               users={users}
               page={page}
+              usersTotal={usersTotal}
+              usersHasMore={usersHasMore}
               userSearch={userSearch}
               setUserSearch={setUserSearch}
               loadUsers={loadUsers}
+              applyUserSearch={applyUserSearch}
+              clearUserSearch={clearUserSearch}
               exportUsers={exportUsers}
               onDetail={(u) => {
                 setSelectedUser(u);

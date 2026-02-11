@@ -28,7 +28,8 @@ export const createAdminClient = (secret) => {
 
   return {
     getSummary: () => request('/api/admin/summary', { method: 'POST' }),
-    getUsers: (page = 1, perPage = 20) => request(`/api/admin/users?page=${page}&per_page=${perPage}`, { method: 'GET' }),
+    getUsers: (page = 1, perPage = 20, q = '') =>
+      request(`/api/admin/users?page=${page}&per_page=${perPage}&q=${encodeURIComponent(String(q || '').trim())}`, { method: 'GET' }),
     getUser: (id) => request(`/api/admin/user?id=${id}`, { method: 'GET' }),
     getUserTasks: (id) => request(`/api/admin/user_tasks?id=${id}`, { method: 'GET' }),
     getAudit: (page = 1, perPage = 20) => request(`/api/admin/audit?page=${page}&per_page=${perPage}`, { method: 'GET' }),
