@@ -37,6 +37,8 @@ const App = () => {
   const [toast, setToast] = useState(null);
   const [undoData, setUndoData] = useState(null);
   const undoTimerRef = useRef(null);
+  const loadMoreAnchorRef = useRef(null);
+  const lastAutoLoadAtRef = useRef(0);
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -322,6 +324,29 @@ const App = () => {
 
   const hasMoreTasks = !canDrag && filteredTasks.length > visibleCount;
 
+  useEffect(() => {
+    if (view !== 'tasks' || canDrag || !hasMoreTasks) return;
+    const anchor = loadMoreAnchorRef.current;
+    if (!anchor) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+
+        const now = Date.now();
+        if (now - lastAutoLoadAtRef.current < 220) return;
+        lastAutoLoadAtRef.current = now;
+
+        setVisibleCount((prev) => Math.min(prev + 30, filteredTasks.length));
+      },
+      { root: null, rootMargin: '0px 0px 260px 0px', threshold: 0.05 }
+    );
+
+    observer.observe(anchor);
+    return () => observer.disconnect();
+  }, [view, canDrag, hasMoreTasks, filteredTasks.length]);
+
   if (!supabase) {
     return (
       <div className="min-h-screen text-slate-900 pb-24">
@@ -500,15 +525,17 @@ const App = () => {
                 当前显示 {displayedTasks.length} / {filteredTasks.length} 条任务
               </p>
               {hasMoreTasks && (
-                <button
-                  type="button"
-                  onClick={() => setVisibleCount((prev) => prev + 30)}
-                  className="self-start md:self-auto text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.30)]"
-                >
-                  加载更多
-                </button>
+                <span className="text-[11px] text-[#7b6f8c]">下滑到底部会自动加载更多</span>
               )}
             </div>
+            {hasMoreTasks && (
+              <div
+                ref={loadMoreAnchorRef}
+                className="h-10 mt-2 text-[11px] text-[#7b6f8c] flex items-center justify-center"
+              >
+                正在等待滚动触底...
+              </div>
+            )}
           </>
         ) : (
           <Suspense fallback={<div className="text-sm text-[#7b6f8c]">加载统计中...</div>}>
