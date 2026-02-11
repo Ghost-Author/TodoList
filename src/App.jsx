@@ -701,6 +701,7 @@ const App = () => {
               canDrag={canDrag}
               selectedCount={selectedIds.size}
               filteredCount={filteredTasks.length}
+              filteredTasks={filteredTasks}
             />
 
             <TaskList

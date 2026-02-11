@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 const FiltersBar = ({
   filter,
@@ -13,10 +13,24 @@ const FiltersBar = ({
   bulkDelete,
   canDrag,
   selectedCount,
-  filteredCount
+  filteredCount,
+  filteredTasks
 }) => {
   const noSelection = !selectedCount;
   const noFiltered = !filteredCount;
+  const topTags = useMemo(() => {
+    const counter = new Map();
+    (filteredTasks || []).forEach((task) => {
+      (task.tags || []).forEach((tag) => {
+        const key = String(tag || '').trim();
+        if (!key) return;
+        counter.set(key, (counter.get(key) || 0) + 1);
+      });
+    });
+    return Array.from(counter.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+  }, [filteredTasks]);
 
   return (
     <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
@@ -60,6 +74,22 @@ const FiltersBar = ({
           清除筛选
         </button>
       </div>
+      {topTags.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] font-black text-[#7b6f8c] uppercase tracking-wider">热门标签</span>
+          {topTags.map(([tag, count]) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => setSearchQuery(tag)}
+              className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+              title={`按标签 ${tag} 过滤`}
+            >
+              #{tag} · {count}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
         <span className="pill-soft px-3 py-1 rounded-full text-[#7b6f8c]">
           已选 {selectedCount || 0} 条
