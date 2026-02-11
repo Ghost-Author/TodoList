@@ -8,6 +8,8 @@ const TaskList = ({
   categories,
   searchQuery,
   groupCompleted,
+  completedCollapsed,
+  setCompletedCollapsed,
   toggleSelect,
   selectedIds,
   toggleTask,
@@ -22,7 +24,6 @@ const TaskList = ({
 }) => {
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
-  const [completedCollapsed, setCompletedCollapsed] = useState(true);
   const [editDraft, setEditDraft] = useState({
     input: '',
     note: '',

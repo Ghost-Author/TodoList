@@ -60,6 +60,7 @@ const App = () => {
   const [isManagingCats, setIsManagingCats] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
   const [addTaskLoading, setAddTaskLoading] = useState(false);
+  const [completedCollapsed, setCompletedCollapsed] = useState(true);
 
   const {
     session,
@@ -232,6 +233,9 @@ const App = () => {
       if (parsed.view === 'tasks' || parsed.view === 'stats') {
         setView(parsed.view);
       }
+      if (typeof parsed.completedCollapsed === 'boolean') {
+        setCompletedCollapsed(parsed.completedCollapsed);
+      }
       if (typeof parsed.category === 'string' && parsed.category.trim()) {
         preferredCategoryRef.current = parsed.category.trim();
       }
@@ -282,12 +286,12 @@ const App = () => {
     try {
       localStorage.setItem(
         `cloud_todo_prefs:${userId}`,
-        JSON.stringify({ filter, sortBy, view, category })
+        JSON.stringify({ filter, sortBy, view, category, completedCollapsed })
       );
     } catch {
       // Ignore localStorage failures.
     }
-  }, [session, filter, sortBy, view, category]);
+  }, [session, filter, sortBy, view, category, completedCollapsed]);
 
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
@@ -719,6 +723,8 @@ const App = () => {
               categories={categories}
               searchQuery={searchQuery}
               groupCompleted={filter === 'all' && !searchQuery.trim()}
+              completedCollapsed={completedCollapsed}
+              setCompletedCollapsed={setCompletedCollapsed}
               toggleSelect={toggleSelect}
               selectedIds={selectedIds}
               toggleTask={toggleTask}
