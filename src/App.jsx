@@ -223,7 +223,7 @@ const App = () => {
       const raw = localStorage.getItem(`cloud_todo_prefs:${userId}`);
       if (!raw) return;
       const parsed = JSON.parse(raw);
-      if (parsed.filter === 'all' || parsed.filter === 'active' || parsed.filter === 'completed') {
+      if (parsed.filter === 'all' || parsed.filter === 'active' || parsed.filter === 'completed' || parsed.filter === 'overdue') {
         setFilter(parsed.filter);
       }
       if (typeof parsed.sortBy === 'string') {

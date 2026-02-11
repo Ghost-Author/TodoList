@@ -13,10 +13,21 @@ export const useTaskBoard = ({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [dragId, setDragId] = useState(null);
 
+  const isOverdueDate = (value) => {
+    if (!value) return false;
+    const due = new Date(value);
+    if (Number.isNaN(due.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    due.setHours(0, 0, 0, 0);
+    return due.getTime() < today.getTime();
+  };
+
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (filter === 'active') result = tasks.filter((t) => !t.completed);
     if (filter === 'completed') result = tasks.filter((t) => t.completed);
+    if (filter === 'overdue') result = tasks.filter((t) => !t.completed && isOverdueDate(t.dueDate));
     if (deferredQuery.trim()) {
       const q = deferredQuery.trim().toLowerCase();
       result = result.filter((t) => {

@@ -36,11 +36,17 @@ const FiltersBar = ({
   return (
     <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
       <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar pb-1">
-        {['all', 'active', 'completed'].map((f) => (
+        {['all', 'active', 'overdue', 'completed'].map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors flex items-center gap-1 ${filter === f ? 'text-[#ff6fb1]' : 'text-slate-400 hover:text-[#ff6fb1]'}`}>
-            <span>{f === 'all' ? '全部任务' : f === 'active' ? '进行中' : '已归档'}</span>
+            <span>{f === 'all' ? '全部任务' : f === 'active' ? '进行中' : f === 'overdue' ? '逾期' : '已归档'}</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${filter === f ? 'bg-white/90 border-[#ffd2e7] text-[#ff6fb1]' : 'bg-white/70 border-[#efe3f3] text-slate-400'}`}>
-              {f === 'all' ? taskCounts?.all || 0 : f === 'active' ? taskCounts?.active || 0 : taskCounts?.completed || 0}
+              {f === 'all'
+                ? taskCounts?.all || 0
+                : f === 'active'
+                  ? taskCounts?.active || 0
+                  : f === 'overdue'
+                    ? taskCounts?.overdue || 0
+                    : taskCounts?.completed || 0}
             </span>
             {filter === f && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#ff8acb] rounded-full" />}
           </button>
