@@ -32,6 +32,22 @@ export const useWheel = ({ session, createTask, priority, category }) => {
     }
   };
 
+  const clearWheelData = async () => {
+    if (!session?.user?.id) return false;
+    const userId = session.user.id;
+
+    const [optRes, histRes, groupRes] = await Promise.all([
+      supabase.from('wheel_options').delete().eq('user_id', userId),
+      supabase.from('wheel_history').delete().eq('user_id', userId),
+      supabase.from('wheel_groups').delete().eq('user_id', userId)
+    ]);
+
+    if (optRes.error || histRes.error || groupRes.error) return false;
+
+    resetWheelData();
+    return true;
+  };
+
   useEffect(() => {
     if (!session?.user?.id) {
       resetWheelData();
@@ -282,6 +298,7 @@ export const useWheel = ({ session, createTask, priority, category }) => {
     clearWheelHistory,
     spinWheel,
     createTaskFromWheel,
-    resetWheelData
+    resetWheelData,
+    clearWheelData
   };
 };

@@ -107,7 +107,7 @@ const App = () => {
     clearWheelHistory,
     spinWheel,
     createTaskFromWheel,
-    resetWheelData
+    clearWheelData
   } = useWheel({ session, createTask, priority, category });
 
   const {
@@ -306,9 +306,8 @@ const App = () => {
   };
 
   const clearAllData = async () => {
-    const ok = await clearAllDataCore();
-    if (!ok) return;
-    resetWheelData();
+    const [taskOk, wheelOk] = await Promise.all([clearAllDataCore(), clearWheelData()]);
+    if (!taskOk || !wheelOk) return;
     resetBoardState();
   };
 
