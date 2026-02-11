@@ -41,6 +41,8 @@ const App = () => {
   const lastAutoLoadAtRef = useRef(0);
   const taskInputRef = useRef(null);
   const draftLoadedUserRef = useRef('');
+  const prefsLoadedUserRef = useRef('');
+  const preferredCategoryRef = useRef('');
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -165,6 +167,8 @@ const App = () => {
     setExpandedId(null);
     resetBoardState();
     draftLoadedUserRef.current = '';
+    prefsLoadedUserRef.current = '';
+    preferredCategoryRef.current = '';
   }, [session, setTasks, setCategories, resetBoardState]);
 
   useEffect(() => {
@@ -211,6 +215,42 @@ const App = () => {
   useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) return;
+    if (prefsLoadedUserRef.current === userId) return;
+    prefsLoadedUserRef.current = userId;
+
+    try {
+      const raw = localStorage.getItem(`cloud_todo_prefs:${userId}`);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed.filter === 'all' || parsed.filter === 'active' || parsed.filter === 'completed') {
+        setFilter(parsed.filter);
+      }
+      if (typeof parsed.sortBy === 'string') {
+        setSortBy(parsed.sortBy);
+      }
+      if (parsed.view === 'tasks' || parsed.view === 'stats') {
+        setView(parsed.view);
+      }
+      if (typeof parsed.category === 'string' && parsed.category.trim()) {
+        preferredCategoryRef.current = parsed.category.trim();
+      }
+    } catch {
+      localStorage.removeItem(`cloud_todo_prefs:${userId}`);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const preferred = preferredCategoryRef.current;
+    if (!preferred || categories.length === 0) return;
+    if (categories.includes(preferred)) {
+      setCategory(preferred);
+    }
+    preferredCategoryRef.current = '';
+  }, [categories, setCategory]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
     const key = `cloud_todo_draft:${userId}`;
     const hasDraft = Boolean(
       input.trim() || note.trim() || dueDate || (tags && tags.length > 0) || category
@@ -233,6 +273,20 @@ const App = () => {
       // Ignore localStorage failures (private mode / quota exceeded).
     }
   }, [session, input, note, dueDate, priority, tags, category]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    if (prefsLoadedUserRef.current !== userId) return;
+    try {
+      localStorage.setItem(
+        `cloud_todo_prefs:${userId}`,
+        JSON.stringify({ filter, sortBy, view, category })
+      );
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }, [session, filter, sortBy, view, category]);
 
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
