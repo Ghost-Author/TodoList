@@ -12,6 +12,21 @@ const DEFAULT_COLORS = [
   '#ffd1dc'
 ];
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getLabelLayout = (segmentDeg, labelLength) => {
+  const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
+  const textPenalty = Math.max(0, Math.ceil((labelLength - 8) / 6));
+  const fontSize = clamp(baseFont - textPenalty, 6, 11);
+
+  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
+  const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
+  const maxWidth = clamp(Math.round(arcLength * 0.9), 38, 100);
+  const lineClamp = segmentDeg < 18 ? 1 : 2;
+
+  return { fontSize, radius, maxWidth, lineClamp };
+};
+
 const WheelPanel = ({
   groups,
   currentGroup,
@@ -183,9 +198,7 @@ const WheelPanel = ({
               {options.map((opt, idx) => {
                 const step = 360 / options.length;
                 const deg = idx * step + step / 2;
-                const len = opt.label.length;
-                const fontSize = len > 16 ? 7 : len > 12 ? 8 : len > 8 ? 9 : 10;
-                const maxWidth = len > 16 ? 52 : len > 12 ? 60 : len > 8 ? 68 : 76;
+                const layout = getLabelLayout(step, opt.label.length);
                 return (
                   <div
                     key={opt.id}
@@ -198,12 +211,13 @@ const WheelPanel = ({
                     <span
                       className="font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/75 border border-[#ffe4f2] text-center shadow-sm"
                       style={{
-                        transform: 'translateY(-72px) rotate(-90deg)',
-                        fontSize: `${fontSize}px`,
-                        maxWidth: `${maxWidth}px`,
+                        transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
+                        fontSize: `${layout.fontSize}px`,
+                        maxWidth: `${layout.maxWidth}px`,
                         lineHeight: 1.15,
+                        wordBreak: 'break-word',
                         display: '-webkit-box',
-                        WebkitLineClamp: 2,
+                        WebkitLineClamp: layout.lineClamp,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis'
