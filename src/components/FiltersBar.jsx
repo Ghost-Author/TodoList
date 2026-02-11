@@ -4,6 +4,8 @@ const FiltersBar = ({
   filter,
   setFilter,
   taskCounts,
+  taskDensity,
+  setTaskDensity,
   searchQuery,
   setSearchQuery,
   sortBy,
@@ -41,9 +43,27 @@ const FiltersBar = ({
   return (
     <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
       <div className="rounded-xl border border-[#ffe4f2] bg-white/80 p-3">
-        <div className="flex items-center justify-between text-[11px] font-bold text-[#7b6f8c] mb-2">
+        <div className="flex items-center justify-between text-[11px] font-bold text-[#7b6f8c] mb-2 gap-3">
           <span>任务进度</span>
-          <span>{completedPercent}% 已完成</span>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-full border border-[#ffd9ec] bg-white/80 p-0.5">
+              <button
+                type="button"
+                onClick={() => setTaskDensity('cozy')}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${taskDensity === 'cozy' ? 'bg-[#ff8acb] text-white' : 'text-[#7b6f8c]'}`}
+              >
+                舒适
+              </button>
+              <button
+                type="button"
+                onClick={() => setTaskDensity('compact')}
+                className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${taskDensity === 'compact' ? 'bg-[#ff8acb] text-white' : 'text-[#7b6f8c]'}`}
+              >
+                紧凑
+              </button>
+            </div>
+            <span>{completedPercent}% 已完成</span>
+          </div>
         </div>
         <div className="h-2 w-full rounded-full bg-[#f7eaf1] overflow-hidden">
           <div className="h-full bg-gradient-to-r from-[#ff8acb] to-[#8fd3ff]" style={{ width: `${completedPercent}%` }} />

@@ -7,6 +7,7 @@ const TaskList = ({
   onResetFilters,
   categories,
   searchQuery,
+  taskDensity,
   groupCompleted,
   completedCollapsed,
   setCompletedCollapsed,
@@ -22,6 +23,7 @@ const TaskList = ({
   handleDragStart,
   handleDrop
 }) => {
+  const compact = taskDensity === 'compact';
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editDraft, setEditDraft] = useState({
@@ -151,16 +153,16 @@ const TaskList = ({
           onDragOver={(e) => canDrag && e.preventDefault()}
           onDrop={() => handleDrop(task.id)}
         >
-          <div className="flex items-center gap-4 p-4">
+          <div className={`flex items-center ${compact ? 'gap-3 p-3' : 'gap-4 p-4'}`}>
             <button
               onClick={() => toggleSelect(task.id)}
-              className={`h-5 w-5 rounded-md border flex items-center justify-center text-xs font-black ${selectedIds.has(task.id) ? 'bg-[#ff8acb] text-white border-[#ff8acb]' : 'bg-white border-[#ffe4f2] text-[#7b6f8c]'}`}
+              className={`${compact ? 'h-[18px] w-[18px]' : 'h-5 w-5'} rounded-md border flex items-center justify-center text-xs font-black ${selectedIds.has(task.id) ? 'bg-[#ff8acb] text-white border-[#ff8acb]' : 'bg-white border-[#ffe4f2] text-[#7b6f8c]'}`}
               title="选择任务"
             >
               {selectedIds.has(task.id) ? '✓' : ''}
             </button>
             <button onClick={() => toggleTask(task.id)} className={`flex-shrink-0 transition-transform active:scale-90 ${task.completed ? 'text-[#ff6fb1]' : 'text-slate-300 hover:text-[#ff8acb]'}`}>
-              {task.completed ? <CheckCircle2 className="w-7 h-7" /> : <Circle className="w-7 h-7" />}
+              {task.completed ? <CheckCircle2 className={compact ? 'w-6 h-6' : 'w-7 h-7'} /> : <Circle className={compact ? 'w-6 h-6' : 'w-7 h-7'} />}
             </button>
 
             <div className="flex-grow min-w-0 cursor-pointer" onClick={() => setExpandedId(expandedId === task.id ? null : task.id)}>
@@ -201,12 +203,12 @@ const TaskList = ({
                   </span>
                 )}
               </div>
-              <p className={`text-base font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>
+              <p className={`${compact ? 'text-[15px]' : 'text-base'} font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>
                 {renderHighlighted(task.text)}
               </p>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className={`flex items-center ${compact ? 'gap-0.5' : 'gap-1'}`}>
               <button onClick={() => setExpandedId(expandedId === task.id ? null : task.id)} className={`p-2 transition-colors ${expandedId === task.id ? 'text-[#ff6fb1]' : 'text-slate-300'}`}>
                 {expandedId === task.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>

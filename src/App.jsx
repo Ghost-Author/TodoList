@@ -61,6 +61,7 @@ const App = () => {
   const [newCatInput, setNewCatInput] = useState('');
   const [addTaskLoading, setAddTaskLoading] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
+  const [taskDensity, setTaskDensity] = useState('cozy');
 
   const {
     session,
@@ -236,6 +237,9 @@ const App = () => {
       if (typeof parsed.completedCollapsed === 'boolean') {
         setCompletedCollapsed(parsed.completedCollapsed);
       }
+      if (parsed.taskDensity === 'cozy' || parsed.taskDensity === 'compact') {
+        setTaskDensity(parsed.taskDensity);
+      }
       if (typeof parsed.category === 'string' && parsed.category.trim()) {
         preferredCategoryRef.current = parsed.category.trim();
       }
@@ -286,12 +290,12 @@ const App = () => {
     try {
       localStorage.setItem(
         `cloud_todo_prefs:${userId}`,
-        JSON.stringify({ filter, sortBy, view, category, completedCollapsed })
+        JSON.stringify({ filter, sortBy, view, category, completedCollapsed, taskDensity })
       );
     } catch {
       // Ignore localStorage failures.
     }
-  }, [session, filter, sortBy, view, category, completedCollapsed]);
+  }, [session, filter, sortBy, view, category, completedCollapsed, taskDensity]);
 
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
@@ -702,6 +706,8 @@ const App = () => {
               filter={filter}
               setFilter={setFilter}
               taskCounts={taskCounts}
+              taskDensity={taskDensity}
+              setTaskDensity={setTaskDensity}
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               sortBy={sortBy}
@@ -722,6 +728,7 @@ const App = () => {
               onResetFilters={resetTaskFilters}
               categories={categories}
               searchQuery={searchQuery}
+              taskDensity={taskDensity}
               groupCompleted={filter === 'all' && !searchQuery.trim()}
               completedCollapsed={completedCollapsed}
               setCompletedCollapsed={setCompletedCollapsed}
