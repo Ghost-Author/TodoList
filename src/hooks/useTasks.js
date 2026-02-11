@@ -167,6 +167,46 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     return target || null;
   };
 
+  const updateTask = async (id, payload) => {
+    if (!session?.user?.id || !id) return null;
+    const text = String(payload?.input || '').trim();
+    if (!text) return null;
+    const nextTags = Array.isArray(payload?.tags) ? payload.tags.slice(0, 20) : [];
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        text,
+        note: String(payload?.note || '').trim(),
+        due_date: payload?.dueDate || null,
+        priority: payload?.priority || 'medium',
+        category: payload?.category || '',
+        tags: nextTags
+      })
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+      .select('id, text, note, due_date, priority, category, tags, order_index, completed, created_at')
+      .single();
+
+    if (error || !data) return null;
+
+    const updated = {
+      id: data.id,
+      text: data.text,
+      note: data.note || '',
+      dueDate: data.due_date || '',
+      priority: data.priority || 'medium',
+      category: data.category || '',
+      tags: data.tags || [],
+      orderIndex: data.order_index ?? 0,
+      completed: data.completed,
+      createdAt: data.created_at
+    };
+
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
+    return updated;
+  };
+
   const bulkComplete = async (ids, completed) => {
     if (!session?.user?.id || ids.length === 0) return false;
     const { error } = await supabase
@@ -272,6 +312,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     removeCategory,
     toggleTask,
     deleteTask,
+    updateTask,
     bulkComplete,
     bulkDelete,
     saveOrder,

@@ -85,6 +85,7 @@ const App = () => {
     removeCategory,
     toggleTask,
     deleteTask: removeTask,
+    updateTask: patchTask,
     bulkComplete: bulkCompleteTasks,
     bulkDelete: bulkDeleteTasks,
     saveOrder,
@@ -371,6 +372,18 @@ const App = () => {
       setUndoData(null);
       setToast(null);
     }, 6000);
+  };
+
+  const editTask = async (id, payload) => {
+    const updated = await patchTask(id, payload);
+    if (!updated) {
+      setToast({ message: '保存失败，请重试' });
+      setTimeout(() => setToast(null), 1500);
+      return false;
+    }
+    setToast({ message: '任务已更新' });
+    setTimeout(() => setToast(null), 1200);
+    return true;
   };
 
   const bulkComplete = async (completed) => {
@@ -694,6 +707,7 @@ const App = () => {
               filteredTasks={displayedTasks}
               emptyMode={emptyMode}
               onResetFilters={resetTaskFilters}
+              categories={categories}
               toggleSelect={toggleSelect}
               selectedIds={selectedIds}
               toggleTask={toggleTask}
@@ -702,6 +716,7 @@ const App = () => {
               priorities={priorities}
               isOverdue={isOverdue}
               deleteTask={deleteTask}
+              editTask={editTask}
               canDrag={canDrag}
               handleDragStart={handleDragStart}
               handleDrop={handleDrop}

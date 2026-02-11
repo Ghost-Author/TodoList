@@ -1,10 +1,11 @@
-import React from 'react';
-import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X } from 'lucide-react';
 
 const TaskList = ({
   filteredTasks,
   emptyMode,
   onResetFilters,
+  categories,
   toggleSelect,
   selectedIds,
   toggleTask,
@@ -13,10 +14,23 @@ const TaskList = ({
   priorities,
   isOverdue,
   deleteTask,
+  editTask,
   canDrag,
   handleDragStart,
   handleDrop
 }) => {
+  const [editingId, setEditingId] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editDraft, setEditDraft] = useState({
+    input: '',
+    note: '',
+    dueDate: '',
+    priority: 'medium',
+    category: '',
+    tags: []
+  });
+  const [editTagInput, setEditTagInput] = useState('');
+
   if (filteredTasks.length === 0) {
     const isFilteredEmpty = emptyMode === 'filtered';
     return (
@@ -36,6 +50,44 @@ const TaskList = ({
       </div>
     );
   }
+
+  const startEdit = (task) => {
+    setEditingId(task.id);
+    setEditDraft({
+      input: task.text || '',
+      note: task.note || '',
+      dueDate: task.dueDate || '',
+      priority: task.priority || 'medium',
+      category: task.category || categories?.[0] || '',
+      tags: Array.isArray(task.tags) ? task.tags : []
+    });
+    setEditTagInput('');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditSaving(false);
+    setEditTagInput('');
+  };
+
+  const addEditTag = () => {
+    const val = editTagInput.trim();
+    if (!val) return;
+    if (editDraft.tags.includes(val)) return;
+    setEditDraft((prev) => ({ ...prev, tags: [...prev.tags, val] }));
+    setEditTagInput('');
+  };
+
+  const saveEdit = async (taskId) => {
+    if (editSaving) return;
+    setEditSaving(true);
+    const ok = await editTask(taskId, editDraft);
+    setEditSaving(false);
+    if (ok) {
+      setEditingId(null);
+      setEditTagInput('');
+    }
+  };
 
   const renderTask = (task) => (
         <div
@@ -100,18 +152,134 @@ const TaskList = ({
           {expandedId === task.id && (
             <div className="px-4 pb-4 pt-0 border-t border-slate-50 animate-in slide-in-from-top-2 duration-200">
               <div className="bg-white/70 rounded-xl p-4 mt-2 border border-[#ffe4f2]">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1">
-                  <StickyNote className="w-3 h-3" /> 详细备忘
-                </h4>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-                  {task.note || '暂无备注内容'}
-                </p>
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                  <span className="text-[10px] font-medium text-slate-400">录入时间: {new Date(task.createdAt).toLocaleString()}</span>
-                  <div className="flex gap-2">
-                    <span className="text-[10px] font-black px-2 py-0.5 pill-soft rounded-full">{task.category}</span>
+                {editingId === task.id ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
+                        <Pencil className="w-3 h-3" /> 编辑任务
+                      </h4>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={cancelEdit}
+                          className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+                        >
+                          <X className="w-3 h-3 inline" /> 取消
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => saveEdit(task.id)}
+                          disabled={editSaving || !editDraft.input.trim()}
+                          className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Save className="w-3 h-3 inline" /> {editSaving ? '保存中...' : '保存'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <input
+                      type="text"
+                      value={editDraft.input}
+                      onChange={(e) => setEditDraft((prev) => ({ ...prev, input: e.target.value }))}
+                      className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      placeholder="任务标题"
+                    />
+                    <textarea
+                      value={editDraft.note}
+                      onChange={(e) => setEditDraft((prev) => ({ ...prev, note: e.target.value }))}
+                      className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] min-h-[88px] resize-none"
+                      placeholder="详细备注"
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                      <input
+                        type="date"
+                        value={editDraft.dueDate}
+                        onChange={(e) => setEditDraft((prev) => ({ ...prev, dueDate: e.target.value }))}
+                        className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      />
+                      <select
+                        value={editDraft.priority}
+                        onChange={(e) => setEditDraft((prev) => ({ ...prev, priority: e.target.value }))}
+                        className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      >
+                        {Object.entries(priorities).map(([k, v]) => (
+                          <option key={k} value={k}>{v.label}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={editDraft.category}
+                        onChange={(e) => setEditDraft((prev) => ({ ...prev, category: e.target.value }))}
+                        className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      >
+                        <option value="">未分类</option>
+                        {Array.from(new Set([editDraft.category, ...(categories || [])].filter(Boolean))).map((c) => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editTagInput}
+                        onChange={(e) => setEditTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addEditTag();
+                          }
+                        }}
+                        placeholder="输入标签后回车"
+                        className="flex-1 text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      />
+                      <button type="button" onClick={addEditTag} className="pill-soft px-3 py-1 rounded-full text-xs font-bold">添加标签</button>
+                    </div>
+                    {editDraft.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {editDraft.tags.map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setEditDraft((prev) => ({ ...prev, tags: prev.tags.filter((tag) => tag !== t) }))}
+                            className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+                          >
+                            #{t} ×
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[10px] font-black text-slate-400 uppercase mb-2 flex items-center gap-1">
+                        <StickyNote className="w-3 h-3" /> 详细备忘
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(task)}
+                        className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+                      >
+                        <Pencil className="w-3 h-3 inline" /> 编辑
+                      </button>
+                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                      {task.note || '暂无备注内容'}
+                    </p>
+                    <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                      <span className="text-[10px] font-medium text-slate-400">录入时间: {new Date(task.createdAt).toLocaleString()}</span>
+                      <div className="flex gap-2">
+                        <span className="text-[10px] font-black px-2 py-0.5 pill-soft rounded-full">{task.category}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
+                {editingId !== task.id && (
+                  <div className="mt-2 text-[10px] text-slate-400">
+                    标签：{(task.tags || []).length > 0 ? task.tags.join(' / ') : '无'}
+                  </div>
+                )}
               </div>
             </div>
           )}
