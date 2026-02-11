@@ -1,26 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const adminSecret = process.env.ADMIN_SECRET;
+import { parsePositiveInt, requireAdmin } from './_utils.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-  if (!adminSecret || req.headers['x-admin-secret'] !== adminSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(500).json({ error: 'Server missing Supabase credentials' });
-  }
+  const auth = requireAdmin(req, res, { method: 'GET', scope: 'users-read', limit: 120 });
+  if (!auth) return;
 
-  const page = Math.max(parseInt(req.query.page || '1', 10), 1);
-  const perPage = Math.min(Math.max(parseInt(req.query.per_page || '20', 10), 1), 100);
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
+  const { supabase } = auth;
+  const page = parsePositiveInt(req.query.page, 1, 1, 10_000);
+  const perPage = parsePositiveInt(req.query.per_page, 20, 1, 100);
 
   try {
     const { data, error } = await supabase.auth.admin.listUsers({
@@ -37,7 +23,7 @@ export default async function handler(req, res) {
       last_sign_in_at: u.last_sign_in_at
     }));
     return res.status(200).json({ users, page, perPage });
-  } catch (err) {
+  } catch {
     return res.status(500).json({ error: 'Server error' });
   }
 }

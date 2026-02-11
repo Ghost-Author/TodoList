@@ -1,28 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const adminSecret = process.env.ADMIN_SECRET;
+import { isValidUuid, requireAdmin } from './_utils.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-  if (!adminSecret || req.headers['x-admin-secret'] !== adminSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(500).json({ error: 'Server missing Supabase credentials' });
-  }
+  const auth = requireAdmin(req, res, { method: 'GET', scope: 'user-tasks-read', limit: 120 });
+  if (!auth) return;
 
-  const userId = req.query.id;
-  if (!userId) {
-    return res.status(400).json({ error: 'Missing user id' });
+  const { supabase } = auth;
+  const userId = String(req.query.id || '').trim();
+  if (!isValidUuid(userId)) {
+    return res.status(400).json({ error: 'Invalid user id' });
   }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
 
   try {
     const { data, error } = await supabase
@@ -35,7 +21,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: error.message });
     }
     return res.status(200).json({ tasks: data || [] });
-  } catch (err) {
+  } catch {
     return res.status(500).json({ error: 'Server error' });
   }
 }

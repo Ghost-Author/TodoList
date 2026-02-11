@@ -1,7 +1,12 @@
 export const createAdminClient = (secret) => {
+  const normalizedSecret = String(secret || '').trim();
+  if (!normalizedSecret) {
+    throw new Error('请输入 Admin Secret');
+  }
+
   const headers = {
     'Content-Type': 'application/json',
-    'x-admin-secret': secret
+    'x-admin-secret': normalizedSecret
   };
 
   const request = async (url, options = {}) => {
@@ -17,17 +22,17 @@ export const createAdminClient = (secret) => {
     getUser: (id) => request(`/api/admin/user?id=${id}`, { method: 'GET' }),
     getUserTasks: (id) => request(`/api/admin/user_tasks?id=${id}`, { method: 'GET' }),
     getAudit: (page = 1, perPage = 20) => request(`/api/admin/audit?page=${page}&per_page=${perPage}`, { method: 'GET' }),
-    banUser: (id, reason, adminEmail) => request('/api/admin/ban', {
+    banUser: (id, reason) => request('/api/admin/ban', {
       method: 'POST',
-      body: JSON.stringify({ id, action: 'ban', reason, adminEmail })
+      body: JSON.stringify({ id, action: 'ban', reason })
     }),
-    unbanUser: (id, adminEmail) => request('/api/admin/ban', {
+    unbanUser: (id) => request('/api/admin/ban', {
       method: 'POST',
-      body: JSON.stringify({ id, action: 'unban', adminEmail })
+      body: JSON.stringify({ id, action: 'unban' })
     }),
-    resetPassword: (email, adminEmail) => request('/api/admin/reset', {
+    resetPassword: (email) => request('/api/admin/reset', {
       method: 'POST',
-      body: JSON.stringify({ email, adminEmail })
+      body: JSON.stringify({ email })
     })
   };
 };

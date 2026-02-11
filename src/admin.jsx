@@ -114,8 +114,8 @@ const AdminApp = () => {
     try {
       const api = createAdminClient(secret);
       const json = isBanned
-        ? await api.unbanUser(id, selectedUser?.email || null)
-        : await api.banUser(id, banReason, selectedUser?.email || null);
+        ? await api.unbanUser(id)
+        : await api.banUser(id, banReason);
       setUserDetail((prev) => prev ? { ...prev, ban_expires_at: json.ban_expires_at } : prev);
       setBanReason('');
     } catch (err) {
@@ -128,7 +128,7 @@ const AdminApp = () => {
     setResetLink('');
     try {
       const api = createAdminClient(secret);
-      const json = await api.resetPassword(email, selectedUser?.email || null);
+      const json = await api.resetPassword(email);
       setResetLink(json.actionLink || '');
     } catch (err) {
       setError(err.message || '请求失败');

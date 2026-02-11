@@ -1,33 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const adminSecret = process.env.ADMIN_SECRET;
+import { isValidEmail, requireAdmin, writeAdminAudit } from './_utils.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-  if (!adminSecret || req.headers['x-admin-secret'] !== adminSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(500).json({ error: 'Server missing Supabase credentials' });
-  }
+  const auth = requireAdmin(req, res, { method: 'POST', scope: 'reset-write', limit: 20 });
+  if (!auth) return;
 
-  const { email, adminEmail } = req.body || {};
-  if (!email) {
-    return res.status(400).json({ error: 'Missing email' });
-  }
+  const { supabase, actor } = auth;
+  const { email } = req.body || {};
+  const normalizedEmail = String(email || '').trim().toLowerCase();
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
+  if (!isValidEmail(normalizedEmail)) {
+    return res.status(400).json({ error: 'Invalid email' });
+  }
 
   try {
     const { data, error } = await supabase.auth.admin.generateLink({
       type: 'recovery',
-      email,
+      email: normalizedEmail,
       options: {
         redirectTo: process.env.PASSWORD_RESET_REDIRECT || undefined
       }
@@ -35,15 +23,16 @@ export default async function handler(req, res) {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    await supabase.from('admin_audit').insert({
-      admin_email: adminEmail || null,
+
+    await writeAdminAudit(supabase, actor, {
       action: 'reset_password',
-      detail: { email }
+      detail: { email: normalizedEmail, source: 'admin_secret' }
     });
+
     return res.status(200).json({
       actionLink: data?.properties?.action_link || data?.action_link || null
     });
-  } catch (err) {
+  } catch {
     return res.status(500).json({ error: 'Server error' });
   }
 }

@@ -1,30 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const adminSecret = process.env.ADMIN_SECRET;
+import { isValidUuid, requireAdmin, writeAdminAudit } from './_utils.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  const auth = requireAdmin(req, res, { method: 'POST', scope: 'ban-write', limit: 40 });
+  if (!auth) return;
+
+  const { supabase, actor } = auth;
+  const { id, action, reason } = req.body || {};
+  const normalizedAction = String(action || '').trim();
+  const normalizedReason = String(reason || '').trim();
+
+  if (!isValidUuid(id)) {
+    return res.status(400).json({ error: 'Invalid user id' });
   }
-  if (!adminSecret || req.headers['x-admin-secret'] !== adminSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (normalizedAction !== 'ban' && normalizedAction !== 'unban') {
+    return res.status(400).json({ error: 'Invalid action' });
   }
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(500).json({ error: 'Server missing Supabase credentials' });
+  if (normalizedReason.length > 500) {
+    return res.status(400).json({ error: 'Reason too long' });
   }
 
-  const { id, action, reason, adminEmail } = req.body || {};
-  if (!id || !action) {
-    return res.status(400).json({ error: 'Missing id or action' });
-  }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  });
-
-  const banDuration = action === 'ban' ? '100y' : '0h';
+  const banDuration = normalizedAction === 'ban' ? '100y' : 'none';
 
   try {
     const { data, error } = await supabase.auth.admin.updateUserById(id, {
@@ -33,17 +28,18 @@ export default async function handler(req, res) {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    await supabase.from('admin_audit').insert({
-      admin_email: adminEmail || null,
-      action: action === 'ban' ? 'ban_user' : 'unban_user',
-      target_user_id: id,
-      detail: { reason: reason || null }
+
+    await writeAdminAudit(supabase, actor, {
+      action: normalizedAction === 'ban' ? 'ban_user' : 'unban_user',
+      targetUserId: id,
+      detail: { reason: normalizedReason || null, source: 'admin_secret' }
     });
+
     return res.status(200).json({
       id: data?.user?.id,
       ban_expires_at: data?.user?.ban_expires_at || null
     });
-  } catch (err) {
+  } catch {
     return res.status(500).json({ error: 'Server error' });
   }
 }

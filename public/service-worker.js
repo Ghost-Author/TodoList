@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cloud-todo-v3';
+const CACHE_NAME = 'cloud-todo-v4';
 const ASSETS = [
   '/index.html',
   '/admin.html',
@@ -26,10 +26,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   if (event.request.mode === 'navigate') {
+    const offlineFallback = url.pathname.startsWith('/admin') ? '/admin.html' : '/index.html';
     event.respondWith(
       fetch(event.request)
         .then((response) => response)
-        .catch(() => caches.match('/index.html'))
+        .catch(() => caches.match(offlineFallback))
     );
     return;
   }

@@ -464,8 +464,8 @@ const App = () => {
       .from('tasks')
       .upsert(updated.map((t) => ({ id: t.id, user_id: session.user.id, order_index: t.orderIndex })), { onConflict: 'id' });
     if (!error) {
-      setToast('排序已保存');
-      setTimeout(() => setToast(''), 1500);
+      setToast({ message: '排序已保存' });
+      setTimeout(() => setToast(null), 1500);
     }
   };
 
