@@ -13,6 +13,21 @@ const DEFAULT_COLORS = [
 ];
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const toChars = (value) => Array.from(String(value || ''));
+const sliceChars = (value, count) => toChars(value).slice(0, count).join('');
+
+const getDisplayLabel = (segmentDeg, label) => {
+  const raw = String(label || '').trim().replace(/\s+/g, ' ');
+  if (!raw) return '';
+
+  const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
+  const candidate = (firstPhrase || raw).trim();
+
+  const maxChars = segmentDeg < 18 ? 6 : segmentDeg < 24 ? 8 : segmentDeg < 32 ? 10 : 14;
+  const chars = toChars(candidate);
+  if (chars.length <= maxChars) return candidate;
+  return `${sliceChars(candidate, maxChars)}…`;
+};
 
 const getLabelLayout = (segmentDeg, labelLength) => {
   const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
@@ -198,7 +213,8 @@ const WheelPanel = ({
               {options.map((opt, idx) => {
                 const step = 360 / options.length;
                 const deg = idx * step + step / 2;
-                const layout = getLabelLayout(step, opt.label.length);
+                const displayLabel = getDisplayLabel(step, opt.label);
+                const layout = getLabelLayout(step, displayLabel.length);
                 return (
                   <div
                     key={opt.id}
@@ -224,7 +240,7 @@ const WheelPanel = ({
                       }}
                       title={opt.label}
                     >
-                      {opt.label}
+                      {displayLabel}
                     </span>
                   </div>
                 );
