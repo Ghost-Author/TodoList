@@ -19,6 +19,11 @@ const FiltersBar = ({
 }) => {
   const noSelection = !selectedCount;
   const noFiltered = !filteredCount;
+  const totalCount = taskCounts?.all || 0;
+  const completedCount = taskCounts?.completed || 0;
+  const overdueCount = taskCounts?.overdue || 0;
+  const completedPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const overduePercent = totalCount > 0 ? Math.round((overdueCount / totalCount) * 100) : 0;
   const topTags = useMemo(() => {
     const counter = new Map();
     (filteredTasks || []).forEach((task) => {
@@ -35,6 +40,21 @@ const FiltersBar = ({
 
   return (
     <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
+      <div className="rounded-xl border border-[#ffe4f2] bg-white/80 p-3">
+        <div className="flex items-center justify-between text-[11px] font-bold text-[#7b6f8c] mb-2">
+          <span>任务进度</span>
+          <span>{completedPercent}% 已完成</span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-[#f7eaf1] overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-[#ff8acb] to-[#8fd3ff]" style={{ width: `${completedPercent}%` }} />
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[10px] text-[#7b6f8c]">
+          <span>总任务 {totalCount}</span>
+          <span className={overdueCount > 0 ? 'text-red-500 font-bold' : ''}>
+            逾期 {overdueCount}（{overduePercent}%）
+          </span>
+        </div>
+      </div>
       <div className="flex gap-6 border-b border-[#ffe4f2] overflow-x-auto no-scrollbar pb-1">
         {['all', 'active', 'overdue', 'completed'].map((f) => (
           <button key={f} onClick={() => setFilter(f)} className={`pb-3 text-sm font-bold relative whitespace-nowrap transition-colors flex items-center gap-1 ${filter === f ? 'text-[#ff6fb1]' : 'text-slate-400 hover:text-[#ff6fb1]'}`}>
