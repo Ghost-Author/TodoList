@@ -1,5 +1,26 @@
 import { parsePositiveInt, requireAdmin, sendJson } from './_utils.js';
 
+const SEARCH_CACHE = new Map();
+const SEARCH_CACHE_TTL_MS = 60_000;
+const SEARCH_CACHE_MAX_ENTRIES = 20;
+
+const readSearchCache = (query) => {
+  const cached = SEARCH_CACHE.get(query);
+  if (!cached) return null;
+  if (Date.now() - cached.updatedAt > SEARCH_CACHE_TTL_MS) {
+    SEARCH_CACHE.delete(query);
+    return null;
+  }
+  return cached.users;
+};
+
+const writeSearchCache = (query, users) => {
+  SEARCH_CACHE.set(query, { users, updatedAt: Date.now() });
+  if (SEARCH_CACHE.size <= SEARCH_CACHE_MAX_ENTRIES) return;
+  const oldest = SEARCH_CACHE.entries().next().value?.[0];
+  if (oldest) SEARCH_CACHE.delete(oldest);
+};
+
 export default async function handler(req, res) {
   const auth = requireAdmin(req, res, { method: 'GET', scope: 'users-read', limit: 120 });
   if (!auth) return;
@@ -18,24 +39,28 @@ export default async function handler(req, res) {
 
   try {
     if (query) {
-      const match = [];
-      let scanPage = 1;
-      const scanPerPage = 1000;
+      let match = readSearchCache(query);
+      if (!match) {
+        match = [];
+        let scanPage = 1;
+        const scanPerPage = 1000;
 
-      while (true) {
-        const { data, error } = await supabase.auth.admin.listUsers({
-          page: scanPage,
-          perPage: scanPerPage
-        });
-        if (error) {
-          return sendJson(res, 500, { error: error.message }, requestId);
+        while (true) {
+          const { data, error } = await supabase.auth.admin.listUsers({
+            page: scanPage,
+            perPage: scanPerPage
+          });
+          if (error) {
+            return sendJson(res, 500, { error: error.message }, requestId);
+          }
+
+          const users = data?.users || [];
+          match.push(...users.filter((u) => String(u.email || '').toLowerCase().includes(query)).map(toView));
+
+          if (users.length < scanPerPage || scanPage >= 1000) break;
+          scanPage += 1;
         }
-
-        const users = data?.users || [];
-        match.push(...users.filter((u) => String(u.email || '').toLowerCase().includes(query)).map(toView));
-
-        if (users.length < scanPerPage || scanPage >= 1000) break;
-        scanPage += 1;
+        writeSearchCache(query, match);
       }
 
       const from = (page - 1) * perPage;
@@ -59,7 +84,8 @@ export default async function handler(req, res) {
     }
     const users = (data?.users || []).map(toView);
     const total = Number.isFinite(data?.total) ? data.total : null;
-    const hasMore = data?.nextPage != null || users.length >= perPage;
+    const hasMore = data?.nextPage != null
+      || (Number.isFinite(total) ? page * perPage < total : users.length === perPage);
     return sendJson(res, 200, {
       users,
       page,

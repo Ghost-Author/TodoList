@@ -8,6 +8,8 @@ import UsersTable from './admin-components/UsersTable.jsx';
 import AuditTable from './admin-components/AuditTable.jsx';
 import UserDetailModal from './admin-components/UserDetailModal.jsx';
 
+const USERS_PER_PAGE = 20;
+
 const AdminApp = () => {
   const [secret, setSecret] = useState('');
   const [data, setData] = useState(null);
@@ -61,7 +63,7 @@ const AdminApp = () => {
     setUsersLoading(true);
     try {
       const api = createAdminClient(secret);
-      const json = await api.getUsers(targetPage, 20, targetQuery);
+      const json = await api.getUsers(targetPage, USERS_PER_PAGE, targetQuery);
       setUsers(json.users || []);
       setPage(targetPage);
       setUsersTotal(Number.isFinite(json.total) ? json.total : null);
@@ -212,6 +214,7 @@ const AdminApp = () => {
               users={users}
               page={page}
               usersTotal={usersTotal}
+              usersPerPage={USERS_PER_PAGE}
               usersHasMore={usersHasMore}
               userSearch={userSearch}
               setUserSearch={setUserSearch}

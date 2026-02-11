@@ -4,6 +4,7 @@ const UsersTable = ({
   users,
   page,
   usersTotal,
+  usersPerPage,
   usersHasMore,
   userSearch,
   setUserSearch,
@@ -14,15 +15,26 @@ const UsersTable = ({
   onDetail,
   usersLoading
 }) => {
+  const totalPages = Number.isFinite(usersTotal)
+    ? Math.max(1, Math.ceil(usersTotal / Math.max(usersPerPage || 1, 1)))
+    : null;
+
   return (
     <div className="mt-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3 text-xs text-[#7b6f8c]">
         <span>
           第 {page} 页
           {Number.isFinite(usersTotal) ? ` · 共 ${usersTotal} 位用户` : ''}
+          {totalPages ? ` · 共 ${totalPages} 页` : ''}
         </span>
         <div className="flex gap-2">
-          <button onClick={() => loadUsers(Math.max(page - 1, 1))} className="pill-soft px-3 py-1 rounded-full">上一页</button>
+          <button
+            onClick={() => loadUsers(Math.max(page - 1, 1))}
+            disabled={page <= 1}
+            className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            上一页
+          </button>
           <button
             onClick={() => loadUsers(page + 1)}
             disabled={!usersHasMore}
