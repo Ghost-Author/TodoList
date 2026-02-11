@@ -3,6 +3,8 @@ import { Plus, X } from 'lucide-react';
 
 const TaskForm = ({
   addTask,
+  taskInputRef,
+  taskSubmitting,
   input,
   setInput,
   note,
@@ -29,6 +31,7 @@ const TaskForm = ({
   return (
     <form onSubmit={addTask} className="card-soft p-6 mb-8 space-y-6">
       <input
+        ref={taskInputRef}
         type="text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -42,6 +45,12 @@ const TaskForm = ({
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
             placeholder="输入具体执行步骤..."
             className="w-full text-sm bg-white/70 rounded-xl p-3 outline-none focus:ring-2 focus:ring-[#ffd7ea] flex-grow min-h-[120px] resize-none transition-all border border-[#ffe4f2]"
           />
@@ -162,8 +171,12 @@ const TaskForm = ({
       )}
 
       <div className="flex justify-end pt-2 border-t border-slate-50">
-        <button type="submit" className="w-full md:w-auto btn-soft px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95">
-          <Plus className="w-5 h-5" /> 确认录入任务
+        <button
+          type="submit"
+          disabled={taskSubmitting || !input.trim()}
+          className="w-full md:w-auto btn-soft px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          <Plus className="w-5 h-5" /> {taskSubmitting ? '提交中...' : '确认录入任务'}
         </button>
       </div>
     </form>

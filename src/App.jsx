@@ -39,6 +39,7 @@ const App = () => {
   const undoTimerRef = useRef(null);
   const loadMoreAnchorRef = useRef(null);
   const lastAutoLoadAtRef = useRef(0);
+  const taskInputRef = useRef(null);
 
   const [input, setInput] = useState('');
   const [note, setNote] = useState('');
@@ -55,6 +56,7 @@ const App = () => {
   const [expandedId, setExpandedId] = useState(null);
   const [isManagingCats, setIsManagingCats] = useState(false);
   const [newCatInput, setNewCatInput] = useState('');
+  const [addTaskLoading, setAddTaskLoading] = useState(false);
 
   const {
     session,
@@ -175,6 +177,12 @@ const App = () => {
     setVisibleCount(30);
   }, [filter, searchQuery, sortBy, view]);
 
+  useEffect(() => {
+    if (!session?.user?.id || view !== 'tasks') return;
+    const timer = setTimeout(() => taskInputRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
+  }, [session, view]);
+
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
     medium: { label: '重要不紧急', color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
@@ -184,13 +192,36 @@ const App = () => {
 
   const addTask = async (e) => {
     e.preventDefault();
-    const created = await createTask({ input, note, dueDate, priority, category, tags });
-    if (!created) return;
-    setInput('');
-    setNote('');
-    setDueDate('');
-    setTags([]);
-    setTagInput('');
+    if (addTaskLoading) return;
+    const trimmedText = input.trim();
+    if (!trimmedText) return;
+
+    const duplicate = tasks.some((t) => {
+      if (t.completed) return false;
+      return String(t.text || '').trim().toLowerCase() === trimmedText.toLowerCase()
+        && String(t.category || '') === String(category || '');
+    });
+    if (duplicate) {
+      setToast({ message: '已存在相同任务（同分类）' });
+      setTimeout(() => setToast(null), 1500);
+      taskInputRef.current?.focus();
+      return;
+    }
+
+    setAddTaskLoading(true);
+    try {
+      const created = await createTask({ input, note, dueDate, priority, category, tags });
+      if (created) {
+        setInput('');
+        setNote('');
+        setDueDate('');
+        setTags([]);
+        setTagInput('');
+        setTimeout(() => taskInputRef.current?.focus(), 0);
+      }
+    } finally {
+      setAddTaskLoading(false);
+    }
   };
 
   const addCategory = async () => {
@@ -453,6 +484,8 @@ const App = () => {
 
             <TaskForm
               addTask={addTask}
+              taskInputRef={taskInputRef}
+              taskSubmitting={addTaskLoading}
               input={input}
               setInput={setInput}
               note={note}
