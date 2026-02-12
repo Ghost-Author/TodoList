@@ -63,6 +63,14 @@ const FiltersBar = ({
         return;
       }
 
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        if (isTypingTarget) return;
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select?.();
+        return;
+      }
+
       if (e.key === 'Escape' && document.activeElement === searchInputRef.current && searchQueryRef.current) {
         e.preventDefault();
         setSearchQuery('');
@@ -133,14 +141,26 @@ const FiltersBar = ({
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="搜索任务/备注/分类/标签（/ 快捷键）"
-          className="w-full text-sm bg-white/82 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-        />
+        <div className="relative">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索任务/备注/分类/标签（/ 或 Ctrl/Cmd+K）"
+            className="w-full text-sm bg-white/82 rounded-xl p-2.5 pr-20 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[#7b6f8c] bg-white/90 border border-[#ffe4f2] rounded-full px-2 py-0.5 hover:text-[#ff6fb1]"
+              aria-label="清空搜索"
+            >
+              清空
+            </button>
+          )}
+        </div>
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
@@ -164,6 +184,12 @@ const FiltersBar = ({
         >
           清除筛选
         </button>
+      </div>
+      <div className="flex items-center justify-between text-[10px] text-[#7b6f8c]">
+        <span>匹配任务 {filteredCount} / 总任务 {totalCount}</span>
+        {searchQuery && (
+          <span className="text-[#ff6fb1] font-bold">当前关键词：{searchQuery}</span>
+        )}
       </div>
       {topTags.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
