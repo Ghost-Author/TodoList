@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const AuditTable = ({
   auditLogs,
@@ -16,6 +16,40 @@ const AuditTable = ({
   auditExporting,
   auditLoading
 }) => {
+  const [visibleCols, setVisibleCols] = useState({
+    time: true,
+    admin: true,
+    action: true,
+    target: true,
+    detail: true
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('admin_audit_visible_cols');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return;
+      setVisibleCols((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      // Ignore storage parse errors.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('admin_audit_visible_cols', JSON.stringify(visibleCols));
+    } catch {
+      // Ignore storage write errors.
+    }
+  }, [visibleCols]);
+
+  const visibleCount = ['time', 'admin', 'action', 'target', 'detail'].filter((key) => visibleCols[key]).length;
+  const safeVisibleCount = Math.max(visibleCount, 1);
+  const setColumnVisible = (key) => {
+    setVisibleCols((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const totalPages = Number.isFinite(auditTotal)
     ? Math.max(1, Math.ceil(auditTotal / Math.max(auditPerPage || 1, 1)))
     : null;
@@ -70,30 +104,38 @@ const AuditTable = ({
           <button type="button" onClick={clearAuditSearch} className="pill-soft px-3 py-1 rounded-full text-xs">清空搜索</button>
         </div>
       </div>
+      <div className="mb-3 flex items-center gap-2 flex-wrap text-[11px] text-[#7b6f8c]">
+        <span className="font-bold">显示列</span>
+        <button type="button" onClick={() => setColumnVisible('time')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.time ? '' : 'opacity-50'}`}>时间</button>
+        <button type="button" onClick={() => setColumnVisible('admin')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.admin ? '' : 'opacity-50'}`}>管理员</button>
+        <button type="button" onClick={() => setColumnVisible('action')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.action ? '' : 'opacity-50'}`}>动作</button>
+        <button type="button" onClick={() => setColumnVisible('target')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.target ? '' : 'opacity-50'}`}>对象</button>
+        <button type="button" onClick={() => setColumnVisible('detail')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.detail ? '' : 'opacity-50'}`}>备注</button>
+      </div>
       <div className="card-soft-sm p-4 overflow-auto">
         <table className="w-full text-xs text-left">
           <thead className="text-[#7b6f8c]">
             <tr>
-              <th className="py-2">时间</th>
-              <th className="py-2">管理员</th>
-              <th className="py-2">动作</th>
-              <th className="py-2">对象</th>
-              <th className="py-2">备注</th>
+              {visibleCols.time && <th className="py-2">时间</th>}
+              {visibleCols.admin && <th className="py-2">管理员</th>}
+              {visibleCols.action && <th className="py-2">动作</th>}
+              {visibleCols.target && <th className="py-2">对象</th>}
+              {visibleCols.detail && <th className="py-2">备注</th>}
             </tr>
           </thead>
           <tbody className="text-[#3b2e4a]">
             {auditLogs.map((log) => (
               <tr key={log.id} className="border-t border-[#ffe4f2]">
-                <td className="py-2">{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>
-                <td className="py-2">{log.admin_email || '-'}</td>
-                <td className="py-2">{log.action || '-'}</td>
-                <td className="py-2">{log.target_user_id || '-'}</td>
-                <td className="py-2">{log.detail?.reason || log.detail?.email || '-'}</td>
+                {visibleCols.time && <td className="py-2">{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>}
+                {visibleCols.admin && <td className="py-2">{log.admin_email || '-'}</td>}
+                {visibleCols.action && <td className="py-2">{log.action || '-'}</td>}
+                {visibleCols.target && <td className="py-2">{log.target_user_id || '-'}</td>}
+                {visibleCols.detail && <td className="py-2">{log.detail?.reason || log.detail?.email || '-'}</td>}
               </tr>
             ))}
             {auditLogs.length === 0 && !auditLoading && (
               <tr>
-                <td className="py-4 text-[#7b6f8c]" colSpan="5">暂无记录</td>
+                <td className="py-4 text-[#7b6f8c]" colSpan={safeVisibleCount}>暂无记录</td>
               </tr>
             )}
           </tbody>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X } from 'lucide-react';
 
 const TaskList = ({
@@ -30,6 +30,9 @@ const TaskList = ({
   const sectionState = sectionCollapsedMap || {};
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [virtualScrollTop, setVirtualScrollTop] = useState(0);
+  const [virtualViewportHeight, setVirtualViewportHeight] = useState(560);
+  const virtualListRef = useRef(null);
   const [editDraft, setEditDraft] = useState({
     input: '',
     note: '',
@@ -190,6 +193,10 @@ const TaskList = ({
     if (priorities && priorities.medium) return priorities.medium;
     return { label: '普通', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-100' };
   };
+
+  useEffect(() => {
+    setVirtualScrollTop(0);
+  }, [searchQuery, groupCompleted, canDrag, taskDensity, filteredTasks.length]);
 
   const setSectionCollapsed = (updater) => {
     if (typeof setSectionCollapsedMap === 'function') {
@@ -458,6 +465,32 @@ const TaskList = ({
   })();
 
   if (!groupCompleted) {
+    const virtualizationEnabled = !canDrag && !editingId && !expandedId && filteredTasks.length > 120;
+    if (virtualizationEnabled) {
+      const itemHeight = compact ? 84 : 102;
+      const overscan = 6;
+      const safeViewport = Math.max(virtualViewportHeight || 560, 120);
+      const startIndex = Math.max(0, Math.floor(virtualScrollTop / itemHeight) - overscan);
+      const visibleCount = Math.ceil(safeViewport / itemHeight) + overscan * 2;
+      const endIndex = Math.min(filteredTasks.length, startIndex + visibleCount);
+      const topSpacer = startIndex * itemHeight;
+      const bottomSpacer = Math.max(0, (filteredTasks.length - endIndex) * itemHeight);
+      const visibleTasks = filteredTasks.slice(startIndex, endIndex);
+      return (
+        <div
+          ref={virtualListRef}
+          onScroll={(e) => {
+            setVirtualScrollTop(e.currentTarget.scrollTop);
+            setVirtualViewportHeight(e.currentTarget.clientHeight);
+          }}
+          className="space-y-4 max-h-[70vh] overflow-auto pr-1"
+        >
+          <div style={{ height: `${topSpacer}px` }} />
+          {visibleTasks.map((task) => renderTask(task))}
+          <div style={{ height: `${bottomSpacer}px` }} />
+        </div>
+      );
+    }
     return <div className="space-y-4">{filteredTasks.map((task) => renderTask(task))}</div>;
   }
 

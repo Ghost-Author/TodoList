@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 const UsersTable = ({
   users,
@@ -17,6 +17,38 @@ const UsersTable = ({
   onDetail,
   usersLoading
 }) => {
+  const [visibleCols, setVisibleCols] = useState({
+    email: true,
+    created: true,
+    lastLogin: true
+  });
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('admin_users_visible_cols');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') return;
+      setVisibleCols((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      // Ignore storage parse errors.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('admin_users_visible_cols', JSON.stringify(visibleCols));
+    } catch {
+      // Ignore storage write errors.
+    }
+  }, [visibleCols]);
+
+  const visibleCount = ['email', 'created', 'lastLogin'].filter((key) => visibleCols[key]).length;
+  const safeVisibleCount = Math.max(visibleCount, 1);
+  const setColumnVisible = (key) => {
+    setVisibleCols((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const totalPages = Number.isFinite(usersTotal)
     ? Math.max(1, Math.ceil(usersTotal / Math.max(usersPerPage || 1, 1)))
     : null;
@@ -82,22 +114,28 @@ const UsersTable = ({
           清空搜索
         </button>
       </div>
+      <div className="mb-3 flex items-center gap-2 flex-wrap text-[11px] text-[#7b6f8c]">
+        <span className="font-bold">显示列</span>
+        <button type="button" onClick={() => setColumnVisible('email')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.email ? '' : 'opacity-50'}`}>邮箱</button>
+        <button type="button" onClick={() => setColumnVisible('created')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.created ? '' : 'opacity-50'}`}>创建时间</button>
+        <button type="button" onClick={() => setColumnVisible('lastLogin')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.lastLogin ? '' : 'opacity-50'}`}>最近登录</button>
+      </div>
       <div className="card-soft-sm p-4 overflow-auto">
         <table className="w-full text-xs text-left">
           <thead className="text-[#7b6f8c]">
             <tr>
-              <th className="py-2">邮箱</th>
-              <th className="py-2">创建时间</th>
-              <th className="py-2">最近登录</th>
+              {visibleCols.email && <th className="py-2">邮箱</th>}
+              {visibleCols.created && <th className="py-2">创建时间</th>}
+              {visibleCols.lastLogin && <th className="py-2">最近登录</th>}
               <th className="py-2 text-right">操作</th>
             </tr>
           </thead>
           <tbody className="text-[#3b2e4a]">
             {users.map((u) => (
               <tr key={u.id} className="border-t border-[#ffe4f2]">
-                <td className="py-2">{u.email || '-'}</td>
-                <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>
-                <td className="py-2">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</td>
+                {visibleCols.email && <td className="py-2">{u.email || '-'}</td>}
+                {visibleCols.created && <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>}
+                {visibleCols.lastLogin && <td className="py-2">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</td>}
                 <td className="py-2 text-right">
                   <button
                     type="button"
@@ -111,7 +149,7 @@ const UsersTable = ({
             ))}
             {users.length === 0 && !usersLoading && (
               <tr>
-                <td className="py-4 text-[#7b6f8c]" colSpan="4">暂无数据</td>
+                <td className="py-4 text-[#7b6f8c]" colSpan={safeVisibleCount + 1}>暂无数据</td>
               </tr>
             )}
           </tbody>

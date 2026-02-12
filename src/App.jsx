@@ -35,8 +35,10 @@ const App = () => {
   const [captchaFails, setCaptchaFails] = useState(0);
   const [captchaLockUntil, setCaptchaLockUntil] = useState(0);
   const [toast, setToast] = useState(null);
+  const [toastQueue, setToastQueue] = useState([]);
   const [undoData, setUndoData] = useState(null);
   const undoTimerRef = useRef(null);
+  const toastTimerRef = useRef(null);
   const loadMoreAnchorRef = useRef(null);
   const lastAutoLoadAtRef = useRef(0);
   const taskInputRef = useRef(null);
@@ -64,6 +66,12 @@ const App = () => {
   const [activeSectionsCollapsed, setActiveSectionsCollapsed] = useState({});
   const [taskDensity, setTaskDensity] = useState('cozy');
   const [showBackTop, setShowBackTop] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState('');
+
+  const enqueueToast = (payload, duration = 1500) => {
+    const normalized = typeof payload === 'string' ? { message: payload } : payload;
+    setToastQueue((prev) => [...prev, { ...normalized, duration, id: `${Date.now()}-${Math.random()}` }]);
+  };
 
   const {
     session,
@@ -138,8 +146,7 @@ const App = () => {
     sortBy,
     saveOrder,
     onOrderSaved: () => {
-      setToast({ message: '排序已保存' });
-      setTimeout(() => setToast(null), 1500);
+      enqueueToast({ message: '排序已保存' }, 1400);
     }
   });
 
@@ -210,8 +217,33 @@ const App = () => {
         clearTimeout(undoTimerRef.current);
         undoTimerRef.current = null;
       }
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = null;
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (toast || toastQueue.length === 0) return;
+    setToast(toastQueue[0]);
+    setToastQueue((prev) => prev.slice(1));
+  }, [toast, toastQueue]);
+
+  useEffect(() => {
+    if (!toast || toast.action) return;
+    const duration = Number.isFinite(toast.duration) ? toast.duration : 1500;
+    toastTimerRef.current = setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, duration);
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+        toastTimerRef.current = null;
+      }
+    };
+  }, [toast]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -229,8 +261,7 @@ const App = () => {
       if (typeof parsed.priority === 'string') setPriority(parsed.priority);
       if (Array.isArray(parsed.tags)) setTags(parsed.tags.map((v) => String(v)).slice(0, 20));
       if (typeof parsed.category === 'string') setCategory(parsed.category);
-      setToast({ message: '已恢复上次草稿' });
-      setTimeout(() => setToast(null), 1400);
+      enqueueToast({ message: '已恢复上次草稿' }, 1400);
     } catch {
       localStorage.removeItem(`cloud_todo_draft:${userId}`);
     }
@@ -348,8 +379,7 @@ const App = () => {
         && String(t.category || '') === String(category || '');
     });
     if (duplicate) {
-      setToast({ message: '已存在相同任务（同分类）' });
-      setTimeout(() => setToast(null), 1500);
+      enqueueToast({ message: '已存在相同任务（同分类）' }, 1500);
       taskInputRef.current?.focus();
       return;
     }
@@ -390,8 +420,7 @@ const App = () => {
     setTags([]);
     setTagInput('');
     setCategory(categories[0] || '');
-    setToast({ message: '草稿已清空' });
-    setTimeout(() => setToast(null), 1200);
+    enqueueToast({ message: '草稿已清空' }, 1200);
     setTimeout(() => taskInputRef.current?.focus(), 0);
   };
 
@@ -417,63 +446,80 @@ const App = () => {
   const editTask = async (id, payload) => {
     const updated = await patchTask(id, payload);
     if (!updated) {
-      setToast({ message: '保存失败，请重试' });
-      setTimeout(() => setToast(null), 1500);
+      enqueueToast({ message: '保存失败，请重试' }, 1500);
       return false;
     }
-    setToast({ message: '任务已更新' });
-    setTimeout(() => setToast(null), 1200);
+    enqueueToast({ message: '任务已更新' }, 1200);
     return true;
   };
 
   const bulkComplete = async (completed) => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || bulkActionLoading) return;
     const ids = Array.from(selectedIds);
-    const ok = await bulkCompleteTasks(ids, completed);
-    if (ok) clearSelection();
+    setBulkActionLoading(completed ? 'complete' : 'uncomplete');
+    try {
+      const ok = await bulkCompleteTasks(ids, completed);
+      if (ok) {
+        clearSelection();
+        enqueueToast({ message: completed ? `已标记 ${ids.length} 条为完成` : `已标记 ${ids.length} 条为未完成` }, 1300);
+      }
+    } finally {
+      setBulkActionLoading('');
+    }
   };
 
   const bulkDelete = async () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0 || bulkActionLoading) return;
     const ids = Array.from(selectedIds);
-    const deleted = await bulkDeleteTasks(ids);
-    if (!deleted || deleted.length === 0) return;
-    clearSelection();
-    setUndoData(deleted);
-    setToast({ message: `已删除 ${deleted.length} 条任务`, action: '撤销' });
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    undoTimerRef.current = setTimeout(() => {
-      setUndoData(null);
-      setToast(null);
-    }, 6000);
+    setBulkActionLoading('delete');
+    try {
+      const deleted = await bulkDeleteTasks(ids);
+      if (!deleted || deleted.length === 0) return;
+      clearSelection();
+      setUndoData(deleted);
+      setToast({ message: `已删除 ${deleted.length} 条任务`, action: '撤销' });
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => {
+        setUndoData(null);
+        setToast(null);
+      }, 6000);
+    } finally {
+      setBulkActionLoading('');
+    }
   };
 
   const clearCompleted = async () => {
+    if (bulkActionLoading) return;
     const ids = tasks.filter((t) => t.completed).map((t) => t.id);
     if (ids.length === 0) return;
-    const deleted = await bulkDeleteTasks(ids);
-    if (!deleted || deleted.length === 0) return;
-    clearSelection();
-    setUndoData(deleted);
-    setToast({ message: `已清理 ${deleted.length} 条已完成任务`, action: '撤销' });
-    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    undoTimerRef.current = setTimeout(() => {
-      setUndoData(null);
-      setToast(null);
-    }, 6000);
+    setBulkActionLoading('clearCompleted');
+    try {
+      const deleted = await bulkDeleteTasks(ids);
+      if (!deleted || deleted.length === 0) return;
+      clearSelection();
+      setUndoData(deleted);
+      setToast({ message: `已清理 ${deleted.length} 条已完成任务`, action: '撤销' });
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = setTimeout(() => {
+        setUndoData(null);
+        setToast(null);
+      }, 6000);
+    } finally {
+      setBulkActionLoading('');
+    }
   };
 
   const undoDelete = async () => {
     if (!undoData) return;
     const ok = await restoreTasks(undoData);
     if (ok) {
-      setToast({ message: '已撤销删除' });
+      enqueueToast({ message: '已撤销删除' }, 1600);
     } else {
-      setToast({ message: '撤销失败' });
+      enqueueToast({ message: '撤销失败' }, 1600);
     }
     setUndoData(null);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    undoTimerRef.current = setTimeout(() => setToast(null), 2000);
+    setToast(null);
   };
 
   const handleAuth = async (e) => {
@@ -543,8 +589,7 @@ const App = () => {
   const runWheelAction = async (action, failedMessage) => {
     const ok = await action();
     if (!ok) {
-      setToast({ message: failedMessage });
-      setTimeout(() => setToast(null), 1800);
+      enqueueToast({ message: failedMessage }, 1800);
     }
     return ok;
   };
@@ -764,6 +809,7 @@ const App = () => {
               bulkComplete={bulkComplete}
               bulkDelete={bulkDelete}
               clearCompleted={clearCompleted}
+              bulkActionLoading={bulkActionLoading}
               canDrag={canDrag}
               selectedCount={selectedIds.size}
               filteredCount={filteredTasks.length}

@@ -15,6 +15,7 @@ const FiltersBar = ({
   bulkComplete,
   bulkDelete,
   clearCompleted,
+  bulkActionLoading,
   canDrag,
   selectedCount,
   filteredCount,
@@ -24,6 +25,7 @@ const FiltersBar = ({
   const searchQueryRef = useRef(searchQuery);
   const noSelection = !selectedCount;
   const noFiltered = !filteredCount;
+  const isBulkBusy = Boolean(bulkActionLoading);
   const totalCount = taskCounts?.all || 0;
   const completedCount = taskCounts?.completed || 0;
   const overdueCount = taskCounts?.overdue || 0;
@@ -202,22 +204,22 @@ const FiltersBar = ({
         <button
           type="button"
           onClick={() => bulkComplete(true)}
-          disabled={noSelection}
+          disabled={noSelection || isBulkBusy}
           className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          标记完成
+          {bulkActionLoading === 'complete' ? '处理中...' : '标记完成'}
         </button>
         <button
           type="button"
           onClick={() => bulkComplete(false)}
-          disabled={noSelection}
+          disabled={noSelection || isBulkBusy}
           className="pill-soft px-3 py-1 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          标记未完成
+          {bulkActionLoading === 'uncomplete' ? '处理中...' : '标记未完成'}
         </button>
         <button
           type="button"
-          disabled={noSelection}
+          disabled={noSelection || isBulkBusy}
           onClick={() => {
             if (window.confirm('确定要删除所选任务吗？')) {
               bulkDelete();
@@ -225,11 +227,11 @@ const FiltersBar = ({
           }}
           className="px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          批量删除
+          {bulkActionLoading === 'delete' ? '删除中...' : '批量删除'}
         </button>
         <button
           type="button"
-          disabled={(taskCounts?.completed || 0) === 0}
+          disabled={(taskCounts?.completed || 0) === 0 || isBulkBusy}
           onClick={() => {
             if (window.confirm('确定要清理所有已完成任务吗？')) {
               clearCompleted();
@@ -237,7 +239,7 @@ const FiltersBar = ({
           }}
           className="px-3 py-1 rounded-full font-bold text-white bg-[#ff8f6b] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          清理已完成
+          {bulkActionLoading === 'clearCompleted' ? '清理中...' : '清理已完成'}
         </button>
         <span className="text-[10px] text-[#7b6f8c] self-center ml-1">
           {canDrag ? '拖动任务可手动排序 · Shift+点击可范围选择' : '切换到手动排序且清空筛选后可拖动 · Shift+点击可范围选择'}
