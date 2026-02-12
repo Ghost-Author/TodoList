@@ -42,13 +42,15 @@ const AdminApp = () => {
   const [resetLoading, setResetLoading] = useState(false);
   const [usersExporting, setUsersExporting] = useState(false);
   const [auditExporting, setAuditExporting] = useState(false);
+  const [retryAction, setRetryAction] = useState('');
   const usersReqSeqRef = useRef(0);
   const auditReqSeqRef = useRef(0);
   const detailReqSeqRef = useRef(0);
 
-  const handleRequestError = (err) => {
+  const handleRequestError = (err, action = '') => {
     const message = err?.message || '请求失败';
     setError(message);
+    setRetryAction(action);
     const matched = message.match(/request_id:\s*([^)]+)/i);
     setRequestId(matched?.[1]?.trim() || '');
   };
@@ -56,13 +58,14 @@ const AdminApp = () => {
   const loadSummary = async () => {
     setError('');
     setRequestId('');
+    setRetryAction('');
     setLoading(true);
     try {
       const api = createAdminClient(secret);
       const json = await api.getSummary();
       setData(json);
     } catch (err) {
-      handleRequestError(err);
+      handleRequestError(err, 'summary');
     } finally {
       setLoading(false);
     }
@@ -72,6 +75,7 @@ const AdminApp = () => {
     const seq = ++usersReqSeqRef.current;
     setError('');
     setRequestId('');
+    setRetryAction('');
     setUsersLoading(true);
     try {
       const api = createAdminClient(secret);
@@ -83,7 +87,7 @@ const AdminApp = () => {
       setUsersHasMore(Boolean(json.has_more));
     } catch (err) {
       if (seq !== usersReqSeqRef.current) return;
-      handleRequestError(err);
+      handleRequestError(err, 'users');
     } finally {
       if (seq !== usersReqSeqRef.current) return;
       setUsersLoading(false);
@@ -131,6 +135,7 @@ const AdminApp = () => {
   const exportUsersAll = async () => {
     setError('');
     setRequestId('');
+    setRetryAction('');
     setUsersExporting(true);
     try {
       const api = createAdminClient(secret);
@@ -155,7 +160,7 @@ const AdminApp = () => {
       const suffix = q ? `search_${encodeURIComponent(q).slice(0, 24)}` : 'all';
       downloadCsv(`users_${suffix}.csv`, toCsv(all, header));
     } catch (err) {
-      handleRequestError(err);
+      handleRequestError(err, 'users_export');
     } finally {
       setUsersExporting(false);
     }
@@ -165,6 +170,7 @@ const AdminApp = () => {
     const seq = ++auditReqSeqRef.current;
     setError('');
     setRequestId('');
+    setRetryAction('');
     setAuditLoading(true);
     try {
       const api = createAdminClient(secret);
@@ -176,7 +182,7 @@ const AdminApp = () => {
       setAuditHasMore(Boolean(json.has_more));
     } catch (err) {
       if (seq !== auditReqSeqRef.current) return;
-      handleRequestError(err);
+      handleRequestError(err, 'audit');
     } finally {
       if (seq !== auditReqSeqRef.current) return;
       setAuditLoading(false);
@@ -211,6 +217,7 @@ const AdminApp = () => {
   const exportAuditAll = async () => {
     setError('');
     setRequestId('');
+    setRetryAction('');
     setAuditExporting(true);
     try {
       const api = createAdminClient(secret);
@@ -238,7 +245,7 @@ const AdminApp = () => {
       const suffix = q ? `search_${encodeURIComponent(q).slice(0, 24)}` : 'all';
       downloadCsv(`audit_${suffix}.csv`, toCsv(all, header));
     } catch (err) {
-      handleRequestError(err);
+      handleRequestError(err, 'audit_export');
     } finally {
       setAuditExporting(false);
     }
@@ -260,7 +267,7 @@ const AdminApp = () => {
       setUserTasks(tasksJson.tasks || []);
     } catch (err) {
       if (seq !== detailReqSeqRef.current) return;
-      handleRequestError(err);
+      handleRequestError(err, 'user_detail');
     } finally {
       if (seq !== detailReqSeqRef.current) return;
       setDetailLoading(false);
@@ -278,6 +285,7 @@ const AdminApp = () => {
   const toggleBan = async (id, isBanned) => {
     setError('');
     setRequestId('');
+    setRetryAction('');
     setBanLoading(true);
     try {
       const api = createAdminClient(secret);
@@ -287,7 +295,7 @@ const AdminApp = () => {
       setUserDetail((prev) => prev ? { ...prev, ban_expires_at: json.ban_expires_at } : prev);
       setBanReason('');
     } catch (err) {
-      handleRequestError(err);
+      handleRequestError(err, 'toggle_ban');
     } finally {
       setBanLoading(false);
     }
@@ -296,6 +304,7 @@ const AdminApp = () => {
   const resetPassword = async (email) => {
     setError('');
     setRequestId('');
+    setRetryAction('');
     setResetLink('');
     setResetLoading(true);
     try {
@@ -303,7 +312,7 @@ const AdminApp = () => {
       const json = await api.resetPassword(email);
       setResetLink(json.actionLink || '');
     } catch (err) {
-      handleRequestError(err);
+      handleRequestError(err, 'reset_password');
     } finally {
       setResetLoading(false);
     }
@@ -314,6 +323,41 @@ const AdminApp = () => {
     if (!secret.trim()) return;
     loadUsers(1, usersQuery);
   }, [tab]);
+
+  const retryLastAction = async () => {
+    if (!secret.trim() || !retryAction) return;
+    if (retryAction === 'summary') {
+      await loadSummary();
+      return;
+    }
+    if (retryAction === 'users') {
+      await loadUsers(page, usersQuery);
+      return;
+    }
+    if (retryAction === 'users_export') {
+      await exportUsersAll();
+      return;
+    }
+    if (retryAction === 'audit') {
+      await loadAudit(auditPage, auditQuery);
+      return;
+    }
+    if (retryAction === 'audit_export') {
+      await exportAuditAll();
+      return;
+    }
+    if (retryAction === 'user_detail' && selectedUser?.id) {
+      await loadUserDetail(selectedUser.id);
+      return;
+    }
+    if (retryAction === 'toggle_ban' && selectedUser?.id) {
+      await toggleBan(selectedUser.id, Boolean(userDetail?.ban_expires_at));
+      return;
+    }
+    if (retryAction === 'reset_password' && selectedUser?.email) {
+      await resetPassword(selectedUser.email);
+    }
+  };
 
   return (
     <div className="min-h-screen text-slate-900 pb-24">
@@ -333,7 +377,19 @@ const AdminApp = () => {
               {loading || usersLoading || auditLoading ? '加载中...' : '查看'}
             </button>
           </div>
-          {error && <div className="mt-3 text-xs text-[#ff6fb1]">{error}</div>}
+          {error && (
+            <div className="mt-3 flex items-center gap-2">
+              <div className="text-xs text-[#ff6fb1]">{error}</div>
+              <button
+                type="button"
+                onClick={retryLastAction}
+                disabled={!retryAction || loading || usersLoading || auditLoading || detailLoading || banLoading || resetLoading || usersExporting || auditExporting}
+                className="pill-soft px-2 py-0.5 rounded-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                重试
+              </button>
+            </div>
+          )}
           {requestId && <div className="mt-2 text-[10px] text-[#7b6f8c]">request_id: {requestId}</div>}
 
           <div className="mt-6 flex gap-2 text-xs font-bold">

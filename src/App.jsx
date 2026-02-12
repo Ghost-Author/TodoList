@@ -16,6 +16,7 @@ import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
 import WheelPanel from './components/WheelPanel.jsx';
+import { Sentry } from './sentry.js';
 
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 const prefetchStatsView = () => import('./StatsView.jsx');
@@ -773,25 +774,27 @@ const App = () => {
             />
 
             <div className="mt-2 mb-6">
-              <WheelPanel
-                groups={wheelGroups}
-                currentGroup={wheelGroup}
-                onGroupChange={setWheelGroup}
-                onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
-                onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
-                onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
-                onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
-                options={currentWheelOptions}
-                history={currentWheelHistory}
-                spinning={wheelSpinning}
-                angle={wheelAngle}
-                result={wheelResult}
-                created={wheelCreated}
-                onSpin={spinWheel}
-                onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
-                onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
-                onCreateTask={createTaskFromWheel}
-              />
+              <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘区域出错了，请刷新重试。</div>}>
+                <WheelPanel
+                  groups={wheelGroups}
+                  currentGroup={wheelGroup}
+                  onGroupChange={setWheelGroup}
+                  onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
+                  onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
+                  onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
+                  onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
+                  options={currentWheelOptions}
+                  history={currentWheelHistory}
+                  spinning={wheelSpinning}
+                  angle={wheelAngle}
+                  result={wheelResult}
+                  created={wheelCreated}
+                  onSpin={spinWheel}
+                  onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
+                  onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
+                  onCreateTask={createTaskFromWheel}
+                />
+              </Sentry.ErrorBoundary>
             </div>
 
             <FiltersBar
@@ -816,30 +819,32 @@ const App = () => {
               filteredTasks={filteredTasks}
             />
 
-            <TaskList
-              filteredTasks={displayedTasks}
-              emptyMode={emptyMode}
-              onResetFilters={resetTaskFilters}
-              categories={categories}
-              searchQuery={searchQuery}
-              taskDensity={taskDensity}
-              groupCompleted={filter === 'all' && !searchQuery.trim()}
-              completedCollapsed={completedCollapsed}
-              setCompletedCollapsed={setCompletedCollapsed}
-              sectionCollapsedMap={activeSectionsCollapsed}
-              setSectionCollapsedMap={setActiveSectionsCollapsed}
-              toggleSelect={toggleSelect}
-              selectedIds={selectedIds}
-              toggleTask={toggleTask}
-              expandedId={expandedId}
-              setExpandedId={setExpandedId}
-              priorities={priorities}
-              deleteTask={deleteTask}
-              editTask={editTask}
-              canDrag={canDrag}
-              handleDragStart={handleDragStart}
-              handleDrop={handleDrop}
-            />
+            <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">任务列表渲染异常，请刷新重试。</div>}>
+              <TaskList
+                filteredTasks={displayedTasks}
+                emptyMode={emptyMode}
+                onResetFilters={resetTaskFilters}
+                categories={categories}
+                searchQuery={searchQuery}
+                taskDensity={taskDensity}
+                groupCompleted={filter === 'all' && !searchQuery.trim()}
+                completedCollapsed={completedCollapsed}
+                setCompletedCollapsed={setCompletedCollapsed}
+                sectionCollapsedMap={activeSectionsCollapsed}
+                setSectionCollapsedMap={setActiveSectionsCollapsed}
+                toggleSelect={toggleSelect}
+                selectedIds={selectedIds}
+                toggleTask={toggleTask}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                priorities={priorities}
+                deleteTask={deleteTask}
+                editTask={editTask}
+                canDrag={canDrag}
+                handleDragStart={handleDragStart}
+                handleDrop={handleDrop}
+              />
+            </Sentry.ErrorBoundary>
 
             <div className="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <p className="text-[11px] text-[#7b6f8c]">
@@ -868,9 +873,11 @@ const App = () => {
             )}
           </>
         ) : (
-          <Suspense fallback={<div className="text-sm text-[#7b6f8c]">加载统计中...</div>}>
-            <StatsView stats={stats} />
-          </Suspense>
+          <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">统计区域出错了，请稍后重试。</div>}>
+            <Suspense fallback={<div className="text-sm text-[#7b6f8c]">加载统计中...</div>}>
+              <StatsView stats={stats} />
+            </Suspense>
+          </Sentry.ErrorBoundary>
         )}
 
         <Suspense fallback={null}>

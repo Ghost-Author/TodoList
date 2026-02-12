@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X } from 'lucide-react';
 
 const TaskList = ({
@@ -32,7 +32,6 @@ const TaskList = ({
   const [editSaving, setEditSaving] = useState(false);
   const [virtualScrollTop, setVirtualScrollTop] = useState(0);
   const [virtualViewportHeight, setVirtualViewportHeight] = useState(560);
-  const virtualListRef = useRef(null);
   const [editDraft, setEditDraft] = useState({
     input: '',
     note: '',
@@ -478,7 +477,6 @@ const TaskList = ({
       const visibleTasks = filteredTasks.slice(startIndex, endIndex);
       return (
         <div
-          ref={virtualListRef}
           onScroll={(e) => {
             setVirtualScrollTop(e.currentTarget.scrollTop);
             setVirtualViewportHeight(e.currentTarget.clientHeight);
