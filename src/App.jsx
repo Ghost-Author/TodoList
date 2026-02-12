@@ -61,6 +61,7 @@ const App = () => {
   const [newCatInput, setNewCatInput] = useState('');
   const [addTaskLoading, setAddTaskLoading] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
+  const [activeSectionsCollapsed, setActiveSectionsCollapsed] = useState({});
   const [taskDensity, setTaskDensity] = useState('cozy');
   const [showBackTop, setShowBackTop] = useState(false);
 
@@ -169,6 +170,7 @@ const App = () => {
     setCategories([]);
     setCategory('');
     setExpandedId(null);
+    setActiveSectionsCollapsed({});
     resetBoardState();
     draftLoadedUserRef.current = '';
     prefsLoadedUserRef.current = '';
@@ -247,6 +249,9 @@ const App = () => {
       if (typeof parsed.completedCollapsed === 'boolean') {
         setCompletedCollapsed(parsed.completedCollapsed);
       }
+      if (parsed.activeSectionsCollapsed && typeof parsed.activeSectionsCollapsed === 'object') {
+        setActiveSectionsCollapsed(parsed.activeSectionsCollapsed);
+      }
       if (parsed.taskDensity === 'cozy' || parsed.taskDensity === 'compact') {
         setTaskDensity(parsed.taskDensity);
       }
@@ -300,12 +305,20 @@ const App = () => {
     try {
       localStorage.setItem(
         `cloud_todo_prefs:${userId}`,
-        JSON.stringify({ filter, sortBy, view, category, completedCollapsed, taskDensity })
+        JSON.stringify({
+          filter,
+          sortBy,
+          view,
+          category,
+          completedCollapsed,
+          activeSectionsCollapsed,
+          taskDensity
+        })
       );
     } catch {
       // Ignore localStorage failures.
     }
-  }, [session, filter, sortBy, view, category, completedCollapsed, taskDensity]);
+  }, [session, filter, sortBy, view, category, completedCollapsed, activeSectionsCollapsed, taskDensity]);
 
   const priorities = {
     high: { label: '重要且紧急', color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
@@ -758,6 +771,8 @@ const App = () => {
               groupCompleted={filter === 'all' && !searchQuery.trim()}
               completedCollapsed={completedCollapsed}
               setCompletedCollapsed={setCompletedCollapsed}
+              sectionCollapsedMap={activeSectionsCollapsed}
+              setSectionCollapsedMap={setActiveSectionsCollapsed}
               toggleSelect={toggleSelect}
               selectedIds={selectedIds}
               toggleTask={toggleTask}

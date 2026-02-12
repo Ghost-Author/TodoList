@@ -11,6 +11,8 @@ const TaskList = ({
   groupCompleted,
   completedCollapsed,
   setCompletedCollapsed,
+  sectionCollapsedMap,
+  setSectionCollapsedMap,
   toggleSelect,
   selectedIds,
   toggleTask,
@@ -26,7 +28,6 @@ const TaskList = ({
   const compact = taskDensity === 'compact';
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
-  const [sectionCollapsed, setSectionCollapsed] = useState({});
   const [editDraft, setEditDraft] = useState({
     input: '',
     note: '',
@@ -447,12 +448,12 @@ const TaskList = ({
         canDrag
           ? activeTasks.map((task) => renderTask(task))
           : activeTaskSections.map((section) => {
-              const collapsed = Boolean(sectionCollapsed[section.key]);
+              const collapsed = Boolean(sectionCollapsedMap?.[section.key]);
               return (
                 <div key={section.key} className="surface-soft p-3">
                   <button
                     type="button"
-                    onClick={() => setSectionCollapsed((prev) => ({ ...prev, [section.key]: !prev[section.key] }))}
+                    onClick={() => setSectionCollapsedMap((prev) => ({ ...prev, [section.key]: !prev?.[section.key] }))}
                     className="w-full flex items-center justify-between text-left px-2 py-1"
                   >
                     <span className={`text-xs font-black ${section.tone}`}>
