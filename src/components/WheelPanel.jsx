@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Dice5, Plus, X, Sparkles, Edit2, Trash2 } from 'lucide-react';
 
 const DEFAULT_COLORS = [
@@ -12,6 +12,7 @@ const DEFAULT_COLORS = [
   '#ffd1dc'
 ];
 
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
 const hexToRgb = (hex) => {
   const clean = String(hex || '').replace('#', '');
@@ -32,31 +33,23 @@ const makeSegmentColor = (idx, count) => {
   return `hsl(${Math.round(baseHue)} ${sat}% ${light}%)`;
 };
 
-const normalizeWheelLabel = (label) => {
+const getDisplayLabel = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
   if (!raw) return '';
   const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
-  return (firstPhrase || raw).trim();
+  const candidate = (firstPhrase || raw).trim();
+  const chars = toChars(candidate);
+  const maxChars = segmentDeg >= 56 ? 9 : segmentDeg >= 44 ? 8 : segmentDeg >= 30 ? 7 : segmentDeg >= 22 ? 5 : 4;
+  if (chars.length <= maxChars) return candidate;
+  return `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
 };
 
-const fitLabelToWidth = (ctx, label, maxWidth) => {
-  const chars = toChars(label);
-  if (ctx.measureText(label).width <= maxWidth) return label;
-  if (chars.length <= 1) return label;
-
-  for (let i = chars.length - 1; i >= 1; i -= 1) {
-    const candidate = `${chars.slice(0, i).join('')}…`;
-    if (ctx.measureText(candidate).width <= maxWidth) return candidate;
-  }
-  return '…';
-};
-
-const getFontSizeBySegment = (segmentDeg) => {
-  if (segmentDeg >= 56) return 17;
-  if (segmentDeg >= 42) return 15;
-  if (segmentDeg >= 30) return 13;
-  if (segmentDeg >= 22) return 11;
-  return 10;
+const getLabelLayout = (segmentDeg) => {
+  const fontSize = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
+  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
+  const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
+  const maxWidth = clamp(Math.round(arcLength * 0.88), 32, 98);
+  return { fontSize, radius, maxWidth };
 };
 
 const getTextTone = (color) => {
@@ -68,100 +61,16 @@ const getTextTone = (color) => {
   return '#3b2e4a';
 };
 
-const drawWheelCanvas = (canvas, options, colors) => {
-  try {
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-    const size = 288;
-    canvas.width = Math.round(size * dpr);
-    canvas.height = Math.round(size * dpr);
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, size, size);
-
-    const cx = size / 2;
-    const cy = size / 2;
-    const radius = 136;
-    const textRadius = 96;
-
-    if (!Array.isArray(options) || !options.length) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.fillStyle = '#f3f4f6';
-      ctx.fill();
-      return;
-    }
-
-    const safeColors = Array.isArray(colors) && colors.length === options.length
-      ? colors
-      : options.map((_, idx) => makeSegmentColor(idx, options.length));
-    const count = options.length;
-    const step = (Math.PI * 2) / count;
-    for (let i = 0; i < count; i += 1) {
-      const start = -Math.PI / 2 + i * step;
-      const end = start + step;
-      const mid = (start + end) / 2;
-      const segmentDeg = 360 / count;
-
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, radius, start, end);
-      ctx.closePath();
-      ctx.fillStyle = safeColors[i];
-      ctx.fill();
-
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(255,255,255,0.66)';
-      ctx.stroke();
-
-      const rawLabel = normalizeWheelLabel(options[i]?.label);
-      if (!rawLabel) continue;
-
-      const textColor = getTextTone(safeColors[i]);
-      const fontSize = getFontSizeBySegment(segmentDeg);
-      ctx.font = `800 ${fontSize}px "Nunito", "Quicksand", sans-serif`;
-
-      const maxArcLength = step * textRadius * 0.84;
-      const fittedLabel = fitLabelToWidth(ctx, rawLabel, maxArcLength);
-      const x = cx + textRadius * Math.cos(mid);
-      const y = cy + textRadius * Math.sin(mid);
-
-      let rotate = mid + Math.PI / 2;
-      if (rotate > Math.PI / 2 && rotate < Math.PI * 1.5) {
-        rotate += Math.PI;
-      }
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotate);
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = textColor;
-      ctx.shadowColor = 'rgba(255,255,255,0.6)';
-      ctx.shadowBlur = 4;
-      ctx.fillText(fittedLabel, 0, 0);
-      ctx.restore();
-    }
-  } catch (err) {
-    // Keep UI functional even if a browser has unexpected canvas issues.
-    console.error('drawWheelCanvas failed', err);
-  }
-};
-
 const WheelPanel = ({
-  groups = [],
+  groups,
   currentGroup,
   onGroupChange,
   onAddGroup,
   onRenameGroup,
   onDeleteGroup,
   onClearHistory,
-  options = [],
-  history = [],
+  options,
+  history,
   spinning,
   angle,
   result,
@@ -175,16 +84,27 @@ const WheelPanel = ({
   const [newGroup, setNewGroup] = useState('');
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const wheelCanvasRef = useRef(null);
 
-  const segmentColors = useMemo(() => {
-    if (!options.length) return [];
-    return options.map((_, idx) => makeSegmentColor(idx, options.length));
+  const { gradient, segmentColors } = useMemo(() => {
+    if (!options.length) {
+      return {
+        gradient: 'conic-gradient(#f3f4f6 0 360deg)',
+        segmentColors: []
+      };
+    }
+    const step = 360 / options.length;
+    const colors = options.map((_, idx) => makeSegmentColor(idx, options.length));
+    const parts = options.map((_, idx) => {
+      const start = idx * step;
+      const end = (idx + 1) * step;
+      const color = colors[idx];
+      return `${color} ${start}deg ${end}deg`;
+    });
+    return {
+      gradient: `conic-gradient(${parts.join(', ')})`,
+      segmentColors: colors
+    };
   }, [options]);
-
-  useEffect(() => {
-    drawWheelCanvas(wheelCanvasRef.current, options, segmentColors);
-  }, [options, segmentColors]);
 
   return (
     <div className="card-soft p-6 md:p-7 overflow-hidden relative">
@@ -316,14 +236,49 @@ const WheelPanel = ({
               <div className="absolute inset-0 rounded-full bg-white/50 border border-[#ffd7ea]" />
               <div className="absolute inset-2 rounded-full border-2 border-white/80 shadow-inner" />
               <div
-                className="absolute inset-4 rounded-full border border-[#ffe4f2] shadow-sm overflow-hidden"
+                className="absolute inset-4 rounded-full border border-[#ffe4f2] shadow-sm"
                 style={{
+                  backgroundImage: gradient,
                   transform: `rotate(${angle}deg)`,
                   transition: spinning ? 'transform 2.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
                 }}
-              >
-                <canvas ref={wheelCanvasRef} className="w-full h-full block" />
-              </div>
+              />
+
+              {options.map((opt, idx) => {
+                const step = 360 / options.length;
+                const deg = idx * step + step / 2;
+                const segmentColor = segmentColors[idx];
+                const layout = getLabelLayout(step);
+                const displayLabel = getDisplayLabel(step, opt.label);
+                const textTone = getTextTone(segmentColor);
+                return (
+                  <div
+                    key={opt.id}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    style={{
+                      transform: `rotate(${deg + angle}deg)`,
+                      transition: spinning ? 'transform 2.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
+                    }}
+                  >
+                    <span
+                      className="wheel-segment-text wheel-segment-label-chip font-bold text-center px-1.5 py-0.5 rounded-lg"
+                      style={{
+                        transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
+                        fontSize: `${layout.fontSize}px`,
+                        lineHeight: 1.08,
+                        color: textTone,
+                        maxWidth: `${layout.maxWidth}px`,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}
+                      title={opt.label}
+                    >
+                      {displayLabel}
+                    </span>
+                  </div>
+                );
+              })}
 
               <button
                 type="button"
