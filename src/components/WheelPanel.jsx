@@ -38,27 +38,31 @@ const getDisplayLabelToken = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
   if (!raw) return { lines: [''], plain: '' };
 
-  const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
-  const candidate = (firstPhrase || raw).trim();
+  const candidate = raw;
   const chars = toChars(candidate);
   if (chars.length === 0) return { lines: [''], plain: '' };
 
-  const lineChars = segmentDeg >= 56 ? 8 : segmentDeg >= 44 ? 7 : segmentDeg >= 30 ? 6 : segmentDeg >= 22 ? 5 : 4;
-  const maxChars = segmentDeg < 18 ? lineChars : lineChars * 2;
+  const lineChars = segmentDeg >= 56 ? 9 : segmentDeg >= 44 ? 8 : segmentDeg >= 30 ? 7 : segmentDeg >= 22 ? 6 : 4;
+  const maxLines = segmentDeg >= 42 ? 3 : segmentDeg >= 22 ? 2 : 1;
+  const maxChars = lineChars * maxLines;
   if (chars.length <= lineChars || segmentDeg < 18) {
     const single = chars.length <= maxChars ? candidate : `${sliceChars(candidate, maxChars)}…`;
     return { lines: [single], plain: single };
   }
 
-  if (chars.length <= lineChars * 2) {
-    const line1 = sliceChars(candidate, lineChars);
-    const line2 = chars.slice(lineChars).join('');
-    return { lines: [line1, line2], plain: `${line1}${line2}` };
+  const lines = [];
+  for (let i = 0; i < maxLines; i += 1) {
+    const start = i * lineChars;
+    const end = start + lineChars;
+    const chunk = chars.slice(start, end).join('');
+    if (!chunk) break;
+    lines.push(chunk);
   }
-
-  const line1 = sliceChars(candidate, lineChars);
-  const line2 = `${chars.slice(lineChars, lineChars * 2 - 1).join('')}…`;
-  return { lines: [line1, line2], plain: `${line1}${line2}` };
+  if (chars.length > maxChars && lines.length > 0) {
+    const last = lines[lines.length - 1];
+    lines[lines.length - 1] = `${sliceChars(last, Math.max(1, lineChars - 1))}…`;
+  }
+  return { lines, plain: lines.join('') };
 };
 
 const getLabelLayout = (segmentDeg, maxLineLength) => {
@@ -68,7 +72,7 @@ const getLabelLayout = (segmentDeg, maxLineLength) => {
 
   const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 79;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.68), 28, 78);
+  const maxWidth = clamp(Math.round(arcLength * 0.76), 30, 90);
 
   return { fontSize, radius, maxWidth };
 };
