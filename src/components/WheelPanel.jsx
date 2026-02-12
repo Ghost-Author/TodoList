@@ -47,20 +47,13 @@ const buildSectorPath = (cx, cy, radius, startDeg, endDeg) => {
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
 };
 
-const buildArcPath = (cx, cy, radius, startDeg, endDeg) => {
-  const start = polarPoint(cx, cy, radius, startDeg);
-  const end = polarPoint(cx, cy, radius, endDeg);
-  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
-  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
-};
-
-const getShortLabel = (segmentDeg, label) => {
+const getVerticalLabel = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
   if (!raw) return '';
   const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
   const candidate = (firstPhrase || raw).trim();
   const chars = toChars(candidate);
-  const maxChars = segmentDeg >= 48 ? 6 : segmentDeg >= 36 ? 5 : segmentDeg >= 28 ? 4 : segmentDeg >= 20 ? 3 : 2;
+  const maxChars = segmentDeg >= 42 ? 5 : segmentDeg >= 30 ? 4 : segmentDeg >= 22 ? 3 : 2;
   if (chars.length <= maxChars) return candidate;
   return `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
 };
@@ -98,10 +91,9 @@ const WheelPanel = ({
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingName, setEditingName] = useState('');
 
-  const { segmentColors, sectors } = useMemo(() => {
+  const { sectors } = useMemo(() => {
     if (!options.length) {
       return {
-        segmentColors: [],
         sectors: []
       };
     }
@@ -109,30 +101,31 @@ const WheelPanel = ({
     const cx = 144;
     const cy = 144;
     const radius = 136;
-    const textRadius = 102;
+    const textRadius = 98;
     const step = 360 / options.length;
     const colors = options.map((_, idx) => makeSegmentColor(idx, options.length));
 
     const computedSectors = options.map((opt, idx) => {
       const start = idx * step - 90;
       const end = (idx + 1) * step - 90;
-      const textPadding = Math.min(4.2, step * 0.16);
-      const pathId = `wheel-arc-${String(opt.id || idx).replace(/[^a-zA-Z0-9_-]/g, '')}-${idx}`;
+      const mid = start + step / 2;
+      const textPoint = polarPoint(cx, cy, textRadius, mid);
+      const shortLabel = getVerticalLabel(step, opt.label);
+      const labelChars = toChars(shortLabel);
       return {
         id: opt.id,
         index: idx,
         color: colors[idx],
         textColor: getTextTone(colors[idx]),
         sectorPath: buildSectorPath(cx, cy, radius, start, end),
-        textArcPath: buildArcPath(cx, cy, textRadius, start + textPadding, end - textPadding),
-        pathId,
-        shortLabel: getShortLabel(step, opt.label),
-        fontSize: step >= 42 ? 14 : step >= 30 ? 12 : step >= 22 ? 11 : 10
+        textX: textPoint.x,
+        textY: textPoint.y,
+        labelChars,
+        fontSize: step >= 42 ? 14 : step >= 30 ? 12 : 11
       };
     });
 
     return {
-      segmentColors: colors,
       sectors: computedSectors
     };
   }, [options]);
@@ -277,25 +270,28 @@ const WheelPanel = ({
                   <div className="absolute inset-0 bg-[#f3f4f6]" />
                 ) : (
                   <svg viewBox="0 0 288 288" className="w-full h-full">
-                    <defs>
-                      {sectors.map((sector) => (
-                        <path key={`${sector.pathId}-def`} id={sector.pathId} d={sector.textArcPath} />
-                      ))}
-                    </defs>
                     {sectors.map((sector) => (
                       <path key={`${sector.id}-slice`} d={sector.sectorPath} fill={sector.color} />
                     ))}
                     {sectors.map((sector) => (
                       <text
                         key={`${sector.id}-text`}
-                        className="wheel-segment-text wheel-segment-path-text"
+                        className="wheel-segment-text wheel-segment-vertical-text"
                         fill={sector.textColor}
                         fontSize={sector.fontSize}
                         fontWeight="800"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
                       >
-                        <textPath href={`#${sector.pathId}`} startOffset="50%" textAnchor="middle">
-                          {sector.shortLabel}
-                        </textPath>
+                        {sector.labelChars.map((ch, charIdx) => (
+                          <tspan
+                            key={`${sector.id}-char-${charIdx}`}
+                            x={sector.textX}
+                            y={sector.textY + (charIdx - (sector.labelChars.length - 1) / 2) * (sector.fontSize * 0.92)}
+                          >
+                            {ch}
+                          </tspan>
+                        ))}
                       </text>
                     ))}
                   </svg>
@@ -319,26 +315,6 @@ const WheelPanel = ({
 
             <div className="mt-4 text-[11px] text-[#7b6f8c] flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> 结果仅提示，不会自动创建任务
-            </div>
-
-            <div className="mt-3 w-full max-w-[320px] card-soft-sm px-3 py-2.5">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6f8c] mb-2">扇区说明</div>
-              <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5">
-                {options.map((opt, idx) => (
-                  <div key={opt.id} className="flex items-center gap-2 text-xs text-[#4a3b5a]">
-                    <span
-                      className="w-4 h-4 rounded-full border border-white/70 shrink-0"
-                      style={{ background: segmentColors[idx] }}
-                      aria-hidden="true"
-                    />
-                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-white/80 border border-[#ffe4f2] text-[10px] font-black text-[#7b6f8c]">
-                      {idx + 1}
-                    </span>
-                    <span className="truncate" title={opt.label}>{opt.label}</span>
-                  </div>
-                ))}
-                {options.length === 0 && <div className="text-xs text-slate-400">暂无扇区</div>}
-              </div>
             </div>
 
             <div className="mt-3 min-h-[34px] flex items-center">
