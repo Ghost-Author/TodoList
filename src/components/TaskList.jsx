@@ -231,7 +231,7 @@ const TaskList = ({
             </button>
 
             <div className="flex-grow min-w-0 cursor-pointer" onClick={() => setExpandedId(expandedId === task.id ? null : task.id)}>
-              <div className="flex items-center gap-2 mb-1 overflow-hidden">
+              <div className="flex items-center gap-1.5 mb-1.5 overflow-hidden">
                 {(() => {
                   const priorityMeta = getPriorityMeta(task.priority);
                   return (
@@ -276,7 +276,7 @@ const TaskList = ({
                   </span>
                 )}
               </div>
-              <p className={`${compact ? 'text-[15px]' : 'text-base'} font-bold truncate transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>
+              <p className={`${compact ? 'text-[15px]' : 'text-base'} font-bold task-title-clamp transition-all ${task.completed ? 'line-through text-slate-400' : 'text-[#3b2e4a] group-hover:text-[#ff6fb1]'}`}>
                 {renderHighlighted(task.text)}
               </p>
             </div>

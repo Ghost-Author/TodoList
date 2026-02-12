@@ -923,7 +923,7 @@ const App = () => {
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="fixed right-5 bottom-6 md:right-8 md:bottom-8 z-40 pill-soft px-3 py-2 rounded-full text-[11px] font-black shadow-[0_10px_24px_rgba(255,138,203,0.3)]"
+            className="fixed safe-bottom-floating right-5 md:right-8 z-40 pill-soft px-3 py-2 rounded-full text-[11px] font-black shadow-[0_10px_24px_rgba(255,138,203,0.3)]"
             aria-label="回到顶部"
           >
             回到顶部
