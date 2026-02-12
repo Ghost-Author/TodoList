@@ -370,11 +370,16 @@ h1, h2, h3 {
 }
 
 .wheel-segment-chip {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 246, 252, 0.84));
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 247, 252, 0.86));
   border: 1px solid rgba(255, 220, 236, 0.92);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
-  box-shadow: 0 3px 8px rgba(230, 172, 204, 0.24);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: 0 2px 6px rgba(230, 172, 204, 0.2);
   backdrop-filter: blur(1px);
+}
+
+.wheel-segment-badge {
+  font-family: "Nunito", "Quicksand", "Arial Rounded MT Bold", system-ui, sans-serif;
+  letter-spacing: 0.01em;
 }
 
 @keyframes result-pop {

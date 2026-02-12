@@ -36,7 +36,7 @@ const getDisplayLabelToken = (segmentDeg, label) => {
   const chars = toChars(candidate);
   if (chars.length === 0) return { lines: [''], plain: '' };
 
-  const lineChars = segmentDeg >= 56 ? 7 : segmentDeg >= 44 ? 6 : segmentDeg >= 30 ? 5 : segmentDeg >= 22 ? 4 : 3;
+  const lineChars = segmentDeg >= 56 ? 8 : segmentDeg >= 44 ? 7 : segmentDeg >= 30 ? 6 : segmentDeg >= 22 ? 5 : 4;
   const maxChars = segmentDeg < 18 ? lineChars : lineChars * 2;
   if (chars.length <= lineChars || segmentDeg < 18) {
     const single = chars.length <= maxChars ? candidate : `${sliceChars(candidate, maxChars)}…`;
@@ -55,13 +55,13 @@ const getDisplayLabelToken = (segmentDeg, label) => {
 };
 
 const getLabelLayout = (segmentDeg, maxLineLength) => {
-  const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
+  const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
   const textPenalty = Math.max(0, Math.ceil((maxLineLength - 6) / 4));
-  const fontSize = clamp(baseFont - textPenalty, 6, 11);
+  const fontSize = clamp(baseFont - textPenalty, 7, 12);
 
-  const radius = segmentDeg >= 55 ? 72 : segmentDeg >= 36 ? 75 : segmentDeg >= 24 ? 78 : 81;
+  const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 79;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.72), 28, 82);
+  const maxWidth = clamp(Math.round(arcLength * 0.68), 28, 78);
 
   return { fontSize, radius, maxWidth };
 };
@@ -264,9 +264,6 @@ const WheelPanel = ({
                 const labelToken = getDisplayLabelToken(step, opt.label);
                 const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
                 const layout = getLabelLayout(step, maxLineLength);
-                const absoluteDeg = ((deg + angle) % 360 + 360) % 360;
-                const shouldFlip = absoluteDeg > 90 && absoluteDeg < 270;
-                const textRotation = shouldFlip ? 90 : -90;
                 const chipTone = getChipTone(segmentColor);
                 return (
                   <div
@@ -278,13 +275,13 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-chip font-bold px-1.5 py-0.5 rounded-lg text-center shadow-sm"
+                      className="wheel-segment-chip wheel-segment-badge font-bold px-2 py-0.5 rounded-full text-center shadow-sm"
                       style={{
-                        transform: `translateY(-${layout.radius}px) rotate(${textRotation}deg)`,
+                        transform: `translateY(-${layout.radius}px) rotate(-${deg + angle}deg)`,
                         width: `${layout.maxWidth}px`,
                         fontSize: `${layout.fontSize}px`,
                         maxWidth: `${layout.maxWidth}px`,
-                        lineHeight: 1.12,
+                        lineHeight: 1.16,
                         background: chipTone.bg,
                         borderColor: chipTone.border,
                         color: chipTone.text,
