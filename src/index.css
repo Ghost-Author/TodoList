@@ -97,6 +97,17 @@ h1, h2, h3 {
   color: #ff6fb1;
 }
 
+.tap-target {
+  min-height: 40px;
+  min-width: 40px;
+}
+
+@media (max-width: 768px) {
+  .tap-target {
+    min-height: 42px;
+  }
+}
+
 .surface-soft {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 248, 253, 0.82));
   border: 1px solid #ffe0ef;

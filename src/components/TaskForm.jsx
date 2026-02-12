@@ -89,10 +89,10 @@ const TaskForm = ({
               className="w-full text-sm bg-white/70 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-[#ffd7ea] ring-1 ring-[#ffe4f2]"
             />
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={pickToday} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">今天</button>
-              <button type="button" onClick={pickTomorrow} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">明天</button>
-              <button type="button" onClick={pickWeekend} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">本周末</button>
-              <button type="button" onClick={() => setDueDate('')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">清空</button>
+              <button type="button" onClick={pickToday} className="pill-soft tap-target px-2 py-1 rounded-full text-[10px] font-bold">今天</button>
+              <button type="button" onClick={pickTomorrow} className="pill-soft tap-target px-2 py-1 rounded-full text-[10px] font-bold">明天</button>
+              <button type="button" onClick={pickWeekend} className="pill-soft tap-target px-2 py-1 rounded-full text-[10px] font-bold">本周末</button>
+              <button type="button" onClick={() => setDueDate('')} className="pill-soft tap-target px-2 py-1 rounded-full text-[10px] font-bold">清空</button>
             </div>
           </div>
 
@@ -151,7 +151,7 @@ const TaskForm = ({
                     setTagInput('');
                   }
                 }}
-                className="pill-soft px-3 rounded-xl text-xs font-bold"
+                className="pill-soft tap-target px-3 rounded-xl text-xs font-bold"
               >
                 添加
               </button>
@@ -205,14 +205,14 @@ const TaskForm = ({
             type="button"
             disabled={!hasTaskDraft || taskSubmitting}
             onClick={clearTaskDraft}
-            className="pill-soft px-4 py-3.5 rounded-2xl text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pill-soft tap-target px-4 py-3.5 rounded-2xl text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             清空草稿
           </button>
           <button
             type="submit"
             disabled={taskSubmitting || !input.trim()}
-            className="w-full md:w-auto btn-soft px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full md:w-auto btn-soft tap-target px-10 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Plus className="w-5 h-5" /> {taskSubmitting ? '提交中...' : '确认录入任务'}
           </button>
