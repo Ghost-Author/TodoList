@@ -369,17 +369,13 @@ h1, h2, h3 {
   box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55), 0 14px 28px rgba(255, 149, 198, 0.42);
 }
 
-.wheel-segment-chip {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 247, 252, 0.86));
-  border: 1px solid rgba(255, 220, 236, 0.92);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
-  box-shadow: 0 2px 6px rgba(230, 172, 204, 0.2);
-  backdrop-filter: blur(1px);
-}
-
-.wheel-segment-badge {
+.wheel-segment-text {
   font-family: "Nunito", "Quicksand", "Arial Rounded MT Bold", system-ui, sans-serif;
   letter-spacing: 0.01em;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.92),
+    0 0 6px rgba(255, 255, 255, 0.56);
+  filter: drop-shadow(0 1px 1px rgba(96, 62, 94, 0.12));
 }
 
 @keyframes result-pop {

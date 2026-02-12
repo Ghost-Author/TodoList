@@ -275,15 +275,13 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-chip wheel-segment-badge font-bold px-2 py-0.5 rounded-full text-center shadow-sm"
+                      className="wheel-segment-text font-bold text-center"
                       style={{
                         transform: `translateY(-${layout.radius}px) rotate(-${deg + angle}deg)`,
                         width: `${layout.maxWidth}px`,
                         fontSize: `${layout.fontSize}px`,
                         maxWidth: `${layout.maxWidth}px`,
                         lineHeight: 1.16,
-                        background: chipTone.bg,
-                        borderColor: chipTone.border,
                         color: chipTone.text,
                         overflow: 'hidden',
                         boxSizing: 'border-box'
