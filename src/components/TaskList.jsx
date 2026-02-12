@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X } from 'lucide-react';
 
 const TaskList = ({
@@ -26,6 +26,7 @@ const TaskList = ({
   const compact = taskDensity === 'compact';
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [sectionCollapsed, setSectionCollapsed] = useState({});
   const [editDraft, setEditDraft] = useState({
     input: '',
     note: '',
@@ -165,6 +166,20 @@ const TaskList = ({
     if (diffDays === 1) return { label: '明天截止', tone: completed ? 'normal' : 'soon' };
     if (diffDays > 1) return { label: `${diffDays} 天后`, tone: 'normal' };
     return { label: dueDate, tone: 'normal' };
+  };
+
+  const getDueBucket = (dueDate) => {
+    if (!dueDate) return 'noDate';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(dueDate);
+    if (Number.isNaN(due.getTime())) return 'noDate';
+    due.setHours(0, 0, 0, 0);
+    const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+    if (diffDays < 0) return 'overdue';
+    if (diffDays === 0) return 'today';
+    if (diffDays <= 7) return 'week';
+    return 'later';
   };
 
   const renderTask = (task) => (
@@ -399,16 +414,65 @@ const TaskList = ({
           )}
         </div>
   );
+  const activeTasks = filteredTasks.filter((task) => !task.completed);
+  const completedTasks = filteredTasks.filter((task) => task.completed);
+  const activeTaskSections = useMemo(() => {
+    if (!groupCompleted) return [];
+    const sections = {
+      overdue: [],
+      today: [],
+      week: [],
+      later: [],
+      noDate: []
+    };
+    activeTasks.forEach((task) => {
+      sections[getDueBucket(task.dueDate)].push(task);
+    });
+    return [
+      { key: 'overdue', label: '逾期任务', tone: 'text-red-500', tasks: sections.overdue },
+      { key: 'today', label: '今天截止', tone: 'text-amber-500', tasks: sections.today },
+      { key: 'week', label: '本周内', tone: 'text-orange-500', tasks: sections.week },
+      { key: 'later', label: '之后处理', tone: 'text-[#7b6f8c]', tasks: sections.later },
+      { key: 'noDate', label: '未设置日期', tone: 'text-slate-500', tasks: sections.noDate }
+    ].filter((section) => section.tasks.length > 0);
+  }, [activeTasks, groupCompleted]);
+
   if (!groupCompleted) {
     return <div className="space-y-4">{filteredTasks.map((task) => renderTask(task))}</div>;
   }
 
-  const activeTasks = filteredTasks.filter((task) => !task.completed);
-  const completedTasks = filteredTasks.filter((task) => task.completed);
-
   return (
     <div className="space-y-4">
-      {activeTasks.length > 0 && activeTasks.map((task) => renderTask(task))}
+      {activeTasks.length > 0 && (
+        canDrag
+          ? activeTasks.map((task) => renderTask(task))
+          : activeTaskSections.map((section) => {
+              const collapsed = Boolean(sectionCollapsed[section.key]);
+              return (
+                <div key={section.key} className="surface-soft p-3">
+                  <button
+                    type="button"
+                    onClick={() => setSectionCollapsed((prev) => ({ ...prev, [section.key]: !prev[section.key] }))}
+                    className="w-full flex items-center justify-between text-left px-2 py-1"
+                  >
+                    <span className={`text-xs font-black ${section.tone}`}>
+                      {section.label} ({section.tasks.length})
+                    </span>
+                    {collapsed ? (
+                      <ChevronDown className="w-4 h-4 text-[#7b6f8c]" />
+                    ) : (
+                      <ChevronUp className="w-4 h-4 text-[#7b6f8c]" />
+                    )}
+                  </button>
+                  {!collapsed && (
+                    <div className="mt-2 space-y-3">
+                      {section.tasks.map((task) => renderTask(task))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+      )}
 
       {completedTasks.length > 0 && (
         <div className="surface-soft p-3">
