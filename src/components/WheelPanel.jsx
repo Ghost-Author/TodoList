@@ -47,13 +47,13 @@ const buildSectorPath = (cx, cy, radius, startDeg, endDeg) => {
   return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
 };
 
-const getVerticalLabel = (segmentDeg, label) => {
+const getShortLabel = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
   if (!raw) return '';
   const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
   const candidate = (firstPhrase || raw).trim();
   const chars = toChars(candidate);
-  const maxChars = segmentDeg >= 42 ? 5 : segmentDeg >= 30 ? 4 : segmentDeg >= 22 ? 3 : 2;
+  const maxChars = segmentDeg >= 48 ? 6 : segmentDeg >= 36 ? 5 : segmentDeg >= 28 ? 4 : segmentDeg >= 20 ? 3 : 2;
   if (chars.length <= maxChars) return candidate;
   return `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
 };
@@ -110,8 +110,11 @@ const WheelPanel = ({
       const end = (idx + 1) * step - 90;
       const mid = start + step / 2;
       const textPoint = polarPoint(cx, cy, textRadius, mid);
-      const shortLabel = getVerticalLabel(step, opt.label);
-      const labelChars = toChars(shortLabel);
+      const shortLabel = getShortLabel(step, opt.label);
+      const tangentRotation = mid + 90;
+      const normalizedRotation = tangentRotation > 90 && tangentRotation < 270
+        ? tangentRotation + 180
+        : tangentRotation;
       return {
         id: opt.id,
         index: idx,
@@ -120,7 +123,8 @@ const WheelPanel = ({
         sectorPath: buildSectorPath(cx, cy, radius, start, end),
         textX: textPoint.x,
         textY: textPoint.y,
-        labelChars,
+        shortLabel,
+        textRotation: normalizedRotation,
         fontSize: step >= 42 ? 14 : step >= 30 ? 12 : 11
       };
     });
@@ -276,22 +280,15 @@ const WheelPanel = ({
                     {sectors.map((sector) => (
                       <text
                         key={`${sector.id}-text`}
-                        className="wheel-segment-text wheel-segment-vertical-text"
+                        className="wheel-segment-text wheel-segment-radial-text"
                         fill={sector.textColor}
                         fontSize={sector.fontSize}
                         fontWeight="800"
                         textAnchor="middle"
                         dominantBaseline="middle"
+                        transform={`rotate(${sector.textRotation} ${sector.textX} ${sector.textY})`}
                       >
-                        {sector.labelChars.map((ch, charIdx) => (
-                          <tspan
-                            key={`${sector.id}-char-${charIdx}`}
-                            x={sector.textX}
-                            y={sector.textY + (charIdx - (sector.labelChars.length - 1) / 2) * (sector.fontSize * 0.92)}
-                          >
-                            {ch}
-                          </tspan>
-                        ))}
+                        {sector.shortLabel}
                       </text>
                     ))}
                   </svg>

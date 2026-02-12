@@ -378,7 +378,7 @@ h1, h2, h3 {
   filter: drop-shadow(0 1px 1px rgba(96, 62, 94, 0.12));
 }
 
-.wheel-segment-vertical-text {
+.wheel-segment-radial-text {
   dominant-baseline: middle;
 }
 
