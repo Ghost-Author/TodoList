@@ -89,11 +89,14 @@ const WheelPanel = ({
   const [customCollapsed, setCustomCollapsed] = useState(false);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [notice, setNotice] = useState('');
+  const [undoOption, setUndoOption] = useState(null);
   const noticeTimerRef = useRef(null);
+  const undoTimerRef = useRef(null);
 
   useEffect(() => {
     return () => {
       window.clearTimeout(noticeTimerRef.current);
+      window.clearTimeout(undoTimerRef.current);
     };
   }, []);
 
@@ -101,6 +104,26 @@ const WheelPanel = ({
     setNotice(text);
     window.clearTimeout(noticeTimerRef.current);
     noticeTimerRef.current = window.setTimeout(() => setNotice(''), 1500);
+  };
+
+  const queueUndoOption = (label) => {
+    window.clearTimeout(undoTimerRef.current);
+    setUndoOption({ label });
+    undoTimerRef.current = window.setTimeout(() => {
+      setUndoOption(null);
+    }, 5000);
+  };
+
+  const handleUndoRemove = async () => {
+    if (!undoOption?.label) return;
+    const ok = await onAddOption(undoOption.label);
+    if (ok !== false) {
+      setUndoOption(null);
+      window.clearTimeout(undoTimerRef.current);
+      showNotice('已撤销删除');
+      return;
+    }
+    showNotice('撤销失败');
   };
 
   const { gradient, segmentColors } = useMemo(() => {
@@ -406,6 +429,18 @@ const WheelPanel = ({
             <div className="mt-2 min-h-[18px] text-[11px] text-[#7b6f8c]">
               {notice}
             </div>
+            {undoOption?.label && (
+              <div className="mt-1 text-[11px] text-[#7b6f8c] flex items-center gap-2 w-full max-w-[320px]">
+                <span className="truncate">已删除：{undoOption.label}</span>
+                <button
+                  type="button"
+                  onClick={handleUndoRemove}
+                  className="px-2 py-0.5 rounded-full bg-white/90 border border-[#ffe4f2] text-[#ff6fb1] font-bold shrink-0"
+                >
+                  撤销
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">
@@ -468,6 +503,7 @@ const WheelPanel = ({
                             const ok = await onRemoveOption(opt.id);
                             if (ok !== false) {
                               showNotice('选项已删除');
+                              queueUndoOption(opt.label);
                             }
                           }}
                           className="text-[#ff6fb1]"
