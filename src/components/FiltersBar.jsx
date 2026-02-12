@@ -26,6 +26,7 @@ const FiltersBar = ({
   const noSelection = !selectedCount;
   const noFiltered = !filteredCount;
   const isBulkBusy = Boolean(bulkActionLoading);
+  const canSwitchToDragMode = !canDrag;
   const totalCount = taskCounts?.all || 0;
   const completedCount = taskCounts?.completed || 0;
   const overdueCount = taskCounts?.overdue || 0;
@@ -211,6 +212,20 @@ const FiltersBar = ({
         <span className="pill-soft px-3 py-1 rounded-full text-[#7b6f8c]">
           已选 {selectedCount || 0} 条
         </span>
+        {canSwitchToDragMode && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setFilter('all');
+              setSortBy('manual');
+            }}
+            className="px-3 py-1 rounded-full font-bold text-white bg-gradient-to-r from-[#ff8acb] to-[#8fd3ff] whitespace-nowrap"
+            title="切换到可拖动排序的状态"
+          >
+            进入拖动排序模式
+          </button>
+        )}
         <button
           type="button"
           onClick={selectAllFiltered}
