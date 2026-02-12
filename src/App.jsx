@@ -426,6 +426,21 @@ const App = () => {
     }, 6000);
   };
 
+  const clearCompleted = async () => {
+    const ids = tasks.filter((t) => t.completed).map((t) => t.id);
+    if (ids.length === 0) return;
+    const deleted = await bulkDeleteTasks(ids);
+    if (!deleted || deleted.length === 0) return;
+    clearSelection();
+    setUndoData(deleted);
+    setToast({ message: `已清理 ${deleted.length} 条已完成任务`, action: '撤销' });
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => {
+      setUndoData(null);
+      setToast(null);
+    }, 6000);
+  };
+
   const undoDelete = async () => {
     if (!undoData) return;
     const ok = await restoreTasks(undoData);
@@ -726,6 +741,7 @@ const App = () => {
               clearSelection={clearSelection}
               bulkComplete={bulkComplete}
               bulkDelete={bulkDelete}
+              clearCompleted={clearCompleted}
               canDrag={canDrag}
               selectedCount={selectedIds.size}
               filteredCount={filteredTasks.length}
