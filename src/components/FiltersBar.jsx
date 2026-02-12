@@ -181,7 +181,7 @@ const FiltersBar = ({
           ))}
         </div>
       )}
-      <div className="flex items-center gap-2 text-xs font-bold overflow-x-auto no-scrollbar pb-1">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
         <span className="pill-soft px-3 py-1 rounded-full text-[#7b6f8c]">
           已选 {selectedCount || 0} 条
         </span>
@@ -189,7 +189,7 @@ const FiltersBar = ({
           type="button"
           onClick={selectAllFiltered}
           disabled={noFiltered}
-          className="pill-soft tap-target px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           全选当前
         </button>
@@ -197,7 +197,7 @@ const FiltersBar = ({
           type="button"
           onClick={clearSelection}
           disabled={noSelection}
-          className="pill-soft tap-target px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           取消选择
         </button>
@@ -205,7 +205,7 @@ const FiltersBar = ({
           type="button"
           onClick={() => bulkComplete(true)}
           disabled={noSelection || isBulkBusy}
-          className="pill-soft tap-target px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {bulkActionLoading === 'complete' ? '处理中...' : '标记完成'}
         </button>
@@ -213,7 +213,7 @@ const FiltersBar = ({
           type="button"
           onClick={() => bulkComplete(false)}
           disabled={noSelection || isBulkBusy}
-          className="pill-soft tap-target px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {bulkActionLoading === 'uncomplete' ? '处理中...' : '标记未完成'}
         </button>
@@ -225,7 +225,7 @@ const FiltersBar = ({
               bulkDelete();
             }
           }}
-          className="tap-target px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-full font-bold text-white bg-[#ff7aa8] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {bulkActionLoading === 'delete' ? '删除中...' : '批量删除'}
         </button>
@@ -237,7 +237,7 @@ const FiltersBar = ({
               clearCompleted();
             }
           }}
-          className="tap-target px-3 py-1 rounded-full font-bold text-white bg-[#ff8f6b] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-full font-bold text-white bg-[#ff8f6b] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {bulkActionLoading === 'clearCompleted' ? '清理中...' : '清理已完成'}
         </button>

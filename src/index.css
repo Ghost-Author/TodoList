@@ -98,14 +98,25 @@ h1, h2, h3 {
 }
 
 .tap-target {
-  min-height: 40px;
-  min-width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
   .tap-target {
-    min-height: 42px;
+    min-height: 34px;
   }
+}
+
+.hit-soft {
+  position: relative;
+}
+
+.hit-soft::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 
 .surface-soft {
