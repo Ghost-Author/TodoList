@@ -253,6 +253,13 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     return true;
   };
 
+  const getLandedIndexByAngle = (angle, count) => {
+    if (!count) return 0;
+    const segment = 360 / count;
+    const normalized = ((angle % 360) + 360) % 360;
+    return Math.floor((((360 - normalized) % 360) / segment)) % count;
+  };
+
   const spinWheel = async () => {
     if (wheelSpinning || currentWheelOptions.length === 0) return;
 
@@ -264,9 +271,17 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     setWheelSpinning(true);
     setWheelAngle(wheelAngleRef.current);
 
-    const label = currentWheelOptions[index].label;
+    const finalAngle = wheelAngleRef.current;
     spinTimerRef.current = setTimeout(async () => {
-      setWheelResult(label);
+      const landedIndex = getLandedIndexByAngle(finalAngle, count);
+      const landedLabel = currentWheelOptions[landedIndex]?.label || currentWheelOptions[index]?.label || '';
+      if (!landedLabel) {
+        setWheelSpinning(false);
+        spinTimerRef.current = null;
+        return;
+      }
+
+      setWheelResult(landedLabel);
       setWheelCreated(false);
       setWheelSpinning(false);
       spinTimerRef.current = null;
@@ -274,7 +289,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
       if (!session?.user?.id) return;
       const { data } = await supabase
         .from('wheel_history')
-        .insert({ user_id: session.user.id, label, group_name: wheelGroup })
+        .insert({ user_id: session.user.id, label: landedLabel, group_name: wheelGroup })
         .select('id, label, group_name, created_at')
         .single();
       if (data) {

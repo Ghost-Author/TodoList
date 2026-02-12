@@ -26,6 +26,13 @@ const hexToRgb = (hex) => {
   };
 };
 const getLuma = ({ r, g, b }) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+const makeSegmentColor = (idx, count) => {
+  if (count <= DEFAULT_COLORS.length) return DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
+  const baseHue = (idx * 137.508) % 360;
+  const sat = idx % 2 === 0 ? 78 : 72;
+  const light = idx % 3 === 0 ? 86 : idx % 3 === 1 ? 82 : 88;
+  return `hsl(${Math.round(baseHue)} ${sat}% ${light}%)`;
+};
 
 const getDisplayLabelToken = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
@@ -66,21 +73,13 @@ const getLabelLayout = (segmentDeg, maxLineLength) => {
   return { fontSize, radius, maxWidth };
 };
 
-const getChipTone = (hexColor) => {
-  const rgb = hexToRgb(hexColor);
+const getTextTone = (color) => {
+  if (String(color).startsWith('hsl')) return '#3b2e4a';
+  const rgb = hexToRgb(color);
   const luma = getLuma(rgb);
-  if (luma < 0.6) {
-    return {
-      bg: 'rgba(255,255,255,0.82)',
-      border: 'rgba(255,229,242,0.95)',
-      text: '#3b2e4a'
-    };
-  }
-  return {
-    bg: 'rgba(255,250,254,0.9)',
-    border: 'rgba(255,219,236,0.9)',
-    text: '#4a3b5a'
-  };
+  if (luma < 0.6) return '#2f2539';
+  if (luma > 0.86) return '#4a3b5a';
+  return '#3b2e4a';
 };
 
 const WheelPanel = ({
@@ -107,16 +106,25 @@ const WheelPanel = ({
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingName, setEditingName] = useState('');
 
-  const gradient = useMemo(() => {
-    if (!options.length) return 'conic-gradient(#f3f4f6 0 360deg)';
+  const { gradient, segmentColors } = useMemo(() => {
+    if (!options.length) {
+      return {
+        gradient: 'conic-gradient(#f3f4f6 0 360deg)',
+        segmentColors: []
+      };
+    }
     const step = 360 / options.length;
+    const colors = options.map((_, idx) => makeSegmentColor(idx, options.length));
     const parts = options.map((_, idx) => {
       const start = idx * step;
       const end = (idx + 1) * step;
-      const color = DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
+      const color = colors[idx];
       return `${color} ${start}deg ${end}deg`;
     });
-    return `conic-gradient(${parts.join(', ')})`;
+    return {
+      gradient: `conic-gradient(${parts.join(', ')})`,
+      segmentColors: colors
+    };
   }, [options]);
 
   return (
@@ -260,11 +268,11 @@ const WheelPanel = ({
               {options.map((opt, idx) => {
                 const step = 360 / options.length;
                 const deg = idx * step + step / 2;
-                const segmentColor = DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
+                const segmentColor = segmentColors[idx];
                 const labelToken = getDisplayLabelToken(step, opt.label);
                 const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
                 const layout = getLabelLayout(step, maxLineLength);
-                const chipTone = getChipTone(segmentColor);
+                const textTone = getTextTone(segmentColor);
                 return (
                   <div
                     key={opt.id}
@@ -275,27 +283,34 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-text font-bold text-center"
+                      className="wheel-segment-holder"
                       style={{
-                        transform: `translateY(-${layout.radius}px) rotate(-${deg + angle}deg)`,
+                        transform: `translateY(-${layout.radius}px)`,
                         width: `${layout.maxWidth}px`,
-                        fontSize: `${layout.fontSize}px`,
-                        maxWidth: `${layout.maxWidth}px`,
-                        lineHeight: 1.16,
-                        color: chipTone.text,
                         overflow: 'hidden',
                         boxSizing: 'border-box'
                       }}
-                      title={opt.label}
                     >
-                      {labelToken.lines.map((line, lineIdx) => (
-                        <span
-                          key={`${opt.id}-line-${lineIdx}`}
-                          className="block whitespace-nowrap overflow-hidden text-ellipsis"
-                        >
-                          {line}
-                        </span>
-                      ))}
+                      <span
+                        className="wheel-segment-text font-bold text-center"
+                        style={{
+                          transform: `rotate(-${deg + angle}deg)`,
+                          fontSize: `${layout.fontSize}px`,
+                          lineHeight: 1.16,
+                          color: textTone,
+                          maxWidth: `${layout.maxWidth}px`
+                        }}
+                        title={opt.label}
+                      >
+                        {labelToken.lines.map((line, lineIdx) => (
+                          <span
+                            key={`${opt.id}-line-${lineIdx}`}
+                            className="block whitespace-nowrap overflow-hidden text-ellipsis"
+                          >
+                            {line}
+                          </span>
+                        ))}
+                      </span>
                     </span>
                   </div>
                 );
