@@ -69,91 +69,99 @@ const getTextTone = (color) => {
 };
 
 const drawWheelCanvas = (canvas, options, colors) => {
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  try {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
-  const size = 288;
-  canvas.width = Math.round(size * dpr);
-  canvas.height = Math.round(size * dpr);
-  canvas.style.width = `${size}px`;
-  canvas.style.height = `${size}px`;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, size, size);
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+    const size = 288;
+    canvas.width = Math.round(size * dpr);
+    canvas.height = Math.round(size * dpr);
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, size, size);
 
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = 136;
-  const textRadius = 96;
+    const cx = size / 2;
+    const cy = size / 2;
+    const radius = 136;
+    const textRadius = 96;
 
-  if (!options.length) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#f3f4f6';
-    ctx.fill();
-    return;
-  }
-
-  const count = options.length;
-  const step = (Math.PI * 2) / count;
-  for (let i = 0; i < count; i += 1) {
-    const start = -Math.PI / 2 + i * step;
-    const end = start + step;
-    const mid = (start + end) / 2;
-    const segmentDeg = 360 / count;
-
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, radius, start, end);
-    ctx.closePath();
-    ctx.fillStyle = colors[i];
-    ctx.fill();
-
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.66)';
-    ctx.stroke();
-
-    const rawLabel = normalizeWheelLabel(options[i]?.label);
-    if (!rawLabel) continue;
-
-    const textColor = getTextTone(colors[i]);
-    const fontSize = getFontSizeBySegment(segmentDeg);
-    ctx.font = `800 ${fontSize}px "Nunito", "Quicksand", sans-serif`;
-
-    const maxArcLength = step * textRadius * 0.84;
-    const fittedLabel = fitLabelToWidth(ctx, rawLabel, maxArcLength);
-    const x = cx + textRadius * Math.cos(mid);
-    const y = cy + textRadius * Math.sin(mid);
-
-    let rotate = mid + Math.PI / 2;
-    if (rotate > Math.PI / 2 && rotate < Math.PI * 1.5) {
-      rotate += Math.PI;
+    if (!Array.isArray(options) || !options.length) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fill();
+      return;
     }
 
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(rotate);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = textColor;
-    ctx.shadowColor = 'rgba(255,255,255,0.6)';
-    ctx.shadowBlur = 4;
-    ctx.fillText(fittedLabel, 0, 0);
-    ctx.restore();
+    const safeColors = Array.isArray(colors) && colors.length === options.length
+      ? colors
+      : options.map((_, idx) => makeSegmentColor(idx, options.length));
+    const count = options.length;
+    const step = (Math.PI * 2) / count;
+    for (let i = 0; i < count; i += 1) {
+      const start = -Math.PI / 2 + i * step;
+      const end = start + step;
+      const mid = (start + end) / 2;
+      const segmentDeg = 360 / count;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, start, end);
+      ctx.closePath();
+      ctx.fillStyle = safeColors[i];
+      ctx.fill();
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.66)';
+      ctx.stroke();
+
+      const rawLabel = normalizeWheelLabel(options[i]?.label);
+      if (!rawLabel) continue;
+
+      const textColor = getTextTone(safeColors[i]);
+      const fontSize = getFontSizeBySegment(segmentDeg);
+      ctx.font = `800 ${fontSize}px "Nunito", "Quicksand", sans-serif`;
+
+      const maxArcLength = step * textRadius * 0.84;
+      const fittedLabel = fitLabelToWidth(ctx, rawLabel, maxArcLength);
+      const x = cx + textRadius * Math.cos(mid);
+      const y = cy + textRadius * Math.sin(mid);
+
+      let rotate = mid + Math.PI / 2;
+      if (rotate > Math.PI / 2 && rotate < Math.PI * 1.5) {
+        rotate += Math.PI;
+      }
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rotate);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = textColor;
+      ctx.shadowColor = 'rgba(255,255,255,0.6)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(fittedLabel, 0, 0);
+      ctx.restore();
+    }
+  } catch (err) {
+    // Keep UI functional even if a browser has unexpected canvas issues.
+    console.error('drawWheelCanvas failed', err);
   }
 };
 
 const WheelPanel = ({
-  groups,
+  groups = [],
   currentGroup,
   onGroupChange,
   onAddGroup,
   onRenameGroup,
   onDeleteGroup,
   onClearHistory,
-  options,
-  history,
+  options = [],
+  history = [],
   spinning,
   angle,
   result,
