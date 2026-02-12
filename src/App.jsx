@@ -205,6 +205,15 @@ const App = () => {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) {
+        clearTimeout(undoTimerRef.current);
+        undoTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     const userId = session?.user?.id;
     if (!userId) return;
     if (draftLoadedUserRef.current === userId) return;

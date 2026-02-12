@@ -21,6 +21,7 @@ const FiltersBar = ({
   filteredTasks
 }) => {
   const searchInputRef = useRef(null);
+  const searchQueryRef = useRef(searchQuery);
   const noSelection = !selectedCount;
   const noFiltered = !filteredCount;
   const totalCount = taskCounts?.all || 0;
@@ -43,6 +44,10 @@ const FiltersBar = ({
   }, [filteredTasks]);
 
   useEffect(() => {
+    searchQueryRef.current = searchQuery;
+  }, [searchQuery]);
+
+  useEffect(() => {
     const onKeyDown = (e) => {
       const target = e.target;
       const tag = target?.tagName?.toLowerCase?.() || '';
@@ -56,7 +61,7 @@ const FiltersBar = ({
         return;
       }
 
-      if (e.key === 'Escape' && document.activeElement === searchInputRef.current && searchQuery) {
+      if (e.key === 'Escape' && document.activeElement === searchInputRef.current && searchQueryRef.current) {
         e.preventDefault();
         setSearchQuery('');
       }
@@ -64,7 +69,7 @@ const FiltersBar = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [searchQuery, setSearchQuery]);
+  }, [setSearchQuery]);
 
   return (
     <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
