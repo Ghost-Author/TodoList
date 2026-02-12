@@ -14,7 +14,6 @@ const DEFAULT_COLORS = [
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
-const sliceChars = (value, count) => toChars(value).slice(0, count).join('');
 const hexToRgb = (hex) => {
   const clean = String(hex || '').replace('#', '');
   if (clean.length !== 6) return { r: 255, g: 255, b: 255 };
@@ -43,32 +42,26 @@ const getDisplayLabelToken = (segmentDeg, label) => {
   if (chars.length === 0) return { lines: [''], plain: '' };
 
   const lineChars = segmentDeg >= 56 ? 10 : segmentDeg >= 44 ? 9 : segmentDeg >= 30 ? 8 : segmentDeg >= 22 ? 6 : 4;
-  const maxLines = segmentDeg >= 56 ? 4 : segmentDeg >= 42 ? 3 : segmentDeg >= 22 ? 2 : 1;
-  const maxChars = lineChars * maxLines;
   if (chars.length <= lineChars || segmentDeg < 18) {
-    const single = chars.length <= maxChars ? candidate : `${sliceChars(candidate, maxChars)}…`;
-    return { lines: [single], plain: single };
+    return { lines: [candidate], plain: candidate };
   }
 
   const lines = [];
-  for (let i = 0; i < maxLines; i += 1) {
-    const start = i * lineChars;
-    const end = start + lineChars;
+  for (let i = 0; i < chars.length; i += lineChars) {
+    const start = i;
+    const end = i + lineChars;
     const chunk = chars.slice(start, end).join('');
     if (!chunk) break;
     lines.push(chunk);
   }
-  if (chars.length > maxChars && lines.length > 0) {
-    const last = lines[lines.length - 1];
-    lines[lines.length - 1] = `${sliceChars(last, Math.max(1, lineChars - 1))}…`;
-  }
   return { lines, plain: lines.join('') };
 };
 
-const getLabelLayout = (segmentDeg, maxLineLength) => {
+const getLabelLayout = (segmentDeg, maxLineLength, lineCount) => {
   const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
   const textPenalty = Math.max(0, Math.ceil((maxLineLength - 6) / 4));
-  const fontSize = clamp(baseFont - textPenalty, 6, 12);
+  const linePenalty = Math.max(0, Math.ceil((lineCount - 2) / 2));
+  const fontSize = clamp(baseFont - textPenalty - linePenalty, 5, 12);
 
   const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 79;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
@@ -275,7 +268,7 @@ const WheelPanel = ({
                 const segmentColor = segmentColors[idx];
                 const labelToken = getDisplayLabelToken(step, opt.label);
                 const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
-                const layout = getLabelLayout(step, maxLineLength);
+                const layout = getLabelLayout(step, maxLineLength, labelToken.lines.length);
                 const textTone = getTextTone(segmentColor);
                 return (
                   <div
@@ -291,7 +284,6 @@ const WheelPanel = ({
                       style={{
                         transform: `translateY(-${layout.radius}px)`,
                         width: `${layout.maxWidth}px`,
-                        overflow: 'hidden',
                         boxSizing: 'border-box'
                       }}
                     >
@@ -300,7 +292,7 @@ const WheelPanel = ({
                         style={{
                           transform: `rotate(-${deg + angle}deg)`,
                           fontSize: `${layout.fontSize}px`,
-                          lineHeight: 1.16,
+                          lineHeight: 1.08,
                           color: textTone,
                           maxWidth: `${layout.maxWidth}px`
                         }}
@@ -309,7 +301,7 @@ const WheelPanel = ({
                         {labelToken.lines.map((line, lineIdx) => (
                           <span
                             key={`${opt.id}-line-${lineIdx}`}
-                            className="block whitespace-nowrap overflow-hidden text-ellipsis"
+                            className="block whitespace-nowrap"
                           >
                             {line}
                           </span>
