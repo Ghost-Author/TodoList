@@ -369,19 +369,6 @@ h1, h2, h3 {
   box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55), 0 14px 28px rgba(255, 149, 198, 0.42);
 }
 
-.wheel-segment-text {
-  font-family: "Nunito", "Quicksand", "Arial Rounded MT Bold", system-ui, sans-serif;
-  letter-spacing: 0.01em;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.92),
-    0 0 6px rgba(255, 255, 255, 0.56);
-  filter: drop-shadow(0 1px 1px rgba(96, 62, 94, 0.12));
-}
-
-.wheel-segment-radial-text {
-  dominant-baseline: middle;
-}
-
 @keyframes result-pop {
   0% {
     opacity: 0;
