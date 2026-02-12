@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import {
   LayoutGrid,
   Cloud,
-  PieChart
+  PieChart,
+  Dice5
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { generateCaptcha } from './utils/captcha.js';
@@ -285,7 +286,7 @@ const App = () => {
       if (typeof parsed.sortBy === 'string') {
         setSortBy(parsed.sortBy);
       }
-      if (parsed.view === 'tasks' || parsed.view === 'stats') {
+      if (parsed.view === 'tasks' || parsed.view === 'wheel' || parsed.view === 'stats') {
         setView(parsed.view);
       }
       if (typeof parsed.completedCollapsed === 'boolean') {
@@ -710,6 +711,9 @@ const App = () => {
             <button onClick={() => setView('tasks')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'tasks' ? 'tab-active' : 'tab-inactive hover:text-[#ff6fb1]'}`}>
               <LayoutGrid className="w-4 h-4" /> 任务清单
             </button>
+            <button onClick={() => setView('wheel')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'wheel' ? 'tab-active' : 'tab-inactive hover:text-[#ff6fb1]'}`}>
+              <Dice5 className="w-4 h-4" /> 转盘
+            </button>
             <button onClick={() => setView('stats')} className={`flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'stats' ? 'tab-active' : 'tab-inactive hover:text-[#ff6fb1]'}`}>
               <PieChart className="w-4 h-4" /> 小成就
             </button>
@@ -773,30 +777,6 @@ const App = () => {
               tagInput={tagInput}
               setTagInput={setTagInput}
             />
-
-            <div className="mt-2 mb-6">
-              <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘区域出错了，请刷新重试。</div>}>
-                <WheelPanel
-                  groups={wheelGroups}
-                  currentGroup={wheelGroup}
-                  onGroupChange={setWheelGroup}
-                  onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
-                  onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
-                  onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
-                  onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
-                  options={currentWheelOptions}
-                  history={currentWheelHistory}
-                  spinning={wheelSpinning}
-                  angle={wheelAngle}
-                  result={wheelResult}
-                  created={wheelCreated}
-                  onSpin={spinWheel}
-                  onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
-                  onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
-                  onCreateTask={createTaskFromWheel}
-                />
-              </Sentry.ErrorBoundary>
-            </div>
 
             <div className="sticky top-2 md:top-3 z-30 mb-6">
               <FiltersBar
@@ -886,6 +866,39 @@ const App = () => {
                 </div>
               </div>
             )}
+          </>
+        ) : view === 'wheel' ? (
+          <>
+            <div className="grid grid-cols-1 gap-6 mb-8">
+              <div className="lg:col-span-2 flex flex-col justify-end">
+                <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a] flex items-center gap-2">
+                  <Dice5 className="w-7 h-7 text-[#ff8acb]" /> 决策转盘
+                </h1>
+                <p className="text-[#7b6f8c] mt-1">把犹豫交给转盘，先开始再优化。</p>
+              </div>
+            </div>
+
+            <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘区域出错了，请刷新重试。</div>}>
+              <WheelPanel
+                groups={wheelGroups}
+                currentGroup={wheelGroup}
+                onGroupChange={setWheelGroup}
+                onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
+                onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
+                onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
+                onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
+                options={currentWheelOptions}
+                history={currentWheelHistory}
+                spinning={wheelSpinning}
+                angle={wheelAngle}
+                result={wheelResult}
+                created={wheelCreated}
+                onSpin={spinWheel}
+                onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
+                onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
+                onCreateTask={createTaskFromWheel}
+              />
+            </Sentry.ErrorBoundary>
           </>
         ) : (
           <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">统计区域出错了，请稍后重试。</div>}>
