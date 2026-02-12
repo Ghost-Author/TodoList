@@ -45,11 +45,20 @@ const getDisplayLabel = (segmentDeg, label) => {
 };
 
 const getLabelLayout = (segmentDeg) => {
-  const fontSize = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
+  const fontSize = segmentDeg >= 36 ? 10 : segmentDeg >= 24 ? 9 : 8;
   const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.88), 32, 98);
+  const maxWidth = clamp(Math.round(arcLength * 0.62), 24, 64);
   return { fontSize, radius, maxWidth };
+};
+
+const getSegmentAlias = (segmentDeg, label, idx) => {
+  const cleaned = getDisplayLabel(segmentDeg, label).replace(/[，,。.!！?？;；:：|/]/g, '').trim();
+  if (!cleaned) return `${idx + 1}`;
+  const chars = toChars(cleaned);
+  const hasAscii = /[a-zA-Z0-9]/.test(cleaned);
+  const aliasLength = hasAscii ? (segmentDeg >= 32 ? 3 : 2) : (segmentDeg >= 32 ? 2 : 1);
+  return chars.slice(0, aliasLength).join('').toUpperCase();
 };
 
 const getTextTone = (color) => {
@@ -249,7 +258,7 @@ const WheelPanel = ({
                 const deg = idx * step + step / 2;
                 const segmentColor = segmentColors[idx];
                 const layout = getLabelLayout(step);
-                const displayLabel = getDisplayLabel(step, opt.label);
+                const alias = getSegmentAlias(step, opt.label, idx);
                 const textTone = getTextTone(segmentColor);
                 return (
                   <div
@@ -261,20 +270,19 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-text wheel-segment-label-chip font-bold text-center px-1.5 py-0.5 rounded-lg"
+                      className="wheel-segment-text wheel-segment-badge font-black text-center rounded-full"
                       style={{
                         transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
                         fontSize: `${layout.fontSize}px`,
-                        lineHeight: 1.08,
+                        lineHeight: 1,
                         color: textTone,
                         maxWidth: `${layout.maxWidth}px`,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        minWidth: `${Math.min(layout.maxWidth, 20)}px`,
+                        height: `${Math.max(16, layout.fontSize + 8)}px`
                       }}
                       title={opt.label}
                     >
-                      {displayLabel}
+                      {alias}
                     </span>
                   </div>
                 );
@@ -297,6 +305,26 @@ const WheelPanel = ({
 
             <div className="mt-4 text-[11px] text-[#7b6f8c] flex items-center gap-1">
               <Sparkles className="w-3 h-3" /> 结果仅提示，不会自动创建任务
+            </div>
+
+            <div className="mt-3 w-full max-w-[320px] card-soft-sm px-3 py-2.5">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6f8c] mb-2">扇区说明</div>
+              <div className="max-h-28 overflow-y-auto pr-1 space-y-1.5">
+                {options.map((opt, idx) => (
+                  <div key={opt.id} className="flex items-center gap-2 text-xs text-[#4a3b5a]">
+                    <span
+                      className="w-4 h-4 rounded-full border border-white/70 shrink-0"
+                      style={{ background: segmentColors[idx] }}
+                      aria-hidden="true"
+                    />
+                    <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-white/80 border border-[#ffe4f2] text-[10px] font-black text-[#7b6f8c]">
+                      {idx + 1}
+                    </span>
+                    <span className="truncate" title={opt.label}>{opt.label}</span>
+                  </div>
+                ))}
+                {options.length === 0 && <div className="text-xs text-slate-400">暂无扇区</div>}
+              </div>
             </div>
 
             <div className="mt-3 min-h-[34px] flex items-center">
