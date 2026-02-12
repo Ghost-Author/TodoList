@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 
 const FiltersBar = ({
   filter,
@@ -20,6 +20,7 @@ const FiltersBar = ({
   filteredCount,
   filteredTasks
 }) => {
+  const searchInputRef = useRef(null);
   const noSelection = !selectedCount;
   const noFiltered = !filteredCount;
   const totalCount = taskCounts?.all || 0;
@@ -40,6 +41,30 @@ const FiltersBar = ({
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8);
   }, [filteredTasks]);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const target = e.target;
+      const tag = target?.tagName?.toLowerCase?.() || '';
+      const isTypingTarget = tag === 'input' || tag === 'textarea' || tag === 'select' || target?.isContentEditable;
+
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (isTypingTarget) return;
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select?.();
+        return;
+      }
+
+      if (e.key === 'Escape' && document.activeElement === searchInputRef.current && searchQuery) {
+        e.preventDefault();
+        setSearchQuery('');
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [searchQuery, setSearchQuery]);
 
   return (
     <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
@@ -102,10 +127,11 @@ const FiltersBar = ({
       )}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <input
+          ref={searchInputRef}
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="搜索任务/备注/分类/标签"
+          placeholder="搜索任务/备注/分类/标签（/ 快捷键）"
           className="w-full text-sm bg-white/82 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
         />
         <select
