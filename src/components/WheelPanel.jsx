@@ -11,6 +11,7 @@ const DEFAULT_COLORS = [
   '#cfe8ff',
   '#ffd1dc'
 ];
+const QUICK_OPTIONS = ['喝水', '伸展 3 分钟', '清理桌面', '番茄钟 25 分钟', '散步 10 分钟', '写今日复盘'];
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
@@ -154,6 +155,30 @@ const WheelPanel = ({
     return true;
   };
 
+  const submitNewGroup = async () => {
+    if (!canAddGroup(newGroup)) return;
+    const ok = await onAddGroup(newGroup.trim());
+    if (ok !== false) {
+      setNewGroup('');
+      showNotice('分组已创建');
+    } else {
+      showNotice('新建分组失败');
+    }
+  };
+
+  const submitNewOption = async (value) => {
+    if (!canAddOption(value)) return;
+    const ok = await onAddOption(String(value).trim());
+    if (ok !== false) {
+      if (String(value).trim() === newOption.trim()) {
+        setNewOption('');
+      }
+      showNotice('选项已添加');
+    } else {
+      showNotice('添加选项失败');
+    }
+  };
+
   return (
     <div className="card-soft p-4 md:p-7 overflow-hidden relative">
       <div className="wheel-cloud wheel-cloud-a" />
@@ -222,14 +247,7 @@ const WheelPanel = ({
               onKeyDown={async (e) => {
                 if (e.key !== 'Enter') return;
                 e.preventDefault();
-                if (!canAddGroup(newGroup)) return;
-                const ok = await onAddGroup(newGroup.trim());
-                if (ok !== false) {
-                  setNewGroup('');
-                  showNotice('分组已创建');
-                } else {
-                  showNotice('新建分组失败');
-                }
+                await submitNewGroup();
               }}
               placeholder="新增分组"
               className="text-xs bg-white/85 rounded-full px-3 py-1 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
@@ -237,16 +255,7 @@ const WheelPanel = ({
             <button
               type="button"
               className="text-xs font-bold text-white bg-[#ff8acb] px-3 py-1 rounded-full shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
-              onClick={async () => {
-                if (!canAddGroup(newGroup)) return;
-                const ok = await onAddGroup(newGroup.trim());
-                if (ok !== false) {
-                  setNewGroup('');
-                  showNotice('分组已创建');
-                } else {
-                  showNotice('新建分组失败');
-                }
-              }}
+              onClick={submitNewGroup}
             >
               新建
             </button>
@@ -421,14 +430,7 @@ const WheelPanel = ({
                       onKeyDown={async (e) => {
                         if (e.key !== 'Enter') return;
                         e.preventDefault();
-                        if (!canAddOption(newOption)) return;
-                        const ok = await onAddOption(newOption.trim());
-                        if (ok !== false) {
-                          setNewOption('');
-                          showNotice('选项已添加');
-                        } else {
-                          showNotice('添加选项失败');
-                        }
+                        await submitNewOption(newOption);
                       }}
                       placeholder="输入想要转到的事项"
                       className="flex-1 min-w-0 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
@@ -436,20 +438,24 @@ const WheelPanel = ({
                     <button
                       type="button"
                       className="px-3 rounded-xl bg-[#ff8acb] text-white shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
-                      onClick={async () => {
-                        if (!canAddOption(newOption)) return;
-                        const ok = await onAddOption(newOption.trim());
-                        if (ok !== false) {
-                          setNewOption('');
-                          showNotice('选项已添加');
-                        } else {
-                          showNotice('添加选项失败');
-                        }
-                      }}
+                      onClick={() => submitNewOption(newOption)}
                       title="添加选项"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] text-[#7b6f8c] font-black uppercase tracking-[0.12em]">快捷添加</span>
+                    {QUICK_OPTIONS.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => submitNewOption(item)}
+                        className="text-[10px] font-bold px-2 py-1 rounded-full bg-white/85 border border-[#ffe4f2] text-[#7b6f8c] hover:text-[#ff6fb1]"
+                      >
+                        {item}
+                      </button>
+                    ))}
                   </div>
                   <div className="flex flex-wrap gap-2 mt-3 max-h-36 overflow-y-auto pr-1">
                     {options.length === 0 && <div className="text-xs text-slate-400">还没有选项，先加几个吧。</div>}
