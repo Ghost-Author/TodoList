@@ -49,13 +49,14 @@ const makeSegmentColor = (idx, count) => {
 };
 
 const getLabelLayout = (segmentDeg) => {
-  const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
-  const fontSize = clamp(baseFont, 6, 12);
-  const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 79;
+  const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
+  const fontSize = clamp(baseFont, 6, 11);
+  const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 80;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.72), 26, 88);
-  const maxLines = segmentDeg >= 58 ? 4 : segmentDeg >= 40 ? 3 : segmentDeg >= 24 ? 2 : 1;
-  return { fontSize, radius, maxWidth, maxLines };
+  const maxWidth = clamp(Math.round(arcLength * 0.58), 22, 68);
+  const maxLines = segmentDeg >= 58 ? 3 : segmentDeg >= 34 ? 2 : 1;
+  const maxHeight = Math.round(fontSize * 1.04 * maxLines + 2);
+  return { fontSize, radius, maxWidth, maxLines, maxHeight };
 };
 
 const trimToFit = (text, maxWidth, fontSize) => {
@@ -313,6 +314,8 @@ const WheelPanel = ({
                       style={{
                         transform: `translateY(-${layout.radius}px)`,
                         width: `${layout.maxWidth}px`,
+                        maxHeight: `${layout.maxHeight}px`,
+                        overflow: 'hidden',
                         boxSizing: 'border-box'
                       }}
                     >
@@ -323,7 +326,9 @@ const WheelPanel = ({
                           fontSize: `${layout.fontSize}px`,
                           lineHeight: 1.08,
                           color: textTone,
-                          maxWidth: `${layout.maxWidth}px`
+                          maxWidth: `${layout.maxWidth}px`,
+                          maxHeight: `${layout.maxHeight}px`,
+                          overflow: 'hidden'
                         }}
                         title={opt.label}
                       >
