@@ -127,6 +127,7 @@ const App = () => {
     renameWheelGroup,
     deleteWheelGroup,
     clearWheelHistory,
+    restoreWheelHistory,
     spinWheel,
     createTaskFromWheel,
     clearWheelData
@@ -900,9 +901,10 @@ const App = () => {
                   onGroupChange={setWheelGroup}
                   onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
                   onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
-                  onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
-                  onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
-                  options={currentWheelOptions}
+                onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
+                onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
+                onRestoreHistory={(items) => runWheelAction(() => restoreWheelHistory(items), '撤销清空失败')}
+                options={currentWheelOptions}
                   history={currentWheelHistory}
                   spinning={wheelSpinning}
                   angle={wheelAngle}

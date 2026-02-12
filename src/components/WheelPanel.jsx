@@ -70,6 +70,7 @@ const WheelPanel = ({
   onRenameGroup,
   onDeleteGroup,
   onClearHistory,
+  onRestoreHistory,
   options,
   history,
   spinning,
@@ -90,13 +91,16 @@ const WheelPanel = ({
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
   const [notice, setNotice] = useState('');
   const [undoOption, setUndoOption] = useState(null);
+  const [undoHistory, setUndoHistory] = useState(null);
   const noticeTimerRef = useRef(null);
   const undoTimerRef = useRef(null);
+  const undoHistoryTimerRef = useRef(null);
 
   useEffect(() => {
     return () => {
       window.clearTimeout(noticeTimerRef.current);
       window.clearTimeout(undoTimerRef.current);
+      window.clearTimeout(undoHistoryTimerRef.current);
     };
   }, []);
 
@@ -124,6 +128,27 @@ const WheelPanel = ({
       return;
     }
     showNotice('撤销失败');
+  };
+
+  const queueUndoHistory = (items) => {
+    if (!Array.isArray(items) || items.length === 0) return;
+    window.clearTimeout(undoHistoryTimerRef.current);
+    setUndoHistory(items);
+    undoHistoryTimerRef.current = window.setTimeout(() => {
+      setUndoHistory(null);
+    }, 5000);
+  };
+
+  const handleUndoHistoryClear = async () => {
+    if (!undoHistory || !onRestoreHistory) return;
+    const ok = await onRestoreHistory(undoHistory);
+    if (ok !== false) {
+      setUndoHistory(null);
+      window.clearTimeout(undoHistoryTimerRef.current);
+      showNotice('已恢复清空记录');
+      return;
+    }
+    showNotice('恢复记录失败');
   };
 
   const { gradient, segmentColors } = useMemo(() => {
@@ -441,6 +466,18 @@ const WheelPanel = ({
                 </button>
               </div>
             )}
+            {undoHistory && (
+              <div className="mt-1 text-[11px] text-[#7b6f8c] flex items-center gap-2 w-full max-w-[320px]">
+                <span className="truncate">已清空 {undoHistory.length} 条记录</span>
+                <button
+                  type="button"
+                  onClick={handleUndoHistoryClear}
+                  className="px-2 py-0.5 rounded-full bg-white/90 border border-[#ffe4f2] text-[#ff6fb1] font-bold shrink-0"
+                >
+                  撤销
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">
@@ -531,9 +568,18 @@ const WheelPanel = ({
                 <button
                   type="button"
                   onClick={async () => {
+                    if (!history.length) {
+                      showNotice('当前分组暂无记录');
+                      return;
+                    }
+                    const snapshot = history.map((item) => ({
+                      label: item.label,
+                      group_name: item.group_name || currentGroup
+                    }));
                     const ok = await onClearHistory();
                     if (ok !== false) {
                       showNotice('记录已清空');
+                      queueUndoHistory(snapshot);
                     }
                   }}
                   className="text-[10px] text-[#7b6f8c] hover:text-[#ff6fb1]"

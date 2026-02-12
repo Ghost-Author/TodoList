@@ -253,6 +253,34 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     return true;
   };
 
+  const restoreWheelHistory = async (entries) => {
+    if (!session?.user?.id) return false;
+    if (!Array.isArray(entries) || entries.length === 0) return false;
+
+    const payload = entries
+      .map((item) => ({
+        user_id: session.user.id,
+        label: String(item?.label || '').trim(),
+        group_name: String(item?.group_name || wheelGroup || '随机')
+      }))
+      .filter((item) => item.label);
+    if (!payload.length) return false;
+
+    const { data, error } = await supabase
+      .from('wheel_history')
+      .insert(payload)
+      .select('id, label, group_name, created_at');
+    if (error || !data) return false;
+
+    setWheelHistory((prev) => {
+      const merged = [...data, ...prev];
+      return merged
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
+    });
+    return true;
+  };
+
   const getLandedIndexByAngle = (angle, count) => {
     if (!count) return 0;
     const segment = 360 / count;
@@ -336,6 +364,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     renameWheelGroup,
     deleteWheelGroup,
     clearWheelHistory,
+    restoreWheelHistory,
     spinWheel,
     createTaskFromWheel,
     resetWheelData,
