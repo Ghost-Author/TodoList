@@ -582,7 +582,8 @@ const WheelPanel = ({
                       queueUndoHistory(snapshot);
                     }
                   }}
-                  className="text-[10px] text-[#7b6f8c] hover:text-[#ff6fb1]"
+                  disabled={!history.length}
+                  className="text-[10px] text-[#7b6f8c] hover:text-[#ff6fb1] disabled:opacity-45 disabled:cursor-not-allowed"
                 >
                   清空当前分组
                 </button>
