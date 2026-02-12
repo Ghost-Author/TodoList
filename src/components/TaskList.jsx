@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X } from 'lucide-react';
 
 const TaskList = ({
@@ -417,7 +417,7 @@ const TaskList = ({
   );
   const activeTasks = filteredTasks.filter((task) => !task.completed);
   const completedTasks = filteredTasks.filter((task) => task.completed);
-  const activeTaskSections = useMemo(() => {
+  const activeTaskSections = (() => {
     if (!groupCompleted) return [];
     const sections = {
       overdue: [],
@@ -436,7 +436,7 @@ const TaskList = ({
       { key: 'later', label: '之后处理', tone: 'text-[#7b6f8c]', tasks: sections.later },
       { key: 'noDate', label: '未设置日期', tone: 'text-slate-500', tasks: sections.noDate }
     ].filter((section) => section.tasks.length > 0);
-  }, [activeTasks, groupCompleted]);
+  })();
 
   if (!groupCompleted) {
     return <div className="space-y-4">{filteredTasks.map((task) => renderTask(task))}</div>;
