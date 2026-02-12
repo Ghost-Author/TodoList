@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Dice5, Plus, X, Sparkles, Edit2, Trash2 } from 'lucide-react';
+import { Dice5, Plus, X, Sparkles, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const DEFAULT_COLORS = [
   '#ffd6e8',
@@ -85,6 +85,8 @@ const WheelPanel = ({
   const [newGroup, setNewGroup] = useState('');
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingName, setEditingName] = useState('');
+  const [customCollapsed, setCustomCollapsed] = useState(false);
+  const [historyCollapsed, setHistoryCollapsed] = useState(false);
 
   const { gradient, segmentColors } = useMemo(() => {
     if (!options.length) {
@@ -337,54 +339,74 @@ const WheelPanel = ({
 
           <div className="space-y-5">
             <div className="card-soft-sm p-4">
-              <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest mb-2">自定义转盘</div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newOption}
-                  onChange={(e) => setNewOption(e.target.value)}
-                  placeholder="输入想要转到的事项"
-                  className="flex-1 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                />
-                <button
-                  type="button"
-                  className="px-3 rounded-xl bg-[#ff8acb] text-white shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
-                  onClick={async () => {
-                    const val = newOption.trim();
-                    if (!val) return;
-                    const ok = await onAddOption(val);
-                    if (ok !== false) {
-                      setNewOption('');
-                    }
-                  }}
-                  title="添加选项"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-3">
-                {options.length === 0 && <div className="text-xs text-slate-400">还没有选项，先加几个吧。</div>}
-                {options.map((opt) => (
-                  <span key={opt.id} className="text-xs bg-white/90 border border-[#ffe4f2] rounded-full px-3 py-1 flex items-center gap-1 text-[#3b2e4a]">
-                    {opt.label}
+              <button
+                type="button"
+                onClick={() => setCustomCollapsed((prev) => !prev)}
+                className="w-full flex items-center justify-between mb-2"
+              >
+                <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest">
+                  自定义转盘 ({options.length})
+                </div>
+                {customCollapsed ? <ChevronDown className="w-4 h-4 text-[#7b6f8c]" /> : <ChevronUp className="w-4 h-4 text-[#7b6f8c]" />}
+              </button>
+              {!customCollapsed && (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newOption}
+                      onChange={(e) => setNewOption(e.target.value)}
+                      placeholder="输入想要转到的事项"
+                      className="flex-1 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                    />
                     <button
                       type="button"
+                      className="px-3 rounded-xl bg-[#ff8acb] text-white shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
                       onClick={async () => {
-                        await onRemoveOption(opt.id);
+                        const val = newOption.trim();
+                        if (!val) return;
+                        const ok = await onAddOption(val);
+                        if (ok !== false) {
+                          setNewOption('');
+                        }
                       }}
-                      className="text-[#ff6fb1]"
-                      title="删除"
+                      title="添加选项"
                     >
-                      <X className="w-3 h-3" />
+                      <Plus className="w-4 h-4" />
                     </button>
-                  </span>
-                ))}
-              </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {options.length === 0 && <div className="text-xs text-slate-400">还没有选项，先加几个吧。</div>}
+                    {options.map((opt) => (
+                      <span key={opt.id} className="text-xs bg-white/90 border border-[#ffe4f2] rounded-full px-3 py-1 flex items-center gap-1 text-[#3b2e4a]">
+                        {opt.label}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await onRemoveOption(opt.id);
+                          }}
+                          className="text-[#ff6fb1]"
+                          title="删除"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="card-soft-sm p-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest">最近 5 次结果</div>
+                <button
+                  type="button"
+                  onClick={() => setHistoryCollapsed((prev) => !prev)}
+                  className="flex items-center gap-2"
+                >
+                  <div className="text-xs font-black text-[#7b6f8c] uppercase tracking-widest">最近 5 次结果 ({history.length})</div>
+                  {historyCollapsed ? <ChevronDown className="w-4 h-4 text-[#7b6f8c]" /> : <ChevronUp className="w-4 h-4 text-[#7b6f8c]" />}
+                </button>
                 <button
                   type="button"
                   onClick={async () => {
@@ -395,7 +417,8 @@ const WheelPanel = ({
                   清空当前分组
                 </button>
               </div>
-              <div className="space-y-2">
+              {!historyCollapsed && (
+                <div className="space-y-2">
                 {history.length === 0 && (
                   <div className="text-xs text-slate-400">还没有转动记录</div>
                 )}
@@ -415,7 +438,8 @@ const WheelPanel = ({
                     </div>
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
