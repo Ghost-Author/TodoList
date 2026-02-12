@@ -12,7 +12,7 @@ const DEFAULT_COLORS = [
   '#ffd1dc'
 ];
 
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const toChars = (value) => Array.from(String(value || ''));
 const hexToRgb = (hex) => {
   const clean = String(hex || '').replace('#', '');
   if (clean.length !== 6) return { r: 255, g: 255, b: 255 };
@@ -32,12 +32,37 @@ const makeSegmentColor = (idx, count) => {
   return `hsl(${Math.round(baseHue)} ${sat}% ${light}%)`;
 };
 
-const getLabelLayout = (segmentDeg) => {
-  const fontSize = segmentDeg >= 36 ? 10 : segmentDeg >= 24 ? 9 : 8;
-  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
-  const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.62), 24, 64);
-  return { fontSize, radius, maxWidth };
+const polarPoint = (cx, cy, radius, deg) => {
+  const rad = (deg * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(rad),
+    y: cy + radius * Math.sin(rad)
+  };
+};
+
+const buildSectorPath = (cx, cy, radius, startDeg, endDeg) => {
+  const start = polarPoint(cx, cy, radius, startDeg);
+  const end = polarPoint(cx, cy, radius, endDeg);
+  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+};
+
+const buildArcPath = (cx, cy, radius, startDeg, endDeg) => {
+  const start = polarPoint(cx, cy, radius, startDeg);
+  const end = polarPoint(cx, cy, radius, endDeg);
+  const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`;
+};
+
+const getShortLabel = (segmentDeg, label) => {
+  const raw = String(label || '').trim().replace(/\s+/g, ' ');
+  if (!raw) return '';
+  const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
+  const candidate = (firstPhrase || raw).trim();
+  const chars = toChars(candidate);
+  const maxChars = segmentDeg >= 48 ? 6 : segmentDeg >= 36 ? 5 : segmentDeg >= 28 ? 4 : segmentDeg >= 20 ? 3 : 2;
+  if (chars.length <= maxChars) return candidate;
+  return `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
 };
 
 const getTextTone = (color) => {
@@ -73,24 +98,42 @@ const WheelPanel = ({
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingName, setEditingName] = useState('');
 
-  const { gradient, segmentColors } = useMemo(() => {
+  const { segmentColors, sectors } = useMemo(() => {
     if (!options.length) {
       return {
-        gradient: 'conic-gradient(#f3f4f6 0 360deg)',
-        segmentColors: []
+        segmentColors: [],
+        sectors: []
       };
     }
+
+    const cx = 144;
+    const cy = 144;
+    const radius = 136;
+    const textRadius = 102;
     const step = 360 / options.length;
     const colors = options.map((_, idx) => makeSegmentColor(idx, options.length));
-    const parts = options.map((_, idx) => {
-      const start = idx * step;
-      const end = (idx + 1) * step;
-      const color = colors[idx];
-      return `${color} ${start}deg ${end}deg`;
+
+    const computedSectors = options.map((opt, idx) => {
+      const start = idx * step - 90;
+      const end = (idx + 1) * step - 90;
+      const textPadding = Math.min(4.2, step * 0.16);
+      const pathId = `wheel-arc-${String(opt.id || idx).replace(/[^a-zA-Z0-9_-]/g, '')}-${idx}`;
+      return {
+        id: opt.id,
+        index: idx,
+        color: colors[idx],
+        textColor: getTextTone(colors[idx]),
+        sectorPath: buildSectorPath(cx, cy, radius, start, end),
+        textArcPath: buildArcPath(cx, cy, textRadius, start + textPadding, end - textPadding),
+        pathId,
+        shortLabel: getShortLabel(step, opt.label),
+        fontSize: step >= 42 ? 14 : step >= 30 ? 12 : step >= 22 ? 11 : 10
+      };
     });
+
     return {
-      gradient: `conic-gradient(${parts.join(', ')})`,
-      segmentColors: colors
+      segmentColors: colors,
+      sectors: computedSectors
     };
   }, [options]);
 
@@ -224,48 +267,40 @@ const WheelPanel = ({
               <div className="absolute inset-0 rounded-full bg-white/50 border border-[#ffd7ea]" />
               <div className="absolute inset-2 rounded-full border-2 border-white/80 shadow-inner" />
               <div
-                className="absolute inset-4 rounded-full border border-[#ffe4f2] shadow-sm"
+                className="absolute inset-4 rounded-full border border-[#ffe4f2] shadow-sm overflow-hidden"
                 style={{
-                  backgroundImage: gradient,
                   transform: `rotate(${angle}deg)`,
                   transition: spinning ? 'transform 2.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
                 }}
-              />
-
-              {options.map((opt, idx) => {
-                const step = 360 / options.length;
-                const deg = idx * step + step / 2;
-                const segmentColor = segmentColors[idx];
-                const layout = getLabelLayout(step);
-                const alias = `${idx + 1}`;
-                const textTone = getTextTone(segmentColor);
-                return (
-                  <div
-                    key={opt.id}
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    style={{
-                      transform: `rotate(${deg + angle}deg)`,
-                      transition: spinning ? 'transform 2.6s cubic-bezier(0.2, 0.8, 0.2, 1)' : 'none'
-                    }}
-                  >
-                    <span
-                      className="wheel-segment-text wheel-segment-badge font-black text-center rounded-full"
-                      style={{
-                        transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
-                        fontSize: `${layout.fontSize}px`,
-                        lineHeight: 1,
-                        color: textTone,
-                        maxWidth: `${layout.maxWidth}px`,
-                        minWidth: `${Math.min(layout.maxWidth, 20)}px`,
-                        height: `${Math.max(16, layout.fontSize + 8)}px`
-                      }}
-                      title={opt.label}
-                    >
-                      {alias}
-                    </span>
-                  </div>
-                );
-              })}
+              >
+                {options.length === 0 ? (
+                  <div className="absolute inset-0 bg-[#f3f4f6]" />
+                ) : (
+                  <svg viewBox="0 0 288 288" className="w-full h-full">
+                    <defs>
+                      {sectors.map((sector) => (
+                        <path key={`${sector.pathId}-def`} id={sector.pathId} d={sector.textArcPath} />
+                      ))}
+                    </defs>
+                    {sectors.map((sector) => (
+                      <path key={`${sector.id}-slice`} d={sector.sectorPath} fill={sector.color} />
+                    ))}
+                    {sectors.map((sector) => (
+                      <text
+                        key={`${sector.id}-text`}
+                        className="wheel-segment-text wheel-segment-path-text"
+                        fill={sector.textColor}
+                        fontSize={sector.fontSize}
+                        fontWeight="800"
+                      >
+                        <textPath href={`#${sector.pathId}`} startOffset="50%" textAnchor="middle">
+                          {sector.shortLabel}
+                        </textPath>
+                      </text>
+                    ))}
+                  </svg>
+                )}
+              </div>
 
               <button
                 type="button"
