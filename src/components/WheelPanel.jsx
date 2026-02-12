@@ -14,21 +14,6 @@ const DEFAULT_COLORS = [
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
-const SEGMENT_FONT_FAMILY = '"Nunito", "Quicksand", "Arial Rounded MT Bold", system-ui, sans-serif';
-let measureCtx = null;
-const getMeasureCtx = () => {
-  if (typeof document === 'undefined') return null;
-  if (measureCtx) return measureCtx;
-  const canvas = document.createElement('canvas');
-  measureCtx = canvas.getContext('2d');
-  return measureCtx;
-};
-const measureTextWidth = (text, fontSize) => {
-  const ctx = getMeasureCtx();
-  if (!ctx) return toChars(text).length * fontSize;
-  ctx.font = `700 ${fontSize}px ${SEGMENT_FONT_FAMILY}`;
-  return ctx.measureText(String(text || '')).width;
-};
 const hexToRgb = (hex) => {
   const clean = String(hex || '').replace('#', '');
   if (clean.length !== 6) return { r: 255, g: 255, b: 255 };
@@ -48,57 +33,23 @@ const makeSegmentColor = (idx, count) => {
   return `hsl(${Math.round(baseHue)} ${sat}% ${light}%)`;
 };
 
-const getLabelLayout = (segmentDeg) => {
-  const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
-  const fontSize = clamp(baseFont, 6, 11);
-  const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 80;
-  const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.58), 22, 68);
-  const maxLines = segmentDeg >= 58 ? 3 : segmentDeg >= 34 ? 2 : 1;
-  const maxHeight = Math.round(fontSize * 1.04 * maxLines + 2);
-  return { fontSize, radius, maxWidth, maxLines, maxHeight };
-};
-
-const trimToFit = (text, maxWidth, fontSize) => {
-  const chars = toChars(text);
-  if (chars.length === 0) return '';
-  let built = '';
-  for (let i = 0; i < chars.length; i += 1) {
-    const next = built + chars[i];
-    if (measureTextWidth(`${next}…`, fontSize) > maxWidth) break;
-    built = next;
-  }
-  return built ? `${built}…` : '…';
-};
-
-const wrapLabelByWidth = (label, maxWidth, fontSize, maxLines) => {
+const getDisplayLabel = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
-  if (!raw) return [''];
-  const chars = toChars(raw);
-  const lines = [];
-  let current = '';
+  if (!raw) return '';
+  const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
+  const candidate = (firstPhrase || raw).trim();
+  const chars = toChars(candidate);
+  const maxChars = segmentDeg >= 56 ? 9 : segmentDeg >= 44 ? 8 : segmentDeg >= 30 ? 7 : segmentDeg >= 22 ? 5 : 4;
+  if (chars.length <= maxChars) return candidate;
+  return `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
+};
 
-  for (let i = 0; i < chars.length; i += 1) {
-    const next = current + chars[i];
-    if (measureTextWidth(next, fontSize) <= maxWidth) {
-      current = next;
-      continue;
-    }
-    if (!current) {
-      lines.push(trimToFit(chars[i], maxWidth, fontSize));
-      current = '';
-    } else {
-      lines.push(current);
-      current = chars[i];
-    }
-    if (lines.length >= maxLines) {
-      const rest = chars.slice(i).join('');
-      lines[maxLines - 1] = trimToFit(lines[maxLines - 1] + rest, maxWidth, fontSize);
-      return lines;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.slice(0, maxLines);
+const getLabelLayout = (segmentDeg) => {
+  const fontSize = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
+  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
+  const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
+  const maxWidth = clamp(Math.round(arcLength * 0.88), 32, 98);
+  return { fontSize, radius, maxWidth };
 };
 
 const getTextTone = (color) => {
@@ -298,7 +249,7 @@ const WheelPanel = ({
                 const deg = idx * step + step / 2;
                 const segmentColor = segmentColors[idx];
                 const layout = getLabelLayout(step);
-                const labelLines = wrapLabelByWidth(opt.label, layout.maxWidth, layout.fontSize, layout.maxLines);
+                const displayLabel = getDisplayLabel(step, opt.label);
                 const textTone = getTextTone(segmentColor);
                 return (
                   <div
@@ -310,37 +261,20 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-holder"
+                      className="wheel-segment-text wheel-segment-label-chip font-bold text-center px-1.5 py-0.5 rounded-lg"
                       style={{
-                        transform: `translateY(-${layout.radius}px)`,
-                        width: `${layout.maxWidth}px`,
-                        maxHeight: `${layout.maxHeight}px`,
+                        transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
+                        fontSize: `${layout.fontSize}px`,
+                        lineHeight: 1.08,
+                        color: textTone,
+                        maxWidth: `${layout.maxWidth}px`,
+                        whiteSpace: 'nowrap',
                         overflow: 'hidden',
-                        boxSizing: 'border-box'
+                        textOverflow: 'ellipsis'
                       }}
+                      title={opt.label}
                     >
-                      <span
-                        className="wheel-segment-text font-bold text-center"
-                        style={{
-                          transform: `rotate(-${deg + angle}deg)`,
-                          fontSize: `${layout.fontSize}px`,
-                          lineHeight: 1.08,
-                          color: textTone,
-                          maxWidth: `${layout.maxWidth}px`,
-                          maxHeight: `${layout.maxHeight}px`,
-                          overflow: 'hidden'
-                        }}
-                        title={opt.label}
-                      >
-                        {labelLines.map((line, lineIdx) => (
-                          <span
-                            key={`${opt.id}-line-${lineIdx}`}
-                            className="block whitespace-nowrap"
-                          >
-                            {line}
-                          </span>
-                        ))}
-                      </span>
+                      {displayLabel}
                     </span>
                   </div>
                 );

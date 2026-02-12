@@ -378,10 +378,9 @@ h1, h2, h3 {
   filter: drop-shadow(0 1px 1px rgba(96, 62, 94, 0.12));
 }
 
-.wheel-segment-holder {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
+.wheel-segment-label-chip {
+  background: rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(255, 226, 241, 0.78);
 }
 
 @keyframes result-pop {
