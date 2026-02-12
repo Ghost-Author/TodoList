@@ -399,10 +399,20 @@ const WheelPanel = ({
                 {history.length === 0 && (
                   <div className="text-xs text-slate-400">还没有转动记录</div>
                 )}
-                {history.map((item) => (
-                  <div key={item.id} className="text-sm text-[#3b2e4a] bg-white/85 border border-[#ffe4f2] rounded-xl px-3 py-2">
-                    <span className="font-semibold">{item.label}</span>
-                    <span className="text-[10px] text-slate-400 ml-2">{new Date(item.created_at).toLocaleString()}</span>
+                {history.map((item, idx) => (
+                  <div key={item.id} className="relative pl-5">
+                    {idx !== history.length - 1 && (
+                      <span className="absolute left-[6px] top-5 bottom-[-8px] w-px bg-[#ffe4f2]" aria-hidden="true" />
+                    )}
+                    <span
+                      className="absolute left-0 top-[9px] w-3 h-3 rounded-full border-2 border-white shadow-sm"
+                      style={{ background: '#ff9ccc' }}
+                      aria-hidden="true"
+                    />
+                    <div className="text-sm text-[#3b2e4a] bg-white/85 border border-[#ffe4f2] rounded-xl px-3 py-2">
+                      <span className="font-semibold">{item.label}</span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{new Date(item.created_at).toLocaleString()}</div>
+                    </div>
                   </div>
                 ))}
               </div>
