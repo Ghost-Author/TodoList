@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Dice5, Plus, X, Sparkles, Edit2, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const DEFAULT_COLORS = [
@@ -87,6 +87,20 @@ const WheelPanel = ({
   const [editingName, setEditingName] = useState('');
   const [customCollapsed, setCustomCollapsed] = useState(false);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
+  const [notice, setNotice] = useState('');
+  const noticeTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(noticeTimerRef.current);
+    };
+  }, []);
+
+  const showNotice = (text) => {
+    setNotice(text);
+    window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => setNotice(''), 1500);
+  };
 
   const { gradient, segmentColors } = useMemo(() => {
     if (!options.length) {
@@ -186,6 +200,7 @@ const WheelPanel = ({
                 const ok = await onAddGroup(val);
                 if (ok !== false) {
                   setNewGroup('');
+                  showNotice('分组已创建');
                 }
               }}
             >
@@ -335,6 +350,9 @@ const WheelPanel = ({
                 )}
               </div>
             )}
+            <div className="mt-2 min-h-[18px] text-[11px] text-[#7b6f8c]">
+              {notice}
+            </div>
           </div>
 
           <div className="space-y-5">
@@ -356,6 +374,17 @@ const WheelPanel = ({
                       type="text"
                       value={newOption}
                       onChange={(e) => setNewOption(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key !== 'Enter') return;
+                        e.preventDefault();
+                        const val = newOption.trim();
+                        if (!val) return;
+                        const ok = await onAddOption(val);
+                        if (ok !== false) {
+                          setNewOption('');
+                          showNotice('选项已添加');
+                        }
+                      }}
                       placeholder="输入想要转到的事项"
                       className="flex-1 min-w-0 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                     />
@@ -368,6 +397,7 @@ const WheelPanel = ({
                         const ok = await onAddOption(val);
                         if (ok !== false) {
                           setNewOption('');
+                          showNotice('选项已添加');
                         }
                       }}
                       title="添加选项"
@@ -383,7 +413,10 @@ const WheelPanel = ({
                         <button
                           type="button"
                           onClick={async () => {
-                            await onRemoveOption(opt.id);
+                            const ok = await onRemoveOption(opt.id);
+                            if (ok !== false) {
+                              showNotice('选项已删除');
+                            }
                           }}
                           className="text-[#ff6fb1]"
                           title="删除"
@@ -410,7 +443,10 @@ const WheelPanel = ({
                 <button
                   type="button"
                   onClick={async () => {
-                    await onClearHistory();
+                    const ok = await onClearHistory();
+                    if (ok !== false) {
+                      showNotice('记录已清空');
+                    }
                   }}
                   className="text-[10px] text-[#7b6f8c] hover:text-[#ff6fb1]"
                 >
