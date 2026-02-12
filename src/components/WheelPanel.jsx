@@ -16,30 +16,43 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
 const sliceChars = (value, count) => toChars(value).slice(0, count).join('');
 
-const getDisplayLabel = (segmentDeg, label) => {
+const getDisplayLabelToken = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
-  if (!raw) return '';
+  if (!raw) return { lines: [''], plain: '' };
 
   const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
   const candidate = (firstPhrase || raw).trim();
-
-  const maxChars = segmentDeg < 18 ? 6 : segmentDeg < 24 ? 8 : segmentDeg < 32 ? 10 : 14;
   const chars = toChars(candidate);
-  if (chars.length <= maxChars) return candidate;
-  return `${sliceChars(candidate, maxChars)}…`;
+  if (chars.length === 0) return { lines: [''], plain: '' };
+
+  const lineChars = segmentDeg >= 56 ? 7 : segmentDeg >= 44 ? 6 : segmentDeg >= 30 ? 5 : segmentDeg >= 22 ? 4 : 3;
+  const maxChars = segmentDeg < 18 ? lineChars : lineChars * 2;
+  if (chars.length <= lineChars || segmentDeg < 18) {
+    const single = chars.length <= maxChars ? candidate : `${sliceChars(candidate, maxChars)}…`;
+    return { lines: [single], plain: single };
+  }
+
+  if (chars.length <= lineChars * 2) {
+    const line1 = sliceChars(candidate, lineChars);
+    const line2 = chars.slice(lineChars).join('');
+    return { lines: [line1, line2], plain: `${line1}${line2}` };
+  }
+
+  const line1 = sliceChars(candidate, lineChars);
+  const line2 = `${chars.slice(lineChars, lineChars * 2 - 1).join('')}…`;
+  return { lines: [line1, line2], plain: `${line1}${line2}` };
 };
 
-const getLabelLayout = (segmentDeg, labelLength) => {
-  const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
-  const textPenalty = Math.max(0, Math.ceil((labelLength - 8) / 6));
-  const fontSize = clamp(baseFont - textPenalty, 6, 11);
+const getLabelLayout = (segmentDeg, maxLineLength) => {
+  const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
+  const textPenalty = Math.max(0, Math.ceil((maxLineLength - 6) / 4));
+  const fontSize = clamp(baseFont - textPenalty, 7, 12);
 
-  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
+  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 83;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.9), 38, 100);
-  const lineClamp = segmentDeg < 18 ? 1 : 2;
+  const maxWidth = clamp(Math.round(arcLength * 0.82), 34, 96);
 
-  return { fontSize, radius, maxWidth, lineClamp };
+  return { fontSize, radius, maxWidth };
 };
 
 const WheelPanel = ({
@@ -219,8 +232,9 @@ const WheelPanel = ({
               {options.map((opt, idx) => {
                 const step = 360 / options.length;
                 const deg = idx * step + step / 2;
-                const displayLabel = getDisplayLabel(step, opt.label);
-                const layout = getLabelLayout(step, displayLabel.length);
+                const labelToken = getDisplayLabelToken(step, opt.label);
+                const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
+                const layout = getLabelLayout(step, maxLineLength);
                 return (
                   <div
                     key={opt.id}
@@ -231,22 +245,20 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="font-bold text-[#3b2e4a] px-2 py-1 rounded-full bg-white/75 border border-[#ffe4f2] text-center shadow-sm"
+                      className="wheel-segment-chip font-bold text-[#3b2e4a] px-2 py-1 rounded-xl text-center shadow-sm"
                       style={{
                         transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
                         fontSize: `${layout.fontSize}px`,
                         maxWidth: `${layout.maxWidth}px`,
-                        lineHeight: 1.15,
-                        wordBreak: 'break-word',
-                        display: '-webkit-box',
-                        WebkitLineClamp: layout.lineClamp,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        lineHeight: 1.12
                       }}
                       title={opt.label}
                     >
-                      {displayLabel}
+                      {labelToken.lines.map((line, lineIdx) => (
+                        <span key={`${opt.id}-line-${lineIdx}`} className="block whitespace-nowrap">
+                          {line}
+                        </span>
+                      ))}
                     </span>
                   </div>
                 );
