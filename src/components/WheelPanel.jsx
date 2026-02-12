@@ -15,6 +15,17 @@ const DEFAULT_COLORS = [
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
 const sliceChars = (value, count) => toChars(value).slice(0, count).join('');
+const hexToRgb = (hex) => {
+  const clean = String(hex || '').replace('#', '');
+  if (clean.length !== 6) return { r: 255, g: 255, b: 255 };
+  const num = parseInt(clean, 16);
+  return {
+    r: (num >> 16) & 255,
+    g: (num >> 8) & 255,
+    b: num & 255
+  };
+};
+const getLuma = ({ r, g, b }) => (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
 
 const getDisplayLabelToken = (segmentDeg, label) => {
   const raw = String(label || '').trim().replace(/\s+/g, ' ');
@@ -53,6 +64,23 @@ const getLabelLayout = (segmentDeg, maxLineLength) => {
   const maxWidth = clamp(Math.round(arcLength * 0.82), 34, 96);
 
   return { fontSize, radius, maxWidth };
+};
+
+const getChipTone = (hexColor) => {
+  const rgb = hexToRgb(hexColor);
+  const luma = getLuma(rgb);
+  if (luma < 0.6) {
+    return {
+      bg: 'rgba(255,255,255,0.82)',
+      border: 'rgba(255,229,242,0.95)',
+      text: '#3b2e4a'
+    };
+  }
+  return {
+    bg: 'rgba(255,250,254,0.9)',
+    border: 'rgba(255,219,236,0.9)',
+    text: '#4a3b5a'
+  };
 };
 
 const WheelPanel = ({
@@ -232,12 +260,14 @@ const WheelPanel = ({
               {options.map((opt, idx) => {
                 const step = 360 / options.length;
                 const deg = idx * step + step / 2;
+                const segmentColor = DEFAULT_COLORS[idx % DEFAULT_COLORS.length];
                 const labelToken = getDisplayLabelToken(step, opt.label);
                 const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
                 const layout = getLabelLayout(step, maxLineLength);
                 const absoluteDeg = ((deg + angle) % 360 + 360) % 360;
                 const shouldFlip = absoluteDeg > 90 && absoluteDeg < 270;
                 const textRotation = shouldFlip ? 90 : -90;
+                const chipTone = getChipTone(segmentColor);
                 return (
                   <div
                     key={opt.id}
@@ -248,12 +278,15 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-chip font-bold text-[#3b2e4a] px-2 py-1 rounded-xl text-center shadow-sm"
+                      className="wheel-segment-chip font-bold px-2 py-1 rounded-xl text-center shadow-sm"
                       style={{
                         transform: `translateY(-${layout.radius}px) rotate(${textRotation}deg)`,
                         fontSize: `${layout.fontSize}px`,
                         maxWidth: `${layout.maxWidth}px`,
-                        lineHeight: 1.12
+                        lineHeight: 1.12,
+                        background: chipTone.bg,
+                        borderColor: chipTone.border,
+                        color: chipTone.text
                       }}
                       title={opt.label}
                     >
