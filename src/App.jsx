@@ -42,6 +42,8 @@ const App = () => {
   const loadMoreAnchorRef = useRef(null);
   const lastAutoLoadAtRef = useRef(0);
   const taskInputRef = useRef(null);
+  const taskScrollPositionsRef = useRef({});
+  const taskScrollSaveTimerRef = useRef(null);
   const draftLoadedUserRef = useRef('');
   const prefsLoadedUserRef = useRef('');
   const preferredCategoryRef = useRef('');
@@ -67,6 +69,7 @@ const App = () => {
   const [taskDensity, setTaskDensity] = useState('cozy');
   const [showBackTop, setShowBackTop] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState('');
+  const taskScrollKey = `${filter}|${sortBy}|${searchQuery.trim() || '_'}`;
 
   const enqueueToast = (payload, duration = 1500) => {
     const normalized = typeof payload === 'string' ? { message: payload } : payload;
@@ -205,17 +208,36 @@ const App = () => {
   useEffect(() => {
     const onScroll = () => {
       setShowBackTop(window.scrollY > 520);
+      if (view !== 'tasks') return;
+      const userId = session?.user?.id;
+      if (!userId) return;
+      taskScrollPositionsRef.current[taskScrollKey] = window.scrollY;
+      if (taskScrollSaveTimerRef.current) clearTimeout(taskScrollSaveTimerRef.current);
+      taskScrollSaveTimerRef.current = setTimeout(() => {
+        try {
+          localStorage.setItem(
+            `cloud_todo_scroll:${userId}`,
+            JSON.stringify(taskScrollPositionsRef.current)
+          );
+        } catch {
+          // Ignore localStorage failures.
+        }
+      }, 320);
     };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [session, taskScrollKey, view]);
 
   useEffect(() => {
     return () => {
       if (undoTimerRef.current) {
         clearTimeout(undoTimerRef.current);
         undoTimerRef.current = null;
+      }
+      if (taskScrollSaveTimerRef.current) {
+        clearTimeout(taskScrollSaveTimerRef.current);
+        taskScrollSaveTimerRef.current = null;
       }
       if (toastTimerRef.current) {
         clearTimeout(toastTimerRef.current);
@@ -266,6 +288,40 @@ const App = () => {
       localStorage.removeItem(`cloud_todo_draft:${userId}`);
     }
   }, [session, setCategory]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    try {
+      const raw = localStorage.getItem(`cloud_todo_scroll:${userId}`);
+      if (!raw) {
+        taskScrollPositionsRef.current = {};
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        taskScrollPositionsRef.current = parsed;
+      } else {
+        taskScrollPositionsRef.current = {};
+      }
+    } catch {
+      taskScrollPositionsRef.current = {};
+      localStorage.removeItem(`cloud_todo_scroll:${userId}`);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (view !== 'tasks') return;
+    const savedTop = Number(taskScrollPositionsRef.current[taskScrollKey] ?? 0);
+    if (!Number.isFinite(savedTop) || savedTop <= 0) {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+    const timer = setTimeout(() => {
+      window.scrollTo({ top: savedTop, behavior: 'auto' });
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [taskScrollKey, view]);
 
   useEffect(() => {
     const userId = session?.user?.id;
