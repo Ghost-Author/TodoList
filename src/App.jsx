@@ -119,6 +119,7 @@ const App = () => {
     wheelAngle,
     wheelResult,
     wheelCreated,
+    wheelCreating,
     currentWheelOptions,
     currentWheelHistory,
     addWheelOption,
@@ -910,6 +911,7 @@ const App = () => {
                   angle={wheelAngle}
                   result={wheelResult}
                   created={wheelCreated}
+                  creating={wheelCreating}
                   onSpin={spinWheel}
                 onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
                 onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}

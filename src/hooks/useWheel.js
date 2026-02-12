@@ -11,6 +11,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelResult, setWheelResult] = useState('');
   const [wheelCreated, setWheelCreated] = useState(false);
+  const [wheelCreating, setWheelCreating] = useState(false);
   const [wheelGroups, setWheelGroups] = useState(DEFAULT_GROUPS);
   const [wheelGroup, setWheelGroup] = useState('随机');
   const wheelAngleRef = useRef(0);
@@ -23,6 +24,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     setWheelAngle(0);
     setWheelResult('');
     setWheelCreated(false);
+    setWheelCreating(false);
     setWheelGroups(DEFAULT_GROUPS);
     setWheelGroup('随机');
     wheelAngleRef.current = 0;
@@ -116,6 +118,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   useEffect(() => {
     setWheelResult('');
     setWheelCreated(false);
+    setWheelCreating(false);
   }, [wheelGroup]);
 
   const currentWheelOptions = useMemo(
@@ -321,6 +324,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
 
       setWheelResult(landedLabel);
       setWheelCreated(false);
+      setWheelCreating(false);
       setWheelSpinning(false);
       spinTimerRef.current = null;
 
@@ -337,21 +341,26 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   };
 
   const createTaskFromWheel = async (label) => {
-    if (!label || wheelCreated) return;
+    if (!label || wheelCreated || wheelCreating) return;
+    setWheelCreating(true);
 
     const mergedTags = Array.from(new Set([...(Array.isArray(tags) ? tags : []), '转盘']));
 
-    const created = await createTask({
-      input: label,
-      note: String(note || '').trim(),
-      dueDate: dueDate || '',
-      priority,
-      category,
-      tags: mergedTags
-    });
-    if (!created) return;
+    try {
+      const created = await createTask({
+        input: label,
+        note: String(note || '').trim(),
+        dueDate: dueDate || '',
+        priority,
+        category,
+        tags: mergedTags
+      });
+      if (!created) return;
 
-    setWheelCreated(true);
+      setWheelCreated(true);
+    } finally {
+      setWheelCreating(false);
+    }
   };
 
   return {
@@ -362,6 +371,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     wheelAngle,
     wheelResult,
     wheelCreated,
+    wheelCreating,
     currentWheelOptions,
     currentWheelHistory,
     addWheelOption,
