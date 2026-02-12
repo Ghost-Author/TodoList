@@ -6,6 +6,7 @@ const defaultCategories = ['工作', '生活', '学习', '健康', '其他'];
 export const useTasks = ({ session, category, setCategory, setAuthError }) => {
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
 
   const ensureDefaultCategories = async (userId) => {
     const { data: existing, error } = await supabase
@@ -53,8 +54,12 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
   };
 
   useEffect(() => {
-    if (!session?.user?.id) return;
+    if (!session?.user?.id) {
+      setTasksLoading(false);
+      return;
+    }
     const userId = session.user.id;
+    setTasksLoading(true);
     Promise.all([ensureDefaultCategories(userId), loadTasks(userId)])
       .then(([cats]) => {
         if (!category && cats.length > 0) {
@@ -63,6 +68,9 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
       })
       .catch((err) => {
         if (setAuthError) setAuthError(err?.message || '加载失败');
+      })
+      .finally(() => {
+        setTasksLoading(false);
       });
   }, [session]);
 
@@ -319,6 +327,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     restoreTasks,
     exportData,
     clearAllData,
-    stats
+    stats,
+    tasksLoading
   };
 };

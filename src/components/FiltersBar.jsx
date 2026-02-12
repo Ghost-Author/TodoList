@@ -74,7 +74,7 @@ const FiltersBar = ({
   }, [setSearchQuery]);
 
   return (
-    <div className="surface-soft p-4 md:p-5 flex flex-col gap-4 mb-6">
+    <div className="surface-soft filter-panel-glass p-4 md:p-5 flex flex-col gap-4">
       <div className="rounded-xl border border-[#ffe4f2] bg-white/80 p-3">
         <div className="flex items-center justify-between text-[11px] font-bold text-[#7b6f8c] mb-2 gap-3">
           <span>任务进度</span>

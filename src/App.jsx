@@ -105,7 +105,8 @@ const App = () => {
     restoreTasks,
     exportData: exportDataPayload,
     clearAllData: clearAllDataCore,
-    stats
+    stats,
+    tasksLoading
   } = useTasks({ session, category, setCategory, setAuthError });
 
   const {
@@ -797,54 +798,68 @@ const App = () => {
               </Sentry.ErrorBoundary>
             </div>
 
-            <FiltersBar
-              filter={filter}
-              setFilter={setFilter}
-              taskCounts={taskCounts}
-              taskDensity={taskDensity}
-              setTaskDensity={setTaskDensity}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              selectAllFiltered={selectAllFiltered}
-              clearSelection={clearSelection}
-              bulkComplete={bulkComplete}
-              bulkDelete={bulkDelete}
-              clearCompleted={clearCompleted}
-              bulkActionLoading={bulkActionLoading}
-              canDrag={canDrag}
-              selectedCount={selectedIds.size}
-              filteredCount={filteredTasks.length}
-              filteredTasks={filteredTasks}
-            />
-
-            <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">任务列表渲染异常，请刷新重试。</div>}>
-              <TaskList
-                filteredTasks={displayedTasks}
-                emptyMode={emptyMode}
-                onResetFilters={resetTaskFilters}
-                categories={categories}
-                searchQuery={searchQuery}
+            <div className="sticky top-2 md:top-3 z-30 mb-6">
+              <FiltersBar
+                filter={filter}
+                setFilter={setFilter}
+                taskCounts={taskCounts}
                 taskDensity={taskDensity}
-                groupCompleted={filter === 'all' && !searchQuery.trim()}
-                completedCollapsed={completedCollapsed}
-                setCompletedCollapsed={setCompletedCollapsed}
-                sectionCollapsedMap={activeSectionsCollapsed}
-                setSectionCollapsedMap={setActiveSectionsCollapsed}
-                toggleSelect={toggleSelect}
-                selectedIds={selectedIds}
-                toggleTask={toggleTask}
-                expandedId={expandedId}
-                setExpandedId={setExpandedId}
-                priorities={priorities}
-                deleteTask={deleteTask}
-                editTask={editTask}
+                setTaskDensity={setTaskDensity}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                selectAllFiltered={selectAllFiltered}
+                clearSelection={clearSelection}
+                bulkComplete={bulkComplete}
+                bulkDelete={bulkDelete}
+                clearCompleted={clearCompleted}
+                bulkActionLoading={bulkActionLoading}
                 canDrag={canDrag}
-                handleDragStart={handleDragStart}
-                handleDrop={handleDrop}
+                selectedCount={selectedIds.size}
+                filteredCount={filteredTasks.length}
+                filteredTasks={filteredTasks}
               />
-            </Sentry.ErrorBoundary>
+            </div>
+
+            {tasksLoading ? (
+              <div className="space-y-4">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="task-card-soft p-4">
+                    <div className="skeleton-line h-3 w-28 mb-3" />
+                    <div className="skeleton-line h-5 w-4/5 mb-2" />
+                    <div className="skeleton-line h-3 w-2/3" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">任务列表渲染异常，请刷新重试。</div>}>
+                <TaskList
+                  filteredTasks={displayedTasks}
+                  emptyMode={emptyMode}
+                  onResetFilters={resetTaskFilters}
+                  categories={categories}
+                  searchQuery={searchQuery}
+                  taskDensity={taskDensity}
+                  groupCompleted={filter === 'all' && !searchQuery.trim()}
+                  completedCollapsed={completedCollapsed}
+                  setCompletedCollapsed={setCompletedCollapsed}
+                  sectionCollapsedMap={activeSectionsCollapsed}
+                  setSectionCollapsedMap={setActiveSectionsCollapsed}
+                  toggleSelect={toggleSelect}
+                  selectedIds={selectedIds}
+                  toggleTask={toggleTask}
+                  expandedId={expandedId}
+                  setExpandedId={setExpandedId}
+                  priorities={priorities}
+                  deleteTask={deleteTask}
+                  editTask={editTask}
+                  canDrag={canDrag}
+                  handleDragStart={handleDragStart}
+                  handleDrop={handleDrop}
+                />
+              </Sentry.ErrorBoundary>
+            )}
 
             <div className="mt-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <p className="text-[11px] text-[#7b6f8c]">

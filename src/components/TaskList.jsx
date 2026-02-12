@@ -180,9 +180,12 @@ const TaskList = ({
   if (filteredTasks.length === 0) {
     const isFilteredEmpty = emptyMode === 'filtered';
     return (
-      <div className="empty-soft py-20 text-center">
-        <p className="text-slate-400 text-sm">
+      <div className="empty-soft py-20 text-center px-6">
+        <p className="text-[#7b6f8c] text-sm font-semibold">
           {isFilteredEmpty ? '没有匹配任务，试试调整筛选条件' : '清单空空如也，给自己一个拥抱吧'}
+        </p>
+        <p className="text-[11px] text-slate-400 mt-2">
+          {isFilteredEmpty ? '可以试试清空搜索词、切换筛选或排序方式。' : '写下第一件小事，今天就已经开始进步了。'}
         </p>
         {isFilteredEmpty && (
           <button
@@ -259,14 +262,17 @@ const TaskList = ({
                 <span className="text-[9px] bg-slate-50 text-slate-400 px-1.5 py-0.5 rounded font-black border border-slate-100">
                   {task.category}
                 </span>
-                {(task.tags || []).slice(0, 3).map((t) => (
+                {(task.tags || []).slice(0, 1).map((t) => (
                   <span key={t} className="text-[9px] px-1.5 py-0.5 rounded font-black pill-soft">
                     #{t}
                   </span>
                 ))}
-                {(task.tags || []).length > 3 && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded font-black text-[#7b6f8c] bg-white/70 border border-[#ffe4f2]">
-                    +{(task.tags || []).length - 3}
+                {(task.tags || []).length > 1 && (
+                  <span className="tag-more relative text-[9px] px-1.5 py-0.5 rounded font-black text-[#7b6f8c] bg-white/70 border border-[#ffe4f2]">
+                    +{(task.tags || []).length - 1}
+                    <span className="tag-more-pop">
+                      {(task.tags || []).slice(1).join(' / ')}
+                    </span>
                   </span>
                 )}
               </div>
