@@ -16,11 +16,12 @@ import Toast from './components/Toast.jsx';
 import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
-import WheelPanel from './components/WheelPanel.jsx';
 import { Sentry } from './sentry.js';
 
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 const prefetchStatsView = () => import('./StatsView.jsx');
+const WheelPanel = React.lazy(() => import('./components/WheelPanel.jsx'));
+const prefetchWheelPanel = () => import('./components/WheelPanel.jsx');
 const SettingsModal = React.lazy(() => import('./components/SettingsModal.jsx'));
 const PrivacyModal = React.lazy(() => import('./components/PrivacyModal.jsx'));
 const EmailVerifyBanner = React.lazy(() => import('./components/EmailVerifyBanner.jsx'));
@@ -192,6 +193,19 @@ const App = () => {
     const timer = setTimeout(() => {
       void prefetchStatsView();
     }, 800);
+    return () => clearTimeout(timer);
+  }, [view]);
+
+  useEffect(() => {
+    if (view !== 'tasks') return;
+    const run = () => {
+      void prefetchWheelPanel();
+    };
+    const idle = window.requestIdleCallback?.(run, { timeout: 1500 });
+    if (idle) {
+      return () => window.cancelIdleCallback?.(idle);
+    }
+    const timer = setTimeout(run, 900);
     return () => clearTimeout(timer);
   }, [view]);
 
@@ -879,25 +893,27 @@ const App = () => {
             </div>
 
             <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘区域出错了，请刷新重试。</div>}>
-              <WheelPanel
-                groups={wheelGroups}
-                currentGroup={wheelGroup}
-                onGroupChange={setWheelGroup}
-                onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
-                onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
-                onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
-                onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
-                options={currentWheelOptions}
-                history={currentWheelHistory}
-                spinning={wheelSpinning}
-                angle={wheelAngle}
-                result={wheelResult}
-                created={wheelCreated}
-                onSpin={spinWheel}
-                onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
-                onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
-                onCreateTask={createTaskFromWheel}
-              />
+              <Suspense fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘加载中...</div>}>
+                <WheelPanel
+                  groups={wheelGroups}
+                  currentGroup={wheelGroup}
+                  onGroupChange={setWheelGroup}
+                  onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
+                  onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
+                  onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
+                  onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
+                  options={currentWheelOptions}
+                  history={currentWheelHistory}
+                  spinning={wheelSpinning}
+                  angle={wheelAngle}
+                  result={wheelResult}
+                  created={wheelCreated}
+                  onSpin={spinWheel}
+                  onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
+                  onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
+                  onCreateTask={createTaskFromWheel}
+                />
+              </Suspense>
             </Sentry.ErrorBoundary>
           </>
         ) : (
