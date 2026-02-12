@@ -110,7 +110,7 @@ const WheelPanel = ({
   }, [options]);
 
   return (
-    <div className="card-soft p-6 md:p-7 overflow-hidden relative">
+    <div className="card-soft p-4 md:p-7 overflow-hidden relative">
       <div className="wheel-cloud wheel-cloud-a" />
       <div className="wheel-cloud wheel-cloud-b" />
       <div className="wheel-cloud wheel-cloud-c" />
@@ -229,9 +229,9 @@ const WheelPanel = ({
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-7">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 md:gap-7">
           <div className="flex flex-col items-center">
-            <div className="relative w-64 h-64 md:w-72 md:h-72 wheel-orbit">
+            <div className="relative w-[min(84vw,18rem)] h-[min(84vw,18rem)] md:w-72 md:h-72 wheel-orbit">
               <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-30">
                 <div className="w-0 h-0 border-l-[12px] border-r-[12px] border-t-[18px] border-l-transparent border-r-transparent border-t-[#ff6fb1] drop-shadow-[0_4px_6px_rgba(255,111,177,0.45)]" />
               </div>
@@ -315,7 +315,7 @@ const WheelPanel = ({
             </div>
 
             {result && (
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 w-full max-w-[320px] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <button
                   type="button"
                   onClick={() => onCreateTask(result)}
@@ -338,7 +338,7 @@ const WheelPanel = ({
           </div>
 
           <div className="space-y-5">
-            <div className="card-soft-sm p-4">
+            <div className="card-soft-sm p-3.5 md:p-4">
               <button
                 type="button"
                 onClick={() => setCustomCollapsed((prev) => !prev)}
@@ -357,7 +357,7 @@ const WheelPanel = ({
                       value={newOption}
                       onChange={(e) => setNewOption(e.target.value)}
                       placeholder="输入想要转到的事项"
-                      className="flex-1 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                      className="flex-1 min-w-0 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                     />
                     <button
                       type="button"
@@ -375,7 +375,7 @@ const WheelPanel = ({
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-3 max-h-36 overflow-y-auto pr-1">
                     {options.length === 0 && <div className="text-xs text-slate-400">还没有选项，先加几个吧。</div>}
                     {options.map((opt) => (
                       <span key={opt.id} className="text-xs bg-white/90 border border-[#ffe4f2] rounded-full px-3 py-1 flex items-center gap-1 text-[#3b2e4a]">
@@ -397,7 +397,7 @@ const WheelPanel = ({
               )}
             </div>
 
-            <div className="card-soft-sm p-4">
+            <div className="card-soft-sm p-3.5 md:p-4">
               <div className="flex items-center justify-between mb-2">
                 <button
                   type="button"
@@ -418,7 +418,7 @@ const WheelPanel = ({
                 </button>
               </div>
               {!historyCollapsed && (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {history.length === 0 && (
                   <div className="text-xs text-slate-400">还没有转动记录</div>
                 )}
