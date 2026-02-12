@@ -273,7 +273,7 @@ const WheelPanel = ({
 
             <div className="mt-3 min-h-[34px] flex items-center">
               {result && (
-                <span className="text-xs font-bold text-[#ff6fb1] bg-white/90 border border-[#ffd7ea] px-3 py-1 rounded-full shadow-sm">
+                <span className="wheel-result-pop text-xs font-bold text-[#ff6fb1] bg-white/90 border border-[#ffd7ea] px-3 py-1 rounded-full shadow-sm">
                   抽到：{result}
                 </span>
               )}
@@ -284,7 +284,7 @@ const WheelPanel = ({
                 type="button"
                 onClick={() => onCreateTask(result)}
                 disabled={created}
-                className="mt-2 text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.32)] disabled:opacity-60"
+                className="mt-2 wheel-result-pop text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.32)] disabled:opacity-60"
               >
                 {created ? '已创建任务' : '一键创建任务'}
               </button>

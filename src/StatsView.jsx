@@ -2,24 +2,29 @@ import React from 'react';
 import { BarChart3 } from 'lucide-react';
 
 const StatsView = ({ stats }) => {
+  const cards = [
+    { label: '任务总量', value: stats.total, valueClass: 'text-[#ff6fb1]', containerClass: 'card-soft-sm' },
+    { label: '累计完成', value: stats.completed, valueClass: 'text-green-500', containerClass: 'card-soft-sm' },
+    { label: '剩余待办', value: stats.total - stats.completed, valueClass: 'text-white', containerClass: 'btn-soft rounded-3xl text-white' }
+  ];
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card-soft-sm p-6 flex flex-col items-center">
-          <div className="text-4xl font-black text-[#ff6fb1] mb-1">{stats.total}</div>
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">任务总量</div>
-        </div>
-        <div className="card-soft-sm p-6 flex flex-col items-center">
-          <div className="text-4xl font-black text-green-500 mb-1">{stats.completed}</div>
-          <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">累计完成</div>
-        </div>
-        <div className="p-6 rounded-3xl flex flex-col items-center text-white btn-soft">
-          <div className="text-4xl font-black mb-1">{stats.total - stats.completed}</div>
-          <div className="text-[10px] font-black text-white/80 uppercase tracking-widest">剩余待办</div>
-        </div>
+        {cards.map((card, idx) => (
+          <div
+            key={card.label}
+            className={`${card.containerClass} stats-card-appear p-6 flex flex-col items-center`}
+            style={{ animationDelay: `${idx * 80}ms` }}
+          >
+            <div className={`text-4xl font-black mb-1 ${card.valueClass}`}>{card.value}</div>
+            <div className={`text-[10px] font-black uppercase tracking-widest ${card.label === '剩余待办' ? 'text-white/80' : 'text-slate-400'}`}>
+              {card.label}
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="card-soft p-8">
+      <div className="card-soft stats-card-appear p-8" style={{ animationDelay: '220ms' }}>
         <h3 className="font-bold text-[#3b2e4a] mb-6 flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-[#ff6fb1]" /> 分类进度概览
         </h3>

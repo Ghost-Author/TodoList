@@ -361,12 +361,54 @@ h1, h2, h3 {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(255, 245, 251, 0.93));
   border: 1px solid #ffd7ea;
   box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55), 0 10px 22px rgba(255, 149, 198, 0.32);
-  transition: transform 160ms ease, box-shadow 160ms ease;
+  transition: transform var(--motion-fast) var(--motion-soft), box-shadow var(--motion-base) var(--motion-soft);
 }
 
 .wheel-core-btn:hover {
   transform: scale(1.03);
   box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55), 0 14px 28px rgba(255, 149, 198, 0.42);
+}
+
+@keyframes result-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+  70% {
+    transform: translateY(0) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes result-glow {
+  0%, 100% {
+    box-shadow: 0 8px 16px rgba(255, 180, 217, 0.22);
+  }
+  50% {
+    box-shadow: 0 10px 24px rgba(255, 138, 203, 0.36);
+  }
+}
+
+.wheel-result-pop {
+  animation: result-pop 320ms var(--motion-soft), result-glow 1.8s ease-in-out infinite;
+}
+
+@keyframes stats-card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stats-card-appear {
+  animation: stats-card-rise 360ms var(--motion-soft) both;
 }
 
 .wheel-twinkle {
