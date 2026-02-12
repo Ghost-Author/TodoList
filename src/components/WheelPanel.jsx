@@ -302,9 +302,13 @@ const WheelPanel = ({
 
             <div className="mt-3 min-h-[34px] flex items-center">
               {result && (
-                <span className="wheel-result-pop text-xs font-bold text-[#ff6fb1] bg-white/90 border border-[#ffd7ea] px-3 py-1 rounded-full shadow-sm">
-                  抽到：{result}
-                </span>
+                <div className="wheel-result-pop w-full max-w-[320px] card-soft-sm px-3 py-2.5">
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#7b6f8c]">抽取结果</div>
+                  <div className="mt-1 text-sm font-bold text-[#ff6fb1] break-words">{result}</div>
+                  <div className="mt-1 text-[10px] text-[#7b6f8c]">
+                    {created ? '任务已创建，可前往任务页查看。' : '确认后可一键创建为任务。'}
+                  </div>
+                </div>
               )}
             </div>
 
