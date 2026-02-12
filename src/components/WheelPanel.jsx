@@ -42,22 +42,28 @@ const getDisplayLabelToken = (segmentDeg, label) => {
   if (chars.length === 0) return { lines: [''], plain: '' };
 
   const lineChars = segmentDeg >= 56 ? 10 : segmentDeg >= 44 ? 9 : segmentDeg >= 30 ? 8 : segmentDeg >= 22 ? 6 : 4;
-  if (chars.length <= lineChars || segmentDeg < 18) {
-    return { lines: [candidate], plain: candidate };
+  const maxLines = segmentDeg >= 56 ? 4 : segmentDeg >= 40 ? 3 : segmentDeg >= 24 ? 2 : 1;
+  const maxChars = lineChars * maxLines;
+  if (chars.length <= lineChars || maxLines === 1) {
+    const single = chars.length <= maxChars ? candidate : `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
+    return { lines: [single], plain: single, maxLines };
   }
-
   const lines = [];
-  for (let i = 0; i < chars.length; i += lineChars) {
+  for (let i = 0; i < chars.length && lines.length < maxLines; i += lineChars) {
     const start = i;
     const end = i + lineChars;
     const chunk = chars.slice(start, end).join('');
     if (!chunk) break;
     lines.push(chunk);
   }
-  return { lines, plain: lines.join('') };
+  if (chars.length > maxChars && lines.length > 0) {
+    const tail = toChars(lines[lines.length - 1]);
+    lines[lines.length - 1] = `${tail.slice(0, Math.max(1, lineChars - 1)).join('')}…`;
+  }
+  return { lines, plain: lines.join(''), maxLines };
 };
 
-const getLabelLayout = (segmentDeg, maxLineLength, lineCount) => {
+const getLabelLayout = (segmentDeg, maxLineLength, lineCount, maxLines) => {
   const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
   const textPenalty = Math.max(0, Math.ceil((maxLineLength - 6) / 4));
   const linePenalty = Math.max(0, Math.ceil((lineCount - 2) / 2));
@@ -65,9 +71,10 @@ const getLabelLayout = (segmentDeg, maxLineLength, lineCount) => {
 
   const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 79;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.82), 30, 96);
+  const maxWidth = clamp(Math.round(arcLength * 0.76), 28, 90);
+  const maxHeight = Math.round(fontSize * 1.08 * maxLines + 2);
 
-  return { fontSize, radius, maxWidth };
+  return { fontSize, radius, maxWidth, maxHeight };
 };
 
 const getTextTone = (color) => {
@@ -268,7 +275,7 @@ const WheelPanel = ({
                 const segmentColor = segmentColors[idx];
                 const labelToken = getDisplayLabelToken(step, opt.label);
                 const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
-                const layout = getLabelLayout(step, maxLineLength, labelToken.lines.length);
+                const layout = getLabelLayout(step, maxLineLength, labelToken.lines.length, labelToken.maxLines || 1);
                 const textTone = getTextTone(segmentColor);
                 return (
                   <div
@@ -284,6 +291,8 @@ const WheelPanel = ({
                       style={{
                         transform: `translateY(-${layout.radius}px)`,
                         width: `${layout.maxWidth}px`,
+                        maxHeight: `${layout.maxHeight}px`,
+                        overflow: 'hidden',
                         boxSizing: 'border-box'
                       }}
                     >
@@ -294,7 +303,9 @@ const WheelPanel = ({
                           fontSize: `${layout.fontSize}px`,
                           lineHeight: 1.08,
                           color: textTone,
-                          maxWidth: `${layout.maxWidth}px`
+                          maxWidth: `${layout.maxWidth}px`,
+                          maxHeight: `${layout.maxHeight}px`,
+                          overflow: 'hidden'
                         }}
                         title={opt.label}
                       >
