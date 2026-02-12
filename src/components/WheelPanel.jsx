@@ -235,6 +235,9 @@ const WheelPanel = ({
                 const labelToken = getDisplayLabelToken(step, opt.label);
                 const maxLineLength = Math.max(...labelToken.lines.map((line) => toChars(line).length));
                 const layout = getLabelLayout(step, maxLineLength);
+                const absoluteDeg = ((deg + angle) % 360 + 360) % 360;
+                const shouldFlip = absoluteDeg > 90 && absoluteDeg < 270;
+                const textRotation = shouldFlip ? 90 : -90;
                 return (
                   <div
                     key={opt.id}
@@ -247,7 +250,7 @@ const WheelPanel = ({
                     <span
                       className="wheel-segment-chip font-bold text-[#3b2e4a] px-2 py-1 rounded-xl text-center shadow-sm"
                       style={{
-                        transform: `translateY(-${layout.radius}px) rotate(-90deg)`,
+                        transform: `translateY(-${layout.radius}px) rotate(${textRotation}deg)`,
                         fontSize: `${layout.fontSize}px`,
                         maxWidth: `${layout.maxWidth}px`,
                         lineHeight: 1.12
