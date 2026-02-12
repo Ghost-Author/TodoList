@@ -55,13 +55,13 @@ const getDisplayLabelToken = (segmentDeg, label) => {
 };
 
 const getLabelLayout = (segmentDeg, maxLineLength) => {
-  const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
+  const baseFont = segmentDeg >= 60 ? 11 : segmentDeg >= 45 ? 10 : segmentDeg >= 30 ? 9 : segmentDeg >= 22 ? 8 : 7;
   const textPenalty = Math.max(0, Math.ceil((maxLineLength - 6) / 4));
-  const fontSize = clamp(baseFont - textPenalty, 7, 12);
+  const fontSize = clamp(baseFont - textPenalty, 6, 11);
 
-  const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 83;
+  const radius = segmentDeg >= 55 ? 72 : segmentDeg >= 36 ? 75 : segmentDeg >= 24 ? 78 : 81;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.82), 34, 96);
+  const maxWidth = clamp(Math.round(arcLength * 0.72), 28, 82);
 
   return { fontSize, radius, maxWidth };
 };
@@ -278,20 +278,26 @@ const WheelPanel = ({
                     }}
                   >
                     <span
-                      className="wheel-segment-chip font-bold px-2 py-1 rounded-xl text-center shadow-sm"
+                      className="wheel-segment-chip font-bold px-1.5 py-0.5 rounded-lg text-center shadow-sm"
                       style={{
                         transform: `translateY(-${layout.radius}px) rotate(${textRotation}deg)`,
+                        width: `${layout.maxWidth}px`,
                         fontSize: `${layout.fontSize}px`,
                         maxWidth: `${layout.maxWidth}px`,
                         lineHeight: 1.12,
                         background: chipTone.bg,
                         borderColor: chipTone.border,
-                        color: chipTone.text
+                        color: chipTone.text,
+                        overflow: 'hidden',
+                        boxSizing: 'border-box'
                       }}
                       title={opt.label}
                     >
                       {labelToken.lines.map((line, lineIdx) => (
-                        <span key={`${opt.id}-line-${lineIdx}`} className="block whitespace-nowrap">
+                        <span
+                          key={`${opt.id}-line-${lineIdx}`}
+                          className="block whitespace-nowrap overflow-hidden text-ellipsis"
+                        >
                           {line}
                         </span>
                       ))}
