@@ -293,7 +293,13 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     if (wheelSpinning || currentWheelOptions.length === 0) return;
 
     const count = currentWheelOptions.length;
-    const index = Math.floor(Math.random() * count);
+    let index = Math.floor(Math.random() * count);
+    if (count > 1 && wheelResult) {
+      const picked = currentWheelOptions[index]?.label;
+      if (picked === wheelResult) {
+        index = (index + 1 + Math.floor(Math.random() * (count - 1))) % count;
+      }
+    }
     const segment = 360 / count;
     const edgePadding = segment * 0.18;
     const inSegmentOffset = edgePadding + Math.random() * Math.max(0, (segment - edgePadding * 2));
