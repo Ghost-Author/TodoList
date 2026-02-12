@@ -42,8 +42,8 @@ const getDisplayLabelToken = (segmentDeg, label) => {
   const chars = toChars(candidate);
   if (chars.length === 0) return { lines: [''], plain: '' };
 
-  const lineChars = segmentDeg >= 56 ? 9 : segmentDeg >= 44 ? 8 : segmentDeg >= 30 ? 7 : segmentDeg >= 22 ? 6 : 4;
-  const maxLines = segmentDeg >= 42 ? 3 : segmentDeg >= 22 ? 2 : 1;
+  const lineChars = segmentDeg >= 56 ? 10 : segmentDeg >= 44 ? 9 : segmentDeg >= 30 ? 8 : segmentDeg >= 22 ? 6 : 4;
+  const maxLines = segmentDeg >= 56 ? 4 : segmentDeg >= 42 ? 3 : segmentDeg >= 22 ? 2 : 1;
   const maxChars = lineChars * maxLines;
   if (chars.length <= lineChars || segmentDeg < 18) {
     const single = chars.length <= maxChars ? candidate : `${sliceChars(candidate, maxChars)}…`;
@@ -68,11 +68,11 @@ const getDisplayLabelToken = (segmentDeg, label) => {
 const getLabelLayout = (segmentDeg, maxLineLength) => {
   const baseFont = segmentDeg >= 60 ? 12 : segmentDeg >= 45 ? 11 : segmentDeg >= 30 ? 10 : segmentDeg >= 22 ? 9 : 8;
   const textPenalty = Math.max(0, Math.ceil((maxLineLength - 6) / 4));
-  const fontSize = clamp(baseFont - textPenalty, 7, 12);
+  const fontSize = clamp(baseFont - textPenalty, 6, 12);
 
   const radius = segmentDeg >= 55 ? 70 : segmentDeg >= 36 ? 73 : segmentDeg >= 24 ? 76 : 79;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
-  const maxWidth = clamp(Math.round(arcLength * 0.76), 30, 90);
+  const maxWidth = clamp(Math.round(arcLength * 0.82), 30, 96);
 
   return { fontSize, radius, maxWidth };
 };

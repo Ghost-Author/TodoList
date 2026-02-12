@@ -257,7 +257,8 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     if (!count) return 0;
     const segment = 360 / count;
     const normalized = ((angle % 360) + 360) % 360;
-    return Math.floor((((360 - normalized) % 360) / segment)) % count;
+    const mapped = ((360 - normalized) % 360) + 1e-7;
+    return Math.floor(mapped / segment) % count;
   };
 
   const spinWheel = async () => {
@@ -266,7 +267,10 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     const count = currentWheelOptions.length;
     const index = Math.floor(Math.random() * count);
     const segment = 360 / count;
-    const target = 360 * 4 + (360 - (index * segment + segment / 2));
+    const edgePadding = segment * 0.18;
+    const inSegmentOffset = edgePadding + Math.random() * Math.max(0, (segment - edgePadding * 2));
+    const landedPointerAngle = index * segment + inSegmentOffset;
+    const target = 360 * 4 + (360 - landedPointerAngle);
     wheelAngleRef.current = (wheelAngleRef.current + target) % 3600;
     setWheelSpinning(true);
     setWheelAngle(wheelAngleRef.current);
