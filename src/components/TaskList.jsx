@@ -44,26 +44,6 @@ const TaskList = ({
   const [editTagInput, setEditTagInput] = useState('');
   const normalizedQuery = searchQuery.trim();
 
-  if (filteredTasks.length === 0) {
-    const isFilteredEmpty = emptyMode === 'filtered';
-    return (
-      <div className="empty-soft py-20 text-center">
-        <p className="text-slate-400 text-sm">
-          {isFilteredEmpty ? '没有匹配任务，试试调整筛选条件' : '清单空空如也，给自己一个拥抱吧'}
-        </p>
-        {isFilteredEmpty && (
-          <button
-            type="button"
-            onClick={onResetFilters}
-            className="mt-3 pill-soft px-3 py-1 rounded-full text-xs font-bold"
-          >
-            一键清空筛选
-          </button>
-        )}
-      </div>
-    );
-  }
-
   const startEdit = (task) => {
     setEditingId(task.id);
     setEditDraft({
@@ -197,6 +177,26 @@ const TaskList = ({
   useEffect(() => {
     setVirtualScrollTop(0);
   }, [searchQuery, groupCompleted, canDrag, taskDensity, filteredTasks.length]);
+
+  if (filteredTasks.length === 0) {
+    const isFilteredEmpty = emptyMode === 'filtered';
+    return (
+      <div className="empty-soft py-20 text-center">
+        <p className="text-slate-400 text-sm">
+          {isFilteredEmpty ? '没有匹配任务，试试调整筛选条件' : '清单空空如也，给自己一个拥抱吧'}
+        </p>
+        {isFilteredEmpty && (
+          <button
+            type="button"
+            onClick={onResetFilters}
+            className="mt-3 pill-soft px-3 py-1 rounded-full text-xs font-bold"
+          >
+            一键清空筛选
+          </button>
+        )}
+      </div>
+    );
+  }
 
   const setSectionCollapsed = (updater) => {
     if (typeof setSectionCollapsedMap === 'function') {
