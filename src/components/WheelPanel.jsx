@@ -78,7 +78,8 @@ const WheelPanel = ({
   onSpin,
   onAddOption,
   onRemoveOption,
-  onCreateTask
+  onCreateTask,
+  onOpenTasks
 }) => {
   const [newOption, setNewOption] = useState('');
   const [newGroup, setNewGroup] = useState('');
@@ -308,14 +309,25 @@ const WheelPanel = ({
             </div>
 
             {result && (
-              <button
-                type="button"
-                onClick={() => onCreateTask(result)}
-                disabled={created}
-                className="mt-2 wheel-result-pop text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.32)] disabled:opacity-60"
-              >
-                {created ? '已创建任务' : '一键创建任务'}
-              </button>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onCreateTask(result)}
+                  disabled={created}
+                  className="wheel-result-pop text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.32)] disabled:opacity-60"
+                >
+                  {created ? '已创建任务' : '一键创建任务'}
+                </button>
+                {created && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenTasks?.()}
+                    className="text-xs font-bold text-[#7b6f8c] bg-white/90 border border-[#ffe4f2] px-3 py-2 rounded-full"
+                  >
+                    去任务页查看
+                  </button>
+                )}
+              </div>
             )}
           </div>
 

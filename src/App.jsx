@@ -909,12 +909,13 @@ const App = () => {
                   result={wheelResult}
                   created={wheelCreated}
                   onSpin={spinWheel}
-                  onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
-                  onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
-                  onCreateTask={createTaskFromWheel}
-                />
-              </Suspense>
-            </Sentry.ErrorBoundary>
+                onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
+                onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
+                onCreateTask={createTaskFromWheel}
+                onOpenTasks={() => setView('tasks')}
+              />
+            </Suspense>
+          </Sentry.ErrorBoundary>
           </>
         ) : (
           <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">统计区域出错了，请稍后重试。</div>}>
