@@ -26,6 +26,8 @@ const TaskList = ({
   handleDrop
 }) => {
   const compact = taskDensity === 'compact';
+  const orderedIds = filteredTasks.map((t) => t.id);
+  const sectionState = sectionCollapsedMap || {};
   const [editingId, setEditingId] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editDraft, setEditDraft] = useState({
@@ -183,6 +185,18 @@ const TaskList = ({
     return 'later';
   };
 
+  const getPriorityMeta = (key) => {
+    if (priorities && priorities[key]) return priorities[key];
+    if (priorities && priorities.medium) return priorities.medium;
+    return { label: '普通', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-100' };
+  };
+
+  const setSectionCollapsed = (updater) => {
+    if (typeof setSectionCollapsedMap === 'function') {
+      setSectionCollapsedMap(updater);
+    }
+  };
+
   const renderTask = (task) => (
         <div
           key={task.id}
@@ -196,7 +210,7 @@ const TaskList = ({
             <button
               onClick={(e) => toggleSelect(task.id, {
                 shiftKey: e.shiftKey,
-                orderedIds: filteredTasks.map((t) => t.id)
+                orderedIds
               })}
               className={`${compact ? 'h-[18px] w-[18px]' : 'h-5 w-5'} rounded-md border flex items-center justify-center text-xs font-black ${selectedIds.has(task.id) ? 'bg-[#ff8acb] text-white border-[#ff8acb]' : 'bg-white border-[#ffe4f2] text-[#7b6f8c]'}`}
               title="选择任务"
@@ -209,9 +223,14 @@ const TaskList = ({
 
             <div className="flex-grow min-w-0 cursor-pointer" onClick={() => setExpandedId(expandedId === task.id ? null : task.id)}>
               <div className="flex items-center gap-2 mb-1 overflow-hidden">
-                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${priorities[task.priority].bg} ${priorities[task.priority].color} border ${priorities[task.priority].border}`}>
-                  {priorities[task.priority].label}
-                </span>
+                {(() => {
+                  const priorityMeta = getPriorityMeta(task.priority);
+                  return (
+                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded whitespace-nowrap ${priorityMeta.bg} ${priorityMeta.color} border ${priorityMeta.border}`}>
+                      {priorityMeta.label}
+                    </span>
+                  );
+                })()}
                 {task.dueDate && (() => {
                   const meta = getDueMeta(task.dueDate, task.completed);
                   const dueTone = meta?.tone || 'normal';
@@ -445,15 +464,45 @@ const TaskList = ({
   return (
     <div className="space-y-4">
       {activeTasks.length > 0 && (
-        canDrag
-          ? activeTasks.map((task) => renderTask(task))
-          : activeTaskSections.map((section) => {
-              const collapsed = Boolean(sectionCollapsedMap?.[section.key]);
+        canDrag ? activeTasks.map((task) => renderTask(task)) : (
+          <>
+            {activeTaskSections.length > 1 && (
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSectionCollapsed(() => {
+                    const next = {};
+                    activeTaskSections.forEach((section) => {
+                      next[section.key] = false;
+                    });
+                    return next;
+                  })}
+                  className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+                >
+                  展开全部分段
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSectionCollapsed(() => {
+                    const next = {};
+                    activeTaskSections.forEach((section) => {
+                      next[section.key] = true;
+                    });
+                    return next;
+                  })}
+                  className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+                >
+                  收起全部分段
+                </button>
+              </div>
+            )}
+            {activeTaskSections.map((section) => {
+              const collapsed = Boolean(sectionState[section.key]);
               return (
                 <div key={section.key} className="surface-soft p-3">
                   <button
                     type="button"
-                    onClick={() => setSectionCollapsedMap((prev) => ({ ...prev, [section.key]: !prev?.[section.key] }))}
+                    onClick={() => setSectionCollapsed((prev) => ({ ...prev, [section.key]: !prev?.[section.key] }))}
                     className="w-full flex items-center justify-between text-left px-2 py-1"
                   >
                     <span className={`text-xs font-black ${section.tone}`}>
@@ -472,7 +521,9 @@ const TaskList = ({
                   )}
                 </div>
               );
-            })
+            })}
+          </>
+        )
       )}
 
       {completedTasks.length > 0 && (
