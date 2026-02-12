@@ -13,7 +13,6 @@ const DEFAULT_COLORS = [
 ];
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-const toChars = (value) => Array.from(String(value || ''));
 const hexToRgb = (hex) => {
   const clean = String(hex || '').replace('#', '');
   if (clean.length !== 6) return { r: 255, g: 255, b: 255 };
@@ -33,32 +32,12 @@ const makeSegmentColor = (idx, count) => {
   return `hsl(${Math.round(baseHue)} ${sat}% ${light}%)`;
 };
 
-const getDisplayLabel = (segmentDeg, label) => {
-  const raw = String(label || '').trim().replace(/\s+/g, ' ');
-  if (!raw) return '';
-  const [firstPhrase] = raw.split(/[，,。.!！?？;；:：|/]/).filter(Boolean);
-  const candidate = (firstPhrase || raw).trim();
-  const chars = toChars(candidate);
-  const maxChars = segmentDeg >= 56 ? 9 : segmentDeg >= 44 ? 8 : segmentDeg >= 30 ? 7 : segmentDeg >= 22 ? 5 : 4;
-  if (chars.length <= maxChars) return candidate;
-  return `${chars.slice(0, Math.max(1, maxChars - 1)).join('')}…`;
-};
-
 const getLabelLayout = (segmentDeg) => {
   const fontSize = segmentDeg >= 36 ? 10 : segmentDeg >= 24 ? 9 : 8;
   const radius = segmentDeg >= 55 ? 74 : segmentDeg >= 36 ? 77 : segmentDeg >= 24 ? 80 : 84;
   const arcLength = (Math.PI * 2 * radius) * (segmentDeg / 360);
   const maxWidth = clamp(Math.round(arcLength * 0.62), 24, 64);
   return { fontSize, radius, maxWidth };
-};
-
-const getSegmentAlias = (segmentDeg, label, idx) => {
-  const cleaned = getDisplayLabel(segmentDeg, label).replace(/[，,。.!！?？;；:：|/]/g, '').trim();
-  if (!cleaned) return `${idx + 1}`;
-  const chars = toChars(cleaned);
-  const hasAscii = /[a-zA-Z0-9]/.test(cleaned);
-  const aliasLength = hasAscii ? (segmentDeg >= 32 ? 3 : 2) : (segmentDeg >= 32 ? 2 : 1);
-  return chars.slice(0, aliasLength).join('').toUpperCase();
 };
 
 const getTextTone = (color) => {
@@ -258,7 +237,7 @@ const WheelPanel = ({
                 const deg = idx * step + step / 2;
                 const segmentColor = segmentColors[idx];
                 const layout = getLabelLayout(step);
-                const alias = getSegmentAlias(step, opt.label, idx);
+                const alias = `${idx + 1}`;
                 const textTone = getTextTone(segmentColor);
                 return (
                   <div
