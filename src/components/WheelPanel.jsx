@@ -12,6 +12,9 @@ const DEFAULT_COLORS = [
   '#ffd1dc'
 ];
 const QUICK_OPTIONS = ['喝水', '伸展 3 分钟', '清理桌面', '番茄钟 25 分钟', '散步 10 分钟', '写今日复盘'];
+const WHEEL_UI_PREFS_KEY = 'wheel_panel_ui_prefs_v1';
+const MAX_OPTION_LENGTH = 32;
+const MAX_GROUP_LENGTH = 16;
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const toChars = (value) => Array.from(String(value || ''));
@@ -105,6 +108,29 @@ const WheelPanel = ({
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(WHEEL_UI_PREFS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (typeof parsed.customCollapsed === 'boolean') setCustomCollapsed(parsed.customCollapsed);
+      if (typeof parsed.historyCollapsed === 'boolean') setHistoryCollapsed(parsed.historyCollapsed);
+    } catch {
+      // Ignore invalid localStorage data.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        WHEEL_UI_PREFS_KEY,
+        JSON.stringify({ customCollapsed, historyCollapsed })
+      );
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }, [customCollapsed, historyCollapsed]);
+
   const showNotice = (text) => {
     setNotice(text);
     window.clearTimeout(noticeTimerRef.current);
@@ -179,6 +205,10 @@ const WheelPanel = ({
       showNotice('请输入选项内容');
       return false;
     }
+    if (toChars(val).length > MAX_OPTION_LENGTH) {
+      showNotice(`选项最多 ${MAX_OPTION_LENGTH} 个字符`);
+      return false;
+    }
     const exists = options.some((opt) => String(opt.label || '').trim() === val);
     if (exists) {
       showNotice('该选项已存在');
@@ -191,6 +221,10 @@ const WheelPanel = ({
     const val = String(value || '').trim();
     if (!val) {
       showNotice('请输入分组名称');
+      return false;
+    }
+    if (toChars(val).length > MAX_GROUP_LENGTH) {
+      showNotice(`分组名最多 ${MAX_GROUP_LENGTH} 个字符`);
       return false;
     }
     if (val === '随机') {
@@ -299,6 +333,7 @@ const WheelPanel = ({
                 await submitNewGroup();
               }}
               placeholder="新增分组"
+              maxLength={MAX_GROUP_LENGTH + 8}
               className="text-xs bg-white/85 rounded-full px-3 py-1 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
             />
             <button
@@ -506,6 +541,7 @@ const WheelPanel = ({
                         await submitNewOption(newOption);
                       }}
                       placeholder="输入想要转到的事项"
+                      maxLength={MAX_OPTION_LENGTH + 10}
                       className="flex-1 min-w-0 text-sm bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
                     />
                     <button
