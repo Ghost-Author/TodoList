@@ -123,6 +123,37 @@ const WheelPanel = ({
     };
   }, [options]);
 
+  const canAddOption = (value) => {
+    const val = String(value || '').trim();
+    if (!val) {
+      showNotice('请输入选项内容');
+      return false;
+    }
+    const exists = options.some((opt) => String(opt.label || '').trim() === val);
+    if (exists) {
+      showNotice('该选项已存在');
+      return false;
+    }
+    return true;
+  };
+
+  const canAddGroup = (value) => {
+    const val = String(value || '').trim();
+    if (!val) {
+      showNotice('请输入分组名称');
+      return false;
+    }
+    if (val === '随机') {
+      showNotice('“随机”为系统分组');
+      return false;
+    }
+    if ((groups || []).includes(val)) {
+      showNotice('该分组已存在');
+      return false;
+    }
+    return true;
+  };
+
   return (
     <div className="card-soft p-4 md:p-7 overflow-hidden relative">
       <div className="wheel-cloud wheel-cloud-a" />
@@ -188,6 +219,18 @@ const WheelPanel = ({
               type="text"
               value={newGroup}
               onChange={(e) => setNewGroup(e.target.value)}
+              onKeyDown={async (e) => {
+                if (e.key !== 'Enter') return;
+                e.preventDefault();
+                if (!canAddGroup(newGroup)) return;
+                const ok = await onAddGroup(newGroup.trim());
+                if (ok !== false) {
+                  setNewGroup('');
+                  showNotice('分组已创建');
+                } else {
+                  showNotice('新建分组失败');
+                }
+              }}
               placeholder="新增分组"
               className="text-xs bg-white/85 rounded-full px-3 py-1 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
             />
@@ -195,12 +238,13 @@ const WheelPanel = ({
               type="button"
               className="text-xs font-bold text-white bg-[#ff8acb] px-3 py-1 rounded-full shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
               onClick={async () => {
-                const val = newGroup.trim();
-                if (!val) return;
-                const ok = await onAddGroup(val);
+                if (!canAddGroup(newGroup)) return;
+                const ok = await onAddGroup(newGroup.trim());
                 if (ok !== false) {
                   setNewGroup('');
                   showNotice('分组已创建');
+                } else {
+                  showNotice('新建分组失败');
                 }
               }}
             >
@@ -377,12 +421,13 @@ const WheelPanel = ({
                       onKeyDown={async (e) => {
                         if (e.key !== 'Enter') return;
                         e.preventDefault();
-                        const val = newOption.trim();
-                        if (!val) return;
-                        const ok = await onAddOption(val);
+                        if (!canAddOption(newOption)) return;
+                        const ok = await onAddOption(newOption.trim());
                         if (ok !== false) {
                           setNewOption('');
                           showNotice('选项已添加');
+                        } else {
+                          showNotice('添加选项失败');
                         }
                       }}
                       placeholder="输入想要转到的事项"
@@ -392,12 +437,13 @@ const WheelPanel = ({
                       type="button"
                       className="px-3 rounded-xl bg-[#ff8acb] text-white shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
                       onClick={async () => {
-                        const val = newOption.trim();
-                        if (!val) return;
-                        const ok = await onAddOption(val);
+                        if (!canAddOption(newOption)) return;
+                        const ok = await onAddOption(newOption.trim());
                         if (ok !== false) {
                           setNewOption('');
                           showNotice('选项已添加');
+                        } else {
+                          showNotice('添加选项失败');
                         }
                       }}
                       title="添加选项"
