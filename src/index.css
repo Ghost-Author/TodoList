@@ -182,6 +182,79 @@ h1, h2, h3 {
   animation: skeleton-shimmer 1.3s ease-in-out infinite;
 }
 
+@keyframes fade-up-soft {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.task-appear {
+  animation: fade-up-soft 260ms var(--motion-soft) both;
+}
+
+.empty-illustration {
+  width: 120px;
+  height: 72px;
+  margin: 0 auto 12px;
+  position: relative;
+}
+
+.empty-illustration::before,
+.empty-illustration::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+}
+
+.empty-illustration::before {
+  width: 86px;
+  height: 44px;
+  left: 18px;
+  top: 18px;
+  background: radial-gradient(circle at 38% 42%, #fff7fc 0%, #ffe9f5 58%, #ffdcee 100%);
+  box-shadow: 0 8px 18px rgba(237, 186, 215, 0.35);
+}
+
+.empty-illustration::after {
+  width: 42px;
+  height: 42px;
+  left: 2px;
+  top: 24px;
+  background: radial-gradient(circle at 50% 44%, #ffffff 0%, #fbefff 68%, #f3e6ff 100%);
+}
+
+.empty-illustration-dot {
+  position: absolute;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #ffd8eb, #d9edff);
+  opacity: 0.8;
+}
+
+.empty-illustration-dot-a {
+  width: 10px;
+  height: 10px;
+  right: 8px;
+  top: 16px;
+}
+
+.empty-illustration-dot-b {
+  width: 8px;
+  height: 8px;
+  right: 24px;
+  top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-appear {
+    animation: none;
+  }
+}
+
 .tag-more {
   cursor: default;
 }
