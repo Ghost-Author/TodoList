@@ -502,13 +502,21 @@ const App = () => {
   const bulkDelete = async () => {
     if (selectedIds.size === 0 || bulkActionLoading) return;
     const ids = Array.from(selectedIds);
+    const idSet = new Set(ids);
+    const snapshot = tasks.filter((t) => idSet.has(t.id));
     setBulkActionLoading('delete');
     try {
-      const deleted = await bulkDeleteTasks(ids);
-      if (!deleted || deleted.length === 0) return;
+      setTasks((prev) => prev.filter((t) => !idSet.has(t.id)));
       clearSelection();
-      setUndoData(deleted);
-      setToast({ message: `已删除 ${deleted.length} 条任务`, action: '撤销' });
+      const deleted = await bulkDeleteTasks(ids);
+      if (!deleted) {
+        setTasks((prev) => [...snapshot, ...prev]);
+        enqueueToast({ message: '删除失败，已回滚' }, 1500);
+        return;
+      }
+      if (snapshot.length === 0) return;
+      setUndoData(snapshot);
+      setToast({ message: `已删除 ${snapshot.length} 条任务`, action: '撤销' });
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
       undoTimerRef.current = setTimeout(() => {
         setUndoData(null);
@@ -522,14 +530,22 @@ const App = () => {
   const clearCompleted = async () => {
     if (bulkActionLoading) return;
     const ids = tasks.filter((t) => t.completed).map((t) => t.id);
+    const idSet = new Set(ids);
+    const snapshot = tasks.filter((t) => idSet.has(t.id));
     if (ids.length === 0) return;
     setBulkActionLoading('clearCompleted');
     try {
+      setTasks((prev) => prev.filter((t) => !idSet.has(t.id)));
       const deleted = await bulkDeleteTasks(ids);
-      if (!deleted || deleted.length === 0) return;
+      if (!deleted) {
+        setTasks((prev) => [...snapshot, ...prev]);
+        enqueueToast({ message: '清理失败，已回滚' }, 1500);
+        return;
+      }
+      if (snapshot.length === 0) return;
       clearSelection();
-      setUndoData(deleted);
-      setToast({ message: `已清理 ${deleted.length} 条已完成任务`, action: '撤销' });
+      setUndoData(snapshot);
+      setToast({ message: `已清理 ${snapshot.length} 条已完成任务`, action: '撤销' });
       if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
       undoTimerRef.current = setTimeout(() => {
         setUndoData(null);
