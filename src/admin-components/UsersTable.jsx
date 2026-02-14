@@ -61,7 +61,7 @@ const UsersTable = ({
           {Number.isFinite(usersTotal) ? ` · 共 ${usersTotal} 位用户` : ''}
           {totalPages ? ` · 共 ${totalPages} 页` : ''}
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => loadUsers(Math.max(page - 1, 1))}
             disabled={page <= 1}
@@ -120,8 +120,48 @@ const UsersTable = ({
         <button type="button" onClick={() => setColumnVisible('created')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.created ? '' : 'opacity-50'}`}>创建时间</button>
         <button type="button" onClick={() => setColumnVisible('lastLogin')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.lastLogin ? '' : 'opacity-50'}`}>最近登录</button>
       </div>
-      <div className="card-soft-sm p-4 overflow-auto">
-        <table className="w-full text-xs text-left">
+
+      <div className="md:hidden space-y-2">
+        {users.map((u) => (
+          <div key={u.id} className="card-soft-sm p-3">
+            <div className="space-y-1.5 text-xs text-[#7b6f8c]">
+              {visibleCols.email && (
+                <div>
+                  <span className="font-black text-[#3b2e4a]">邮箱：</span>
+                  <span className="break-all">{u.email || '-'}</span>
+                </div>
+              )}
+              {visibleCols.created && (
+                <div>
+                  <span className="font-black text-[#3b2e4a]">创建：</span>
+                  <span>{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</span>
+                </div>
+              )}
+              {visibleCols.lastLogin && (
+                <div>
+                  <span className="font-black text-[#3b2e4a]">最近登录：</span>
+                  <span>{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</span>
+                </div>
+              )}
+            </div>
+            <div className="mt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => onDetail(u)}
+                className="pill-soft px-3 py-1 rounded-full text-[10px] font-bold"
+              >
+                详情
+              </button>
+            </div>
+          </div>
+        ))}
+        {users.length === 0 && !usersLoading && (
+          <div className="card-soft-sm p-4 text-xs text-[#7b6f8c] text-center">暂无数据</div>
+        )}
+      </div>
+
+      <div className="hidden md:block card-soft-sm p-4 overflow-auto">
+        <table className="w-full text-xs text-left min-w-[620px]">
           <thead className="text-[#7b6f8c]">
             <tr>
               {visibleCols.email && <th className="py-2">邮箱</th>}

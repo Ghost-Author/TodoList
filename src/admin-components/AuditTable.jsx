@@ -56,13 +56,13 @@ const AuditTable = ({
 
   return (
     <div className="mt-6">
-      <div className="flex items-center justify-between mb-3 text-xs text-[#7b6f8c]">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3 text-xs text-[#7b6f8c]">
         <span>
           第 {auditPage} 页
           {Number.isFinite(auditTotal) ? ` · 共 ${auditTotal} 条` : ''}
           {totalPages ? ` · 共 ${totalPages} 页` : ''}
         </span>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => loadAudit(Math.max(auditPage - 1, 1))}
             disabled={auditPage <= 1}
@@ -112,8 +112,49 @@ const AuditTable = ({
         <button type="button" onClick={() => setColumnVisible('target')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.target ? '' : 'opacity-50'}`}>对象</button>
         <button type="button" onClick={() => setColumnVisible('detail')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.detail ? '' : 'opacity-50'}`}>备注</button>
       </div>
-      <div className="card-soft-sm p-4 overflow-auto">
-        <table className="w-full text-xs text-left">
+
+      <div className="md:hidden space-y-2">
+        {auditLogs.map((log) => (
+          <div key={log.id} className="card-soft-sm p-3 text-xs text-[#7b6f8c] space-y-1.5">
+            {visibleCols.time && (
+              <div>
+                <span className="font-black text-[#3b2e4a]">时间：</span>
+                <span>{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</span>
+              </div>
+            )}
+            {visibleCols.admin && (
+              <div>
+                <span className="font-black text-[#3b2e4a]">管理员：</span>
+                <span className="break-all">{log.admin_email || '-'}</span>
+              </div>
+            )}
+            {visibleCols.action && (
+              <div>
+                <span className="font-black text-[#3b2e4a]">动作：</span>
+                <span>{log.action || '-'}</span>
+              </div>
+            )}
+            {visibleCols.target && (
+              <div>
+                <span className="font-black text-[#3b2e4a]">对象：</span>
+                <span className="break-all">{log.target_user_id || '-'}</span>
+              </div>
+            )}
+            {visibleCols.detail && (
+              <div>
+                <span className="font-black text-[#3b2e4a]">备注：</span>
+                <span>{log.detail?.reason || log.detail?.email || '-'}</span>
+              </div>
+            )}
+          </div>
+        ))}
+        {auditLogs.length === 0 && !auditLoading && (
+          <div className="card-soft-sm p-4 text-xs text-[#7b6f8c] text-center">暂无记录</div>
+        )}
+      </div>
+
+      <div className="hidden md:block card-soft-sm p-4 overflow-auto">
+        <table className="w-full text-xs text-left min-w-[860px]">
           <thead className="text-[#7b6f8c]">
             <tr>
               {visibleCols.time && <th className="py-2">时间</th>}
