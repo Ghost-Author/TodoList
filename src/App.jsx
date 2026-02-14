@@ -721,6 +721,7 @@ const App = () => {
                   filteredTasks={displayedTasks}
                   emptyMode={emptyMode}
                   onResetFilters={resetTaskFilters}
+                  onOpenWheel={() => setView('wheel')}
                   categories={categories}
                   searchQuery={searchQuery}
                   taskDensity={taskDensity}

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, ChevronDown, ChevronUp, Calendar, StickyNote, Pencil, Save, X, SearchX, Sparkles } from 'lucide-react';
 
 const TaskList = ({
   filteredTasks,
   emptyMode,
   onResetFilters,
+  onOpenWheel,
   categories,
   searchQuery,
   taskDensity,
@@ -180,26 +181,44 @@ const TaskList = ({
   if (filteredTasks.length === 0) {
     const isFilteredEmpty = emptyMode === 'filtered';
     return (
-      <div className="empty-soft py-20 text-center px-6">
-        <div className="empty-illustration" aria-hidden="true">
-          <span className="empty-illustration-dot empty-illustration-dot-a" />
-          <span className="empty-illustration-dot empty-illustration-dot-b" />
+      <div className="empty-soft py-12 md:py-16 px-5 md:px-6">
+        <div className="max-w-md mx-auto text-center">
+          <div className="empty-illustration" aria-hidden="true">
+            <span className="empty-illustration-dot empty-illustration-dot-a" />
+            <span className="empty-illustration-dot empty-illustration-dot-b" />
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/80 border border-[#ffe4f2] text-[10px] font-black tracking-[0.14em] uppercase text-[#7b6f8c]">
+            {isFilteredEmpty ? <SearchX className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+            {isFilteredEmpty ? '筛选结果为空' : '开始第一件事'}
+          </div>
+          <p className="text-[#7b6f8c] text-sm font-semibold mt-3">
+            {isFilteredEmpty ? '没有匹配任务，换个筛选试试' : '清单还没有任务，先从一件小事开始'}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-2">
+            {isFilteredEmpty
+              ? (searchQuery.trim() ? '你可以清空搜索词，或切换筛选/排序条件。' : '你可以切换筛选状态或排序方式。')
+              : '不确定做什么时，可以先去转盘获得一个轻量行动。'}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {isFilteredEmpty ? (
+              <button
+                type="button"
+                onClick={onResetFilters}
+                className="pill-soft px-3 py-1 rounded-full text-xs font-bold"
+              >
+                一键清空筛选
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenWheel?.()}
+                className="pill-soft px-3 py-1 rounded-full text-xs font-bold"
+              >
+                去转盘找灵感
+              </button>
+            )}
+          </div>
         </div>
-        <p className="text-[#7b6f8c] text-sm font-semibold">
-          {isFilteredEmpty ? '没有匹配任务，试试调整筛选条件' : '清单空空如也，给自己一个拥抱吧'}
-        </p>
-        <p className="text-[11px] text-slate-400 mt-2">
-          {isFilteredEmpty ? '可以试试清空搜索词、切换筛选或排序方式。' : '写下第一件小事，今天就已经开始进步了。'}
-        </p>
-        {isFilteredEmpty && (
-          <button
-            type="button"
-            onClick={onResetFilters}
-            className="mt-3 pill-soft px-3 py-1 rounded-full text-xs font-bold"
-          >
-            一键清空筛选
-          </button>
-        )}
       </div>
     );
   }
