@@ -16,6 +16,7 @@ import {
 } from './wheel/renderUtils.js';
 
 const WheelPanel = ({
+  loading = false,
   groups,
   currentGroup,
   onGroupChange,
@@ -172,53 +173,88 @@ const WheelPanel = ({
           </span>
         </div>
 
-        <WheelGroupBar
-          groups={groups}
-          currentGroup={currentGroup}
-          onGroupChange={onGroupChange}
-          onAddGroup={onAddGroup}
-          onRenameGroup={onRenameGroup}
-          onDeleteGroup={onDeleteGroup}
-          showNotice={showNotice}
-          maxGroupLength={MAX_GROUP_LENGTH}
-        />
+        {loading ? (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <span key={idx} className="h-7 w-16 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 md:gap-7">
+              <div className="card-soft-sm p-4 flex flex-col items-center">
+                <div className="w-[min(84vw,18rem)] h-[min(84vw,18rem)] md:w-72 md:h-72 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                <div className="mt-4 h-4 w-44 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                <div className="mt-3 h-8 w-36 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+              </div>
+              <div className="space-y-4">
+                <div className="card-soft-sm p-4 space-y-3">
+                  <div className="h-4 w-32 rounded bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                  <div className="h-9 w-full rounded-xl bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                  <div className="flex gap-2">
+                    <div className="h-5 w-14 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                    <div className="h-5 w-14 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                    <div className="h-5 w-14 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                  </div>
+                </div>
+                <div className="card-soft-sm p-4 space-y-3">
+                  <div className="h-4 w-36 rounded bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                  <div className="h-14 w-full rounded-xl bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                  <div className="h-14 w-full rounded-xl bg-white/70 border border-[#ffe4f2] animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <WheelGroupBar
+              groups={groups}
+              currentGroup={currentGroup}
+              onGroupChange={onGroupChange}
+              onAddGroup={onAddGroup}
+              onRenameGroup={onRenameGroup}
+              onDeleteGroup={onDeleteGroup}
+              showNotice={showNotice}
+              maxGroupLength={MAX_GROUP_LENGTH}
+            />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 md:gap-7">
-          <WheelCenterPanel
-            options={options}
-            gradient={gradient}
-            angle={angle}
-            spinning={spinning}
-            segmentColors={segmentColors}
-            onSpin={onSpin}
-            result={result}
-            created={created}
-            creating={creating}
-            onCreateTask={onCreateTask}
-            onOpenTasks={onOpenTasks}
-            notice={notice}
-            undoOption={undoOption}
-            undoHistory={undoHistory}
-            onUndoRemove={handleUndoRemove}
-            onUndoHistoryClear={handleUndoHistoryClear}
-          />
-          <WheelSettingsPanel
-            customCollapsed={customCollapsed}
-            setCustomCollapsed={setCustomCollapsed}
-            historyCollapsed={historyCollapsed}
-            setHistoryCollapsed={setHistoryCollapsed}
-            options={options}
-            newOption={newOption}
-            setNewOption={setNewOption}
-            submitNewOption={submitNewOption}
-            maxOptionLength={MAX_OPTION_LENGTH}
-            quickOptions={QUICK_OPTIONS}
-            onRemoveOption={handleRemoveOption}
-            history={history}
-            currentGroup={currentGroup}
-            onClearHistoryWithUndo={clearHistoryWithUndo}
-          />
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 md:gap-7">
+              <WheelCenterPanel
+                options={options}
+                gradient={gradient}
+                angle={angle}
+                spinning={spinning}
+                segmentColors={segmentColors}
+                onSpin={onSpin}
+                result={result}
+                created={created}
+                creating={creating}
+                onCreateTask={onCreateTask}
+                onOpenTasks={onOpenTasks}
+                notice={notice}
+                undoOption={undoOption}
+                undoHistory={undoHistory}
+                onUndoRemove={handleUndoRemove}
+                onUndoHistoryClear={handleUndoHistoryClear}
+              />
+              <WheelSettingsPanel
+                customCollapsed={customCollapsed}
+                setCustomCollapsed={setCustomCollapsed}
+                historyCollapsed={historyCollapsed}
+                setHistoryCollapsed={setHistoryCollapsed}
+                options={options}
+                newOption={newOption}
+                setNewOption={setNewOption}
+                submitNewOption={submitNewOption}
+                maxOptionLength={MAX_OPTION_LENGTH}
+                quickOptions={QUICK_OPTIONS}
+                onRemoveOption={handleRemoveOption}
+                history={history}
+                currentGroup={currentGroup}
+                onClearHistoryWithUndo={clearHistoryWithUndo}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

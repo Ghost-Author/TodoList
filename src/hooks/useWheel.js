@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS = ['整理桌面 5 分钟', '喝一杯水', '伸展一下'
 export const useWheel = ({ session, createTask, priority, category, dueDate, note, tags }) => {
   const [wheelOptions, setWheelOptions] = useState([]);
   const [wheelHistory, setWheelHistory] = useState([]);
+  const [wheelLoading, setWheelLoading] = useState(true);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelAngle, setWheelAngle] = useState(0);
   const [wheelResult, setWheelResult] = useState('');
@@ -20,6 +21,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   const resetWheelData = () => {
     setWheelOptions([]);
     setWheelHistory([]);
+    setWheelLoading(false);
     setWheelSpinning(false);
     setWheelAngle(0);
     setWheelResult('');
@@ -59,53 +61,58 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     const userId = session.user.id;
     let mounted = true;
     const isAlive = () => mounted;
+    setWheelLoading(true);
 
     const loadWheel = async () => {
-      const [groupRes, optRes, histRes] = await Promise.all([
-        supabase
-          .from('wheel_groups')
-          .select('id, name, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('wheel_options')
-          .select('id, label, group_name, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('wheel_history')
-          .select('id, label, group_name, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(5)
-      ]);
+      try {
+        const [groupRes, optRes, histRes] = await Promise.all([
+          supabase
+            .from('wheel_groups')
+            .select('id, name, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('wheel_options')
+            .select('id, label, group_name, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('wheel_history')
+            .select('id, label, group_name, created_at')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(5)
+        ]);
 
-      if (!isAlive()) return;
+        if (!isAlive()) return;
 
-      if (groupRes.data && groupRes.data.length > 0) {
-        const names = groupRes.data.map((g) => g.name);
-        if (!isAlive()) return;
-        setWheelGroups(['随机', ...names.filter((n) => n !== '随机')]);
-      } else {
-        if (!isAlive()) return;
-        setWheelGroups(DEFAULT_GROUPS);
-      }
+        if (groupRes.data && groupRes.data.length > 0) {
+          const names = groupRes.data.map((g) => g.name);
+          if (!isAlive()) return;
+          setWheelGroups(['随机', ...names.filter((n) => n !== '随机')]);
+        } else {
+          if (!isAlive()) return;
+          setWheelGroups(DEFAULT_GROUPS);
+        }
 
-      if (optRes.data && optRes.data.length > 0) {
-        if (!isAlive()) return;
-        setWheelOptions(optRes.data);
-      } else {
-        const { data: seeded } = await supabase
-          .from('wheel_options')
-          .insert(DEFAULT_OPTIONS.map((label) => ({ user_id: userId, label, group_name: '随机' })))
-          .select('id, label, group_name, created_at')
-          .order('created_at', { ascending: true });
-        if (seeded && isAlive()) setWheelOptions(seeded);
-      }
+        if (optRes.data && optRes.data.length > 0) {
+          if (!isAlive()) return;
+          setWheelOptions(optRes.data);
+        } else {
+          const { data: seeded } = await supabase
+            .from('wheel_options')
+            .insert(DEFAULT_OPTIONS.map((label) => ({ user_id: userId, label, group_name: '随机' })))
+            .select('id, label, group_name, created_at')
+            .order('created_at', { ascending: true });
+          if (seeded && isAlive()) setWheelOptions(seeded);
+        }
 
-      if (histRes.data) {
-        if (!isAlive()) return;
-        setWheelHistory(histRes.data);
+        if (histRes.data) {
+          if (!isAlive()) return;
+          setWheelHistory(histRes.data);
+        }
+      } finally {
+        if (isAlive()) setWheelLoading(false);
       }
     };
 
@@ -369,6 +376,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   };
 
   return {
+    wheelLoading,
     wheelGroups,
     wheelGroup,
     setWheelGroup,

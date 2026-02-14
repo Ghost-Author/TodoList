@@ -111,6 +111,7 @@ const App = () => {
   } = useTasks({ session, category, setCategory, setAuthError });
 
   const {
+    wheelLoading,
     wheelGroups,
     wheelGroup,
     setWheelGroup,
@@ -783,6 +784,7 @@ const App = () => {
             <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘区域出错了，请刷新重试。</div>}>
               <Suspense fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">转盘加载中...</div>}>
                 <WheelPanel
+                  loading={wheelLoading}
                   groups={wheelGroups}
                   currentGroup={wheelGroup}
                   onGroupChange={setWheelGroup}
