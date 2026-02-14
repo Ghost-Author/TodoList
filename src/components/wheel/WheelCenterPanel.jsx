@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { getDisplayLabel, getLabelLayout, getTextTone } from './renderUtils.js';
 
 const WheelCenterPanel = ({
   options,
@@ -7,9 +8,6 @@ const WheelCenterPanel = ({
   angle,
   spinning,
   segmentColors,
-  getLabelLayout,
-  getDisplayLabel,
-  getTextTone,
   onSpin,
   result,
   created,
