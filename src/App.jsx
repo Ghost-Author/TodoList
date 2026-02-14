@@ -28,6 +28,8 @@ const prefetchWheelPanel = () => import('./components/WheelPanel.jsx');
 const SettingsModal = React.lazy(() => import('./components/SettingsModal.jsx'));
 const PrivacyModal = React.lazy(() => import('./components/PrivacyModal.jsx'));
 const EmailVerifyBanner = React.lazy(() => import('./components/EmailVerifyBanner.jsx'));
+const CAPTCHA_LOCK_KEY = 'cloud_todo_captcha_lock_until';
+const CAPTCHA_FAILS_KEY = 'cloud_todo_captcha_fails';
 
 const App = () => {
   const [email, setEmail] = useState('');
@@ -218,6 +220,56 @@ const App = () => {
     setCaptchaImage(image);
   }, []);
 
+  useEffect(() => {
+    try {
+      const lockRaw = localStorage.getItem(CAPTCHA_LOCK_KEY);
+      const failsRaw = localStorage.getItem(CAPTCHA_FAILS_KEY);
+      const lockUntil = Number(lockRaw || 0);
+      const fails = Number(failsRaw || 0);
+      const now = Date.now();
+
+      if (Number.isFinite(lockUntil) && lockUntil > now) {
+        setCaptchaLockUntil(lockUntil);
+      } else {
+        localStorage.removeItem(CAPTCHA_LOCK_KEY);
+      }
+
+      if (Number.isFinite(fails) && fails > 0) {
+        setCaptchaFails(Math.min(10, Math.max(0, Math.floor(fails))));
+      } else {
+        localStorage.removeItem(CAPTCHA_FAILS_KEY);
+      }
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (captchaLockUntil > Date.now()) {
+        localStorage.setItem(CAPTCHA_LOCK_KEY, String(captchaLockUntil));
+      } else {
+        localStorage.removeItem(CAPTCHA_LOCK_KEY);
+      }
+
+      if (captchaFails > 0) {
+        localStorage.setItem(CAPTCHA_FAILS_KEY, String(captchaFails));
+      } else {
+        localStorage.removeItem(CAPTCHA_FAILS_KEY);
+      }
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }, [captchaLockUntil, captchaFails]);
+
+  useEffect(() => {
+    if (captchaLockUntil <= Date.now()) return;
+    const timer = setTimeout(() => {
+      setCaptchaLockUntil(0);
+    }, Math.max(0, captchaLockUntil - Date.now() + 10));
+    return () => clearTimeout(timer);
+  }, [captchaLockUntil]);
+
   const refreshCaptcha = (lengthOverride) => {
     const length = typeof lengthOverride === 'number' ? lengthOverride : (captchaFails >= 3 ? 6 : 5);
     const { text, image } = generateCaptcha(length);
@@ -398,6 +450,9 @@ const App = () => {
 
     if (captchaOk) {
       setCaptchaFails(0);
+      if (captchaLockUntil <= Date.now()) {
+        setCaptchaLockUntil(0);
+      }
     }
 
     await authHandleAuth({
