@@ -155,13 +155,13 @@ const WheelPanel = ({
   };
 
   return (
-    <div className="card-soft p-4 md:p-7 overflow-hidden relative">
+    <div className="card-soft wheel-panel-shell p-3.5 md:p-7 overflow-hidden relative">
       <div className="wheel-cloud wheel-cloud-a" />
       <div className="wheel-cloud wheel-cloud-b" />
       <div className="wheel-cloud wheel-cloud-c" />
 
       <div className="relative z-10">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4 mb-4 md:mb-5">
           <div>
             <h3 className="text-lg font-bold text-[#3b2e4a] flex items-center gap-2">
               <Dice5 className="w-5 h-5 text-[#ff8acb]" /> 棉花糖转盘
@@ -174,13 +174,13 @@ const WheelPanel = ({
         </div>
 
         {loading ? (
-          <div className="space-y-4">
+          <div className="space-y-3.5 md:space-y-4">
             <div className="flex flex-wrap gap-2">
               {Array.from({ length: 4 }).map((_, idx) => (
                 <span key={idx} className="h-7 w-16 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
               ))}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 md:gap-7">
+            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 md:gap-7">
               <div className="card-soft-sm p-4 flex flex-col items-center">
                 <div className="w-[min(84vw,18rem)] h-[min(84vw,18rem)] md:w-72 md:h-72 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
                 <div className="mt-4 h-4 w-44 rounded-full bg-white/70 border border-[#ffe4f2] animate-pulse" />
@@ -217,7 +217,7 @@ const WheelPanel = ({
               maxGroupLength={MAX_GROUP_LENGTH}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 md:gap-7">
+            <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 md:gap-7">
               <WheelCenterPanel
                 options={options}
                 gradient={gradient}

@@ -445,3 +445,19 @@ h1, h2, h3 {
   left: 26px;
   animation-delay: 0.9s;
 }
+
+@media (max-width: 640px) {
+  .wheel-panel-shell {
+    border-radius: 22px;
+    box-shadow: 0 14px 30px rgba(233, 189, 214, 0.24);
+  }
+
+  .wheel-panel-shell .wheel-cloud {
+    opacity: 0.38;
+    filter: blur(1px);
+  }
+
+  .wheel-panel-shell .wheel-orbit {
+    filter: drop-shadow(0 10px 18px rgba(255, 157, 205, 0.24));
+  }
+}

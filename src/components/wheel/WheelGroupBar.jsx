@@ -50,48 +50,51 @@ const WheelGroupBar = ({
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        {groups.map((g) => (
-          <div key={g} className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => onGroupChange(g)}
-              className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
-                currentGroup === g
-                  ? 'bg-[#ff8acb] text-white border-[#ff8acb] shadow-[0_6px_16px_rgba(255,138,203,0.35)]'
-                  : 'bg-white/85 text-[#7b6f8c] border-[#ffe4f2] hover:border-[#ffb6d8]'
-              }`}
-            >
-              {g}
-            </button>
-            {g !== '随机' && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingGroup(g);
-                    setEditingName(g);
-                  }}
-                  className="text-[#7b6f8c] hover:text-[#ff6fb1]"
-                  title="重命名"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await onDeleteGroup(g);
-                  }}
-                  className="text-[#7b6f8c] hover:text-red-500"
-                  title="删除分组"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </>
-            )}
-          </div>
-        ))}
-        <div className="flex items-center gap-2 ml-1">
+      <div className="mb-4 space-y-2.5">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+          {groups.map((g) => (
+            <div key={g} className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => onGroupChange(g)}
+                className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${
+                  currentGroup === g
+                    ? 'bg-[#ff8acb] text-white border-[#ff8acb] shadow-[0_6px_16px_rgba(255,138,203,0.35)]'
+                    : 'bg-white/85 text-[#7b6f8c] border-[#ffe4f2] hover:border-[#ffb6d8]'
+                }`}
+              >
+                {g}
+              </button>
+              {g !== '随机' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingGroup(g);
+                      setEditingName(g);
+                    }}
+                    className="text-[#7b6f8c] hover:text-[#ff6fb1]"
+                    title="重命名"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await onDeleteGroup(g);
+                    }}
+                    className="text-[#7b6f8c] hover:text-red-500"
+                    title="删除分组"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
           <input
             type="text"
             value={newGroup}
@@ -103,11 +106,11 @@ const WheelGroupBar = ({
             }}
             placeholder="新增分组"
             maxLength={maxGroupLength + 8}
-            className="text-xs bg-white/85 rounded-full px-3 py-1 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+            className="flex-1 min-w-0 text-xs bg-white/85 rounded-full px-3 py-1.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
           />
           <button
             type="button"
-            className="text-xs font-bold text-white bg-[#ff8acb] px-3 py-1 rounded-full shadow-[0_8px_16px_rgba(255,138,203,0.35)]"
+            className="text-xs font-bold text-white bg-[#ff8acb] px-3 py-1.5 rounded-full shadow-[0_8px_16px_rgba(255,138,203,0.35)] shrink-0"
             onClick={submitNewGroup}
           >
             新建
@@ -116,37 +119,39 @@ const WheelGroupBar = ({
       </div>
 
       {editingGroup && (
-        <div className="mb-4 flex items-center gap-2 text-xs bg-white/85 border border-[#ffe4f2] rounded-xl px-3 py-2">
-          <span className="text-[#7b6f8c]">重命名分组：</span>
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs bg-white/85 border border-[#ffe4f2] rounded-xl px-3 py-2">
+          <span className="text-[#7b6f8c] shrink-0">重命名分组：</span>
           <input
             type="text"
             value={editingName}
             onChange={(e) => setEditingName(e.target.value)}
-            className="flex-1 text-xs bg-transparent outline-none"
+            className="flex-1 min-w-[120px] text-xs bg-transparent outline-none"
           />
-          <button
-            type="button"
-            className="text-xs font-bold text-white bg-[#ff8acb] px-2 py-1 rounded-full"
-            onClick={async () => {
-              const ok = await onRenameGroup(editingGroup, editingName);
-              if (ok !== false) {
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              className="text-xs font-bold text-white bg-[#ff8acb] px-2 py-1 rounded-full"
+              onClick={async () => {
+                const ok = await onRenameGroup(editingGroup, editingName);
+                if (ok !== false) {
+                  setEditingGroup(null);
+                  setEditingName('');
+                }
+              }}
+            >
+              保存
+            </button>
+            <button
+              type="button"
+              className="text-xs text-[#7b6f8c]"
+              onClick={() => {
                 setEditingGroup(null);
                 setEditingName('');
-              }
-            }}
-          >
-            保存
-          </button>
-          <button
-            type="button"
-            className="text-xs text-[#7b6f8c]"
-            onClick={() => {
-              setEditingGroup(null);
-              setEditingName('');
-            }}
-          >
-            取消
-          </button>
+              }}
+            >
+              取消
+            </button>
+          </div>
         </div>
       )}
     </>
