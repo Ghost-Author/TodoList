@@ -78,7 +78,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     if (!category && categories.length > 0) {
       setCategory(categories[0]);
     }
-  }, [categories, category, setCategory]);
+  }, [categories, category]);
 
   const addTask = async ({
     input,

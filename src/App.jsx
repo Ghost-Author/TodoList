@@ -17,6 +17,7 @@ import TaskForm from './components/TaskForm.jsx';
 import FiltersBar from './components/FiltersBar.jsx';
 import TaskList from './components/TaskList.jsx';
 import { Sentry } from './sentry.js';
+import { isOverdueDate } from './utils/date.js';
 
 const StatsView = React.lazy(() => import('./StatsView.jsx'));
 const prefetchStatsView = () => import('./StatsView.jsx');
@@ -284,7 +285,7 @@ const App = () => {
     } catch {
       localStorage.removeItem(`cloud_todo_draft:${userId}`);
     }
-  }, [session, setCategory]);
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -329,7 +330,7 @@ const App = () => {
       setCategory(preferred);
     }
     preferredCategoryRef.current = '';
-  }, [categories, setCategory]);
+  }, [categories]);
 
   useEffect(() => {
     const userId = session?.user?.id;
@@ -613,11 +614,6 @@ const App = () => {
     return ok;
   };
 
-  const isOverdue = (date) => {
-    if (!date) return false;
-    return new Date(date) < new Date() && new Date(date).toDateString() !== new Date().toDateString();
-  };
-
   const resetTaskFilters = () => {
     setSearchQuery('');
     setSortBy('created_desc');
@@ -631,7 +627,7 @@ const App = () => {
     const all = tasks.length;
     const active = tasks.filter((t) => !t.completed).length;
     const completed = tasks.filter((t) => t.completed).length;
-    const overdue = tasks.filter((t) => t.dueDate && !t.completed && isOverdue(t.dueDate)).length;
+    const overdue = tasks.filter((t) => !t.completed && isOverdueDate(t.dueDate)).length;
     return { all, active, completed, overdue };
   }, [tasks]);
 
@@ -902,10 +898,10 @@ const App = () => {
                   onGroupChange={setWheelGroup}
                   onAddGroup={(name) => runWheelAction(() => addWheelGroup(name), '新建分组失败')}
                   onRenameGroup={(from, to) => runWheelAction(() => renameWheelGroup(from, to), '重命名分组失败')}
-                onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
-                onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
-                onRestoreHistory={(items) => runWheelAction(() => restoreWheelHistory(items), '撤销清空失败')}
-                options={currentWheelOptions}
+                  onDeleteGroup={(name) => runWheelAction(() => deleteWheelGroup(name), '删除分组失败')}
+                  onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
+                  onRestoreHistory={(items) => runWheelAction(() => restoreWheelHistory(items), '撤销清空失败')}
+                  options={currentWheelOptions}
                   history={currentWheelHistory}
                   spinning={wheelSpinning}
                   angle={wheelAngle}
@@ -913,13 +909,13 @@ const App = () => {
                   created={wheelCreated}
                   creating={wheelCreating}
                   onSpin={spinWheel}
-                onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
-                onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
-                onCreateTask={createTaskFromWheel}
-                onOpenTasks={() => setView('tasks')}
-              />
-            </Suspense>
-          </Sentry.ErrorBoundary>
+                  onAddOption={(label) => runWheelAction(() => addWheelOption(label), '添加选项失败')}
+                  onRemoveOption={(id) => runWheelAction(() => removeWheelOption(id), '删除选项失败')}
+                  onCreateTask={createTaskFromWheel}
+                  onOpenTasks={() => setView('tasks')}
+                />
+              </Suspense>
+            </Sentry.ErrorBoundary>
           </>
         ) : (
           <Sentry.ErrorBoundary fallback={<div className="surface-soft p-4 text-sm text-[#7b6f8c]">统计区域出错了，请稍后重试。</div>}>

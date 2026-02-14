@@ -58,6 +58,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
 
     const userId = session.user.id;
     let mounted = true;
+    const isAlive = () => mounted;
 
     const loadWheel = async () => {
       const [groupRes, optRes, histRes] = await Promise.all([
@@ -79,16 +80,19 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
           .limit(5)
       ]);
 
-      if (!mounted) return;
+      if (!isAlive()) return;
 
       if (groupRes.data && groupRes.data.length > 0) {
         const names = groupRes.data.map((g) => g.name);
+        if (!isAlive()) return;
         setWheelGroups(['随机', ...names.filter((n) => n !== '随机')]);
       } else {
+        if (!isAlive()) return;
         setWheelGroups(DEFAULT_GROUPS);
       }
 
       if (optRes.data && optRes.data.length > 0) {
+        if (!isAlive()) return;
         setWheelOptions(optRes.data);
       } else {
         const { data: seeded } = await supabase
@@ -96,10 +100,11 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
           .insert(DEFAULT_OPTIONS.map((label) => ({ user_id: userId, label, group_name: '随机' })))
           .select('id, label, group_name, created_at')
           .order('created_at', { ascending: true });
-        if (seeded && mounted) setWheelOptions(seeded);
+        if (seeded && isAlive()) setWheelOptions(seeded);
       }
 
       if (histRes.data) {
+        if (!isAlive()) return;
         setWheelHistory(histRes.data);
       }
     };

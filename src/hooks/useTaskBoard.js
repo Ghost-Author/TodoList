@@ -1,4 +1,5 @@
 import { useCallback, useDeferredValue, useMemo, useState } from 'react';
+import { isOverdueDate } from '../utils/date';
 
 export const useTaskBoard = ({
   tasks,
@@ -13,16 +14,6 @@ export const useTaskBoard = ({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [dragId, setDragId] = useState(null);
   const [lastSelectedId, setLastSelectedId] = useState(null);
-
-  const isOverdueDate = (value) => {
-    if (!value) return false;
-    const due = new Date(value);
-    if (Number.isNaN(due.getTime())) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    due.setHours(0, 0, 0, 0);
-    return due.getTime() < today.getTime();
-  };
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
