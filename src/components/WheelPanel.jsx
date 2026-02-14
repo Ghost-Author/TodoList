@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dice5, Sparkles } from 'lucide-react';
 import WheelGroupBar from './wheel/WheelGroupBar.jsx';
 import WheelCenterPanel from './wheel/WheelCenterPanel.jsx';
 import WheelSettingsPanel from './wheel/WheelSettingsPanel.jsx';
+import useWheelNoticeUndo from '../hooks/useWheelNoticeUndo.js';
 import {
   QUICK_OPTIONS,
   WHEEL_UI_PREFS_KEY,
@@ -39,20 +40,19 @@ const WheelPanel = ({
   const [newOption, setNewOption] = useState('');
   const [customCollapsed, setCustomCollapsed] = useState(false);
   const [historyCollapsed, setHistoryCollapsed] = useState(false);
-  const [notice, setNotice] = useState('');
-  const [undoOption, setUndoOption] = useState(null);
-  const [undoHistory, setUndoHistory] = useState(null);
-  const noticeTimerRef = useRef(null);
-  const undoTimerRef = useRef(null);
-  const undoHistoryTimerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      window.clearTimeout(noticeTimerRef.current);
-      window.clearTimeout(undoTimerRef.current);
-      window.clearTimeout(undoHistoryTimerRef.current);
-    };
-  }, []);
+  const {
+    notice,
+    undoOption,
+    undoHistory,
+    showNotice,
+    queueUndoOption,
+    queueUndoHistory,
+    handleUndoRemove,
+    handleUndoHistoryClear
+  } = useWheelNoticeUndo({
+    onAddOption,
+    onRestoreHistory
+  });
 
   useEffect(() => {
     try {
@@ -76,53 +76,6 @@ const WheelPanel = ({
       // Ignore localStorage failures.
     }
   }, [customCollapsed, historyCollapsed]);
-
-  const showNotice = (text) => {
-    setNotice(text);
-    window.clearTimeout(noticeTimerRef.current);
-    noticeTimerRef.current = window.setTimeout(() => setNotice(''), 1500);
-  };
-
-  const queueUndoOption = (label) => {
-    window.clearTimeout(undoTimerRef.current);
-    setUndoOption({ label });
-    undoTimerRef.current = window.setTimeout(() => {
-      setUndoOption(null);
-    }, 5000);
-  };
-
-  const handleUndoRemove = async () => {
-    if (!undoOption?.label) return;
-    const ok = await onAddOption(undoOption.label);
-    if (ok !== false) {
-      setUndoOption(null);
-      window.clearTimeout(undoTimerRef.current);
-      showNotice('已撤销删除');
-      return;
-    }
-    showNotice('撤销失败');
-  };
-
-  const queueUndoHistory = (items) => {
-    if (!Array.isArray(items) || items.length === 0) return;
-    window.clearTimeout(undoHistoryTimerRef.current);
-    setUndoHistory(items);
-    undoHistoryTimerRef.current = window.setTimeout(() => {
-      setUndoHistory(null);
-    }, 5000);
-  };
-
-  const handleUndoHistoryClear = async () => {
-    if (!undoHistory || !onRestoreHistory) return;
-    const ok = await onRestoreHistory(undoHistory);
-    if (ok !== false) {
-      setUndoHistory(null);
-      window.clearTimeout(undoHistoryTimerRef.current);
-      showNotice('已恢复清空记录');
-      return;
-    }
-    showNotice('恢复记录失败');
-  };
 
   const { gradient, segmentColors } = useMemo(() => {
     if (!options.length) {
