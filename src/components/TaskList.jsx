@@ -319,11 +319,11 @@ const TaskList = ({
               <div className="bg-white/70 rounded-xl p-4 mt-2 border border-[#ffe4f2]">
                 {editingId === task.id ? (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <h4 className="text-[10px] font-black text-slate-400 uppercase flex items-center gap-1">
                         <Pencil className="w-3 h-3" /> 编辑任务
                       </h4>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           type="button"
                           onClick={cancelEdit}
@@ -342,89 +342,98 @@ const TaskList = ({
                       </div>
                     </div>
 
-                    <input
-                      type="text"
-                      value={editDraft.input}
-                      onChange={(e) => setEditDraft((prev) => ({ ...prev, input: e.target.value }))}
-                      onKeyDown={(e) => handleEditHotkey(e, task.id)}
-                      className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                      placeholder="任务标题"
-                    />
-                    <textarea
-                      value={editDraft.note}
-                      onChange={(e) => setEditDraft((prev) => ({ ...prev, note: e.target.value }))}
-                      onKeyDown={(e) => handleEditHotkey(e, task.id)}
-                      className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] min-h-[88px] resize-none"
-                      placeholder="详细备注"
-                    />
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="space-y-2 rounded-xl bg-white/70 border border-[#ffeaf4] p-3">
+                      <div className="text-[10px] font-black text-slate-400 uppercase">基础内容</div>
                       <input
-                        type="date"
-                        value={editDraft.dueDate}
-                        onChange={(e) => setEditDraft((prev) => ({ ...prev, dueDate: e.target.value }))}
-                        className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                        type="text"
+                        value={editDraft.input}
+                        onChange={(e) => setEditDraft((prev) => ({ ...prev, input: e.target.value }))}
+                        onKeyDown={(e) => handleEditHotkey(e, task.id)}
+                        className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                        placeholder="任务标题"
                       />
-                      <div className="md:col-span-3 flex flex-wrap gap-2">
+                      <textarea
+                        value={editDraft.note}
+                        onChange={(e) => setEditDraft((prev) => ({ ...prev, note: e.target.value }))}
+                        onKeyDown={(e) => handleEditHotkey(e, task.id)}
+                        className="w-full text-sm bg-white/85 rounded-xl p-2.5 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea] min-h-[88px] resize-none"
+                        placeholder="详细备注"
+                      />
+                    </div>
+
+                    <div className="space-y-2 rounded-xl bg-white/70 border border-[#ffeaf4] p-3">
+                      <div className="text-[10px] font-black text-slate-400 uppercase">时间与分类</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <input
+                          type="date"
+                          value={editDraft.dueDate}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, dueDate: e.target.value }))}
+                          className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                        />
+                        <select
+                          value={editDraft.priority}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, priority: e.target.value }))}
+                          className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                        >
+                          {Object.entries(priorities).map(([k, v]) => (
+                            <option key={k} value={k}>{v.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={editDraft.category}
+                          onChange={(e) => setEditDraft((prev) => ({ ...prev, category: e.target.value }))}
+                          className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                        >
+                          <option value="">未分类</option>
+                          {Array.from(new Set([editDraft.category, ...(categories || [])].filter(Boolean))).map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => setEditDueDateQuick('today')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">今天</button>
                         <button type="button" onClick={() => setEditDueDateQuick('tomorrow')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">明天</button>
                         <button type="button" onClick={() => setEditDueDateQuick('weekend')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">本周末</button>
                         <button type="button" onClick={() => setEditDueDateQuick('clear')} className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold">清空</button>
                       </div>
-                      <select
-                        value={editDraft.priority}
-                        onChange={(e) => setEditDraft((prev) => ({ ...prev, priority: e.target.value }))}
-                        className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                      >
-                        {Object.entries(priorities).map(([k, v]) => (
-                          <option key={k} value={k}>{v.label}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={editDraft.category}
-                        onChange={(e) => setEditDraft((prev) => ({ ...prev, category: e.target.value }))}
-                        className="text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                      >
-                        <option value="">未分类</option>
-                        {Array.from(new Set([editDraft.category, ...(categories || [])].filter(Boolean))).map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
                     </div>
 
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={editTagInput}
-                        onChange={(e) => setEditTagInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          handleEditHotkey(e, task.id);
-                          if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') return;
-                          if (e.key === 'Escape') return;
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addEditTag();
-                          }
-                        }}
-                        placeholder="输入标签后回车"
-                        className="flex-1 text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
-                      />
-                      <button type="button" onClick={addEditTag} className="pill-soft px-3 py-1 rounded-full text-xs font-bold">添加标签</button>
-                    </div>
-                    {editDraft.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {editDraft.tags.map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setEditDraft((prev) => ({ ...prev, tags: prev.tags.filter((tag) => tag !== t) }))}
-                            className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
-                          >
-                            #{t} ×
-                          </button>
-                        ))}
+                    <div className="space-y-2 rounded-xl bg-white/70 border border-[#ffeaf4] p-3">
+                      <div className="text-[10px] font-black text-slate-400 uppercase">标签</div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={editTagInput}
+                          onChange={(e) => setEditTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            handleEditHotkey(e, task.id);
+                            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') return;
+                            if (e.key === 'Escape') return;
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addEditTag();
+                            }
+                          }}
+                          placeholder="输入标签后回车"
+                          className="flex-1 text-xs bg-white/85 rounded-xl p-2 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
+                        />
+                        <button type="button" onClick={addEditTag} className="pill-soft px-3 py-1 rounded-full text-xs font-bold">添加标签</button>
                       </div>
-                    )}
+                      {editDraft.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {editDraft.tags.map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setEditDraft((prev) => ({ ...prev, tags: prev.tags.filter((tag) => tag !== t) }))}
+                              className="pill-soft px-2 py-1 rounded-full text-[10px] font-bold"
+                            >
+                              #{t} ×
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="text-[10px] text-slate-400">
                       快捷键：`Ctrl/Cmd + Enter` 保存，`Esc` 取消
                     </div>
