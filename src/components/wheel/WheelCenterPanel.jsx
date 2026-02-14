@@ -77,7 +77,9 @@ const WheelCenterPanel = ({
         type="button"
         onClick={onSpin}
         disabled={spinning || options.length === 0}
-        className="absolute inset-[34%] rounded-full wheel-core-btn disabled:opacity-60 disabled:cursor-not-allowed"
+        className={`absolute inset-[34%] rounded-full wheel-core-btn disabled:opacity-60 disabled:cursor-not-allowed ${
+          spinning ? 'wheel-core-btn-spinning' : ''
+        }`}
         aria-label="点击转动转盘"
       >
         <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7b6f8c]">今日灵感</div>
@@ -92,9 +94,9 @@ const WheelCenterPanel = ({
       <Sparkles className="w-3 h-3" /> 结果仅提示，不会自动创建任务
     </div>
 
-    <div className="mt-3 min-h-[34px] flex items-center">
+    <div className="mt-3 min-h-[34px] flex items-center" aria-live="polite">
       {result && (
-        <div className="wheel-result-pop w-full max-w-[320px] card-soft-sm px-3 py-2.5">
+        <div className={`wheel-result-pop w-full max-w-[320px] card-soft-sm px-3 py-2.5 ${created ? 'wheel-result-success' : ''}`}>
           <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[#7b6f8c]">抽取结果</div>
           <div className="mt-1 text-sm font-bold text-[#ff6fb1] break-words">{result}</div>
           <div className="mt-1 text-[10px] text-[#7b6f8c]">
@@ -110,7 +112,9 @@ const WheelCenterPanel = ({
           type="button"
           onClick={() => onCreateTask(result)}
           disabled={created || creating}
-          className="wheel-result-pop text-xs font-bold text-white bg-[#ff8acb] px-4 py-2 rounded-full shadow-[0_10px_20px_rgba(255,138,203,0.32)] disabled:opacity-60"
+          className={`wheel-result-pop text-xs font-bold text-white px-4 py-2 rounded-full disabled:opacity-60 ${
+            created ? 'wheel-action-btn-created' : creating ? 'wheel-action-btn-creating' : 'wheel-action-btn-ready'
+          }`}
         >
           {created ? '已创建任务' : creating ? '创建中...' : '一键创建任务'}
         </button>
@@ -126,7 +130,7 @@ const WheelCenterPanel = ({
       </div>
     )}
 
-    <div className="mt-2 min-h-[18px] text-[11px] text-[#7b6f8c]">
+    <div className="mt-2 min-h-[18px] text-[11px] text-[#7b6f8c]" aria-live="polite">
       {notice}
     </div>
     {undoOption?.label && (
