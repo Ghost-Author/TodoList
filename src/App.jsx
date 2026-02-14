@@ -476,12 +476,23 @@ const App = () => {
   const bulkComplete = async (completed) => {
     if (selectedIds.size === 0 || bulkActionLoading) return;
     const ids = Array.from(selectedIds);
+    const idSet = new Set(ids);
+    const snapshot = tasks
+      .filter((t) => idSet.has(t.id))
+      .map((t) => ({ id: t.id, completed: t.completed }));
     setBulkActionLoading(completed ? 'complete' : 'uncomplete');
     try {
+      setTasks((prev) => prev.map((t) => (idSet.has(t.id) ? { ...t, completed } : t)));
       const ok = await bulkCompleteTasks(ids, completed);
       if (ok) {
         clearSelection();
         enqueueToast({ message: completed ? `已标记 ${ids.length} 条为完成` : `已标记 ${ids.length} 条为未完成` }, 1300);
+      } else {
+        const revertMap = new Map(snapshot.map((item) => [item.id, item.completed]));
+        setTasks((prev) => prev.map((t) => (
+          revertMap.has(t.id) ? { ...t, completed: revertMap.get(t.id) } : t
+        )));
+        enqueueToast({ message: '操作失败，已回滚' }, 1500);
       }
     } finally {
       setBulkActionLoading('');
