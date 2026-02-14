@@ -1,5 +1,7 @@
 import React from 'react';
-import { Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import WheelOptionChip from './WheelOptionChip.jsx';
+import WheelHistoryItem from './WheelHistoryItem.jsx';
 
 const WheelSettingsPanel = ({
   customCollapsed,
@@ -70,19 +72,7 @@ const WheelSettingsPanel = ({
           <div className="flex flex-wrap gap-2 mt-3 max-h-36 overflow-y-auto pr-1">
             {options.length === 0 && <div className="text-xs text-slate-400">还没有选项，先加几个吧。</div>}
             {options.map((opt) => (
-              <span key={opt.id} className="text-xs bg-white/90 border border-[#ffe4f2] rounded-full px-3 py-1 flex items-center gap-1 text-[#3b2e4a]">
-                {opt.label}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await onRemoveOption(opt);
-                  }}
-                  className="text-[#ff6fb1]"
-                  title="删除"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+              <WheelOptionChip key={opt.id} option={opt} onRemove={onRemoveOption} />
             ))}
           </div>
         </>
@@ -114,20 +104,7 @@ const WheelSettingsPanel = ({
             <div className="text-xs text-slate-400">还没有转动记录</div>
           )}
           {history.map((item, idx) => (
-            <div key={item.id} className="relative pl-5">
-              {idx !== history.length - 1 && (
-                <span className="absolute left-[6px] top-5 bottom-[-8px] w-px bg-[#ffe4f2]" aria-hidden="true" />
-              )}
-              <span
-                className="absolute left-0 top-[9px] w-3 h-3 rounded-full border-2 border-white shadow-sm"
-                style={{ background: '#ff9ccc' }}
-                aria-hidden="true"
-              />
-              <div className="text-sm text-[#3b2e4a] bg-white/85 border border-[#ffe4f2] rounded-xl px-3 py-2">
-                <span className="font-semibold">{item.label}</span>
-                <div className="text-[10px] text-slate-400 mt-0.5">{new Date(item.created_at).toLocaleString()}</div>
-              </div>
-            </div>
+            <WheelHistoryItem key={item.id} item={item} isLast={idx === history.length - 1} />
           ))}
         </div>
       )}
@@ -136,4 +113,3 @@ const WheelSettingsPanel = ({
 );
 
 export default WheelSettingsPanel;
-
