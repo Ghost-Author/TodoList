@@ -361,11 +361,11 @@ const AdminApp = () => {
 
   return (
     <div className="min-h-screen text-slate-900 pb-24">
-      <div className="max-w-3xl mx-auto p-6 md:p-10">
-        <div className="card-soft p-8 mt-10">
-          <h1 className="text-3xl font-bold tracking-tight text-[#3b2e4a]">后台面板</h1>
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <div className="card-soft p-4 md:p-8 mt-6 md:mt-10">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-[#3b2e4a]">后台面板</h1>
           <p className="text-[#7b6f8c] mt-2">请输入管理员密钥以查看统计数据。</p>
-          <div className="mt-6 flex gap-2">
+          <div className="mt-4 md:mt-6 flex flex-col sm:flex-row gap-2">
             <input
               type="password"
               value={secret}
@@ -373,13 +373,13 @@ const AdminApp = () => {
               placeholder="Admin Secret"
               className="flex-1 text-sm bg-white/80 rounded-xl p-3 outline-none ring-1 ring-[#ffe4f2] focus:ring-2 focus:ring-[#ffd7ea]"
             />
-            <button onClick={() => (tab === 'summary' ? loadSummary() : tab === 'users' ? loadUsers(page, usersQuery) : loadAudit(auditPage, auditQuery))} className="btn-soft px-6 rounded-xl font-bold">
+            <button onClick={() => (tab === 'summary' ? loadSummary() : tab === 'users' ? loadUsers(page, usersQuery) : loadAudit(auditPage, auditQuery))} className="btn-soft px-6 py-3 rounded-xl font-bold">
               {loading || usersLoading || auditLoading ? '加载中...' : '查看'}
             </button>
           </div>
           {error && (
-            <div className="mt-3 flex items-center gap-2">
-              <div className="text-xs text-[#ff6fb1]">{error}</div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="text-xs text-[#ff6fb1] break-all">{error}</div>
               <button
                 type="button"
                 onClick={retryLastAction}
@@ -392,19 +392,30 @@ const AdminApp = () => {
           )}
           {requestId && <div className="mt-2 text-[10px] text-[#7b6f8c]">request_id: {requestId}</div>}
 
-          <div className="mt-6 flex gap-2 text-xs font-bold">
-            <button onClick={() => setTab('summary')} className={tab === 'summary' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
+          <div className="mt-5 md:mt-6 flex gap-2 text-xs font-bold overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+            <button onClick={() => setTab('summary')} className={`shrink-0 ${tab === 'summary' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}`}>
               统计
             </button>
-            <button onClick={() => setTab('users')} className={tab === 'users' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
+            <button onClick={() => setTab('users')} className={`shrink-0 ${tab === 'users' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}`}>
               用户列表
             </button>
-            <button onClick={() => { setTab('audit'); loadAudit(1, auditQuery); }} className={tab === 'audit' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}>
+            <button onClick={() => { setTab('audit'); loadAudit(1, auditQuery); }} className={`shrink-0 ${tab === 'audit' ? 'pill-soft px-3 py-1 rounded-full' : 'text-[#7b6f8c] hover:text-[#ff6fb1]'}`}>
               操作审计
             </button>
           </div>
 
-          {tab === 'summary' && <SummaryCards data={data} />}
+          {tab === 'summary' && (
+            loading ? (
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Array.from({ length: 8 }).map((_, idx) => (
+                  <div key={idx} className="card-soft-sm p-4">
+                    <div className="skeleton-line h-6 w-12 mx-auto mb-2" />
+                    <div className="skeleton-line h-3 w-16 mx-auto" />
+                  </div>
+                ))}
+              </div>
+            ) : <SummaryCards data={data} />
+          )}
 
           {tab === 'users' && (
             <UsersTable
