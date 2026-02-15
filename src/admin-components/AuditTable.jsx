@@ -7,6 +7,7 @@ const AuditTable = ({
   auditPerPage,
   auditHasMore,
   auditSearch,
+  auditQuery,
   setAuditSearch,
   loadAudit,
   applyAuditSearch,
@@ -53,6 +54,20 @@ const AuditTable = ({
   const totalPages = Number.isFinite(auditTotal)
     ? Math.max(1, Math.ceil(auditTotal / Math.max(auditPerPage || 1, 1)))
     : null;
+  const appliedQuery = String(auditQuery || '').trim();
+
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const renderHighlighted = (text) => {
+    const raw = String(text || '');
+    if (!appliedQuery) return raw;
+    const matcher = new RegExp(`(${escapeRegExp(appliedQuery)})`, 'ig');
+    const needle = appliedQuery.toLowerCase();
+    return raw.split(matcher).map((part, idx) => (
+      part.toLowerCase() === needle
+        ? <mark key={`${part}-${idx}`} className="bg-[#ffe597] text-[#3b2e4a] rounded px-0.5">{part}</mark>
+        : <React.Fragment key={`${part}-${idx}`}>{part}</React.Fragment>
+    ));
+  };
 
   return (
     <div className="mt-6">
@@ -104,6 +119,15 @@ const AuditTable = ({
           <button type="button" onClick={clearAuditSearch} className="pill-soft px-3 py-1 rounded-full text-xs">清空搜索</button>
         </div>
       </div>
+      {appliedQuery && (
+        <div className="mb-3 flex items-center gap-2 flex-wrap text-[11px] text-[#7b6f8c]">
+          <span className="font-bold">已搜索</span>
+          <span className="pill-soft px-2 py-1 rounded-full">"{appliedQuery}"</span>
+          <button type="button" onClick={clearAuditSearch} className="pill-soft px-2 py-1 rounded-full text-[10px]">
+            清除并重查
+          </button>
+        </div>
+      )}
       <div className="mb-3 flex items-center gap-2 flex-wrap text-[11px] text-[#7b6f8c]">
         <span className="font-bold">显示列</span>
         <button type="button" onClick={() => setColumnVisible('time')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.time ? '' : 'opacity-50'}`}>时间</button>
@@ -125,25 +149,25 @@ const AuditTable = ({
             {visibleCols.admin && (
               <div>
                 <span className="font-black text-[#3b2e4a]">管理员：</span>
-                <span className="break-all">{log.admin_email || '-'}</span>
+                <span className="break-all">{renderHighlighted(log.admin_email || '-')}</span>
               </div>
             )}
             {visibleCols.action && (
               <div>
                 <span className="font-black text-[#3b2e4a]">动作：</span>
-                <span>{log.action || '-'}</span>
+                <span>{renderHighlighted(log.action || '-')}</span>
               </div>
             )}
             {visibleCols.target && (
               <div>
                 <span className="font-black text-[#3b2e4a]">对象：</span>
-                <span className="break-all">{log.target_user_id || '-'}</span>
+                <span className="break-all">{renderHighlighted(log.target_user_id || '-')}</span>
               </div>
             )}
             {visibleCols.detail && (
               <div>
                 <span className="font-black text-[#3b2e4a]">备注：</span>
-                <span>{log.detail?.reason || log.detail?.email || '-'}</span>
+                <span>{renderHighlighted(log.detail?.reason || log.detail?.email || '-')}</span>
               </div>
             )}
           </div>
@@ -168,10 +192,10 @@ const AuditTable = ({
             {auditLogs.map((log) => (
               <tr key={log.id} className="border-t border-[#ffe4f2]">
                 {visibleCols.time && <td className="py-2">{log.created_at ? new Date(log.created_at).toLocaleString() : '-'}</td>}
-                {visibleCols.admin && <td className="py-2">{log.admin_email || '-'}</td>}
-                {visibleCols.action && <td className="py-2">{log.action || '-'}</td>}
-                {visibleCols.target && <td className="py-2">{log.target_user_id || '-'}</td>}
-                {visibleCols.detail && <td className="py-2">{log.detail?.reason || log.detail?.email || '-'}</td>}
+                {visibleCols.admin && <td className="py-2 break-all">{renderHighlighted(log.admin_email || '-')}</td>}
+                {visibleCols.action && <td className="py-2">{renderHighlighted(log.action || '-')}</td>}
+                {visibleCols.target && <td className="py-2 break-all">{renderHighlighted(log.target_user_id || '-')}</td>}
+                {visibleCols.detail && <td className="py-2">{renderHighlighted(log.detail?.reason || log.detail?.email || '-')}</td>}
               </tr>
             ))}
             {auditLogs.length === 0 && !auditLoading && (

@@ -7,6 +7,7 @@ const UsersTable = ({
   usersPerPage,
   usersHasMore,
   userSearch,
+  usersQuery,
   setUserSearch,
   loadUsers,
   applyUserSearch,
@@ -52,6 +53,20 @@ const UsersTable = ({
   const totalPages = Number.isFinite(usersTotal)
     ? Math.max(1, Math.ceil(usersTotal / Math.max(usersPerPage || 1, 1)))
     : null;
+  const appliedQuery = String(usersQuery || '').trim();
+
+  const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const renderHighlighted = (text) => {
+    const raw = String(text || '');
+    if (!appliedQuery) return raw;
+    const matcher = new RegExp(`(${escapeRegExp(appliedQuery)})`, 'ig');
+    const needle = appliedQuery.toLowerCase();
+    return raw.split(matcher).map((part, idx) => (
+      part.toLowerCase() === needle
+        ? <mark key={`${part}-${idx}`} className="bg-[#ffe597] text-[#3b2e4a] rounded px-0.5">{part}</mark>
+        : <React.Fragment key={`${part}-${idx}`}>{part}</React.Fragment>
+    ));
+  };
 
   return (
     <div className="mt-6">
@@ -114,6 +129,15 @@ const UsersTable = ({
           清空搜索
         </button>
       </div>
+      {appliedQuery && (
+        <div className="mb-3 flex items-center gap-2 flex-wrap text-[11px] text-[#7b6f8c]">
+          <span className="font-bold">已搜索</span>
+          <span className="pill-soft px-2 py-1 rounded-full">"{appliedQuery}"</span>
+          <button type="button" onClick={clearUserSearch} className="pill-soft px-2 py-1 rounded-full text-[10px]">
+            清除并重查
+          </button>
+        </div>
+      )}
       <div className="mb-3 flex items-center gap-2 flex-wrap text-[11px] text-[#7b6f8c]">
         <span className="font-bold">显示列</span>
         <button type="button" onClick={() => setColumnVisible('email')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.email ? '' : 'opacity-50'}`}>邮箱</button>
@@ -128,7 +152,7 @@ const UsersTable = ({
               {visibleCols.email && (
                 <div>
                   <span className="font-black text-[#3b2e4a]">邮箱：</span>
-                  <span className="break-all">{u.email || '-'}</span>
+                  <span className="break-all">{renderHighlighted(u.email || '-')}</span>
                 </div>
               )}
               {visibleCols.created && (
@@ -173,7 +197,7 @@ const UsersTable = ({
           <tbody className="text-[#3b2e4a]">
             {users.map((u) => (
               <tr key={u.id} className="border-t border-[#ffe4f2]">
-                {visibleCols.email && <td className="py-2">{u.email || '-'}</td>}
+                {visibleCols.email && <td className="py-2 break-all">{renderHighlighted(u.email || '-')}</td>}
                 {visibleCols.created && <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>}
                 {visibleCols.lastLogin && <td className="py-2">{u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString() : '-'}</td>}
                 <td className="py-2 text-right">

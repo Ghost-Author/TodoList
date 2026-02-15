@@ -425,6 +425,7 @@ const AdminApp = () => {
               usersPerPage={USERS_PER_PAGE}
               usersHasMore={usersHasMore}
               userSearch={userSearch}
+              usersQuery={usersQuery}
               setUserSearch={setUserSearch}
               loadUsers={loadUsers}
               applyUserSearch={applyUserSearch}
@@ -448,6 +449,7 @@ const AdminApp = () => {
               auditPerPage={AUDIT_PER_PAGE}
               auditHasMore={auditHasMore}
               auditSearch={auditSearch}
+              auditQuery={auditQuery}
               setAuditSearch={setAuditSearch}
               loadAudit={loadAudit}
               applyAuditSearch={applyAuditSearch}
