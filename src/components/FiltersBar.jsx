@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const FiltersBar = ({
   filter,
@@ -15,12 +15,17 @@ const FiltersBar = ({
   bulkComplete,
   bulkDelete,
   clearCompleted,
+  bulkSetFields,
   bulkActionLoading,
   canDrag,
   selectedCount,
   filteredCount,
-  filteredTasks
+  filteredTasks,
+  categories
 }) => {
+  const [bulkPriority, setBulkPriority] = useState('medium');
+  const [bulkCategory, setBulkCategory] = useState('');
+  const [bulkDueDate, setBulkDueDate] = useState('');
   const searchInputRef = useRef(null);
   const searchQueryRef = useRef(searchQuery);
   const noSelection = !selectedCount;
@@ -281,6 +286,76 @@ const FiltersBar = ({
           className="px-3 py-1 rounded-full font-bold text-white bg-[#ff8f6b] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {bulkActionLoading === 'clearCompleted' ? '清理中...' : '清理已完成'}
+        </button>
+        <div className="h-4 w-px bg-[#ffe4f2] mx-1" />
+        <select
+          value={bulkPriority}
+          onChange={(e) => setBulkPriority(e.target.value)}
+          className="text-[11px] bg-white/85 rounded-xl px-2 py-1 outline-none ring-1 ring-[#ffe4f2]"
+          disabled={noSelection || isBulkBusy}
+        >
+          <option value="high">重要且紧急</option>
+          <option value="medium">重要不紧急</option>
+          <option value="low">不重要但紧急</option>
+          <option value="none">不重要不紧急</option>
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            void bulkSetFields?.({ priority: bulkPriority });
+          }}
+          disabled={noSelection || isBulkBusy}
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          应用优先级
+        </button>
+        <select
+          value={bulkCategory}
+          onChange={(e) => setBulkCategory(e.target.value)}
+          className="text-[11px] bg-white/85 rounded-xl px-2 py-1 outline-none ring-1 ring-[#ffe4f2]"
+          disabled={noSelection || isBulkBusy}
+        >
+          <option value="">未分类</option>
+          {(categories || []).map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            void bulkSetFields?.({ category: bulkCategory });
+          }}
+          disabled={noSelection || isBulkBusy}
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          应用分类
+        </button>
+        <input
+          type="date"
+          value={bulkDueDate}
+          onChange={(e) => setBulkDueDate(e.target.value)}
+          disabled={noSelection || isBulkBusy}
+          className="text-[11px] bg-white/85 rounded-xl px-2 py-1 outline-none ring-1 ring-[#ffe4f2] disabled:opacity-60"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            void bulkSetFields?.({ dueDate: bulkDueDate || '' });
+          }}
+          disabled={noSelection || isBulkBusy}
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          应用日期
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            void bulkSetFields?.({ dueDate: '' });
+          }}
+          disabled={noSelection || isBulkBusy}
+          className="pill-soft px-3 py-1 rounded-full whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          清空日期
         </button>
         <span className="text-[10px] text-[#7b6f8c] self-center ml-1 whitespace-nowrap">
           {canDrag ? '拖动任务可手动排序 · Shift+点击可范围选择' : '切换到手动排序且清空筛选后可拖动 · Shift+点击可范围选择'}

@@ -240,6 +240,39 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     return deleted;
   };
 
+  const bulkUpdateFields = async (ids, payload) => {
+    if (!session?.user?.id || !Array.isArray(ids) || ids.length === 0) return false;
+    const updates = {};
+    if (Object.prototype.hasOwnProperty.call(payload || {}, 'priority')) {
+      updates.priority = payload.priority || 'medium';
+    }
+    if (Object.prototype.hasOwnProperty.call(payload || {}, 'category')) {
+      updates.category = payload.category || '';
+    }
+    if (Object.prototype.hasOwnProperty.call(payload || {}, 'dueDate')) {
+      updates.due_date = payload.dueDate || null;
+    }
+    if (Object.keys(updates).length === 0) return false;
+
+    const { error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .in('id', ids)
+      .eq('user_id', session.user.id);
+    if (error) return false;
+
+    setTasks((prev) => prev.map((t) => {
+      if (!ids.includes(t.id)) return t;
+      return {
+        ...t,
+        ...(Object.prototype.hasOwnProperty.call(payload || {}, 'priority') ? { priority: payload.priority || 'medium' } : {}),
+        ...(Object.prototype.hasOwnProperty.call(payload || {}, 'category') ? { category: payload.category || '' } : {}),
+        ...(Object.prototype.hasOwnProperty.call(payload || {}, 'dueDate') ? { dueDate: payload.dueDate || '' } : {})
+      };
+    }));
+    return true;
+  };
+
   const saveOrder = async (updated) => {
     if (!session?.user?.id) return false;
     const { error } = await supabase
@@ -323,6 +356,7 @@ export const useTasks = ({ session, category, setCategory, setAuthError }) => {
     updateTask,
     bulkComplete,
     bulkDelete,
+    bulkUpdateFields,
     saveOrder,
     restoreTasks,
     exportData,

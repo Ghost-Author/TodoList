@@ -9,6 +9,7 @@ export const useTaskMutations = ({
   patchTask,
   bulkCompleteTasks,
   bulkDeleteTasks,
+  bulkUpdateTasks,
   restoreTasks,
   enqueueToast,
   setToast
@@ -121,6 +122,45 @@ export const useTaskMutations = ({
     }
   };
 
+  const bulkSetFields = async (payload) => {
+    if (selectedIds.size === 0 || bulkActionLoading) return false;
+    const ids = Array.from(selectedIds);
+    const idSet = new Set(ids);
+    const snapshot = tasks.filter((t) => idSet.has(t.id)).map((t) => ({
+      id: t.id,
+      priority: t.priority,
+      category: t.category,
+      dueDate: t.dueDate
+    }));
+    setBulkActionLoading('updateFields');
+    try {
+      setTasks((prev) => prev.map((t) => {
+        if (!idSet.has(t.id)) return t;
+        return {
+          ...t,
+          ...(Object.prototype.hasOwnProperty.call(payload || {}, 'priority') ? { priority: payload.priority || 'medium' } : {}),
+          ...(Object.prototype.hasOwnProperty.call(payload || {}, 'category') ? { category: payload.category || '' } : {}),
+          ...(Object.prototype.hasOwnProperty.call(payload || {}, 'dueDate') ? { dueDate: payload.dueDate || '' } : {})
+        };
+      }));
+      const ok = await bulkUpdateTasks(ids, payload);
+      if (!ok) {
+        const map = new Map(snapshot.map((item) => [item.id, item]));
+        setTasks((prev) => prev.map((t) => {
+          const old = map.get(t.id);
+          return old ? { ...t, priority: old.priority, category: old.category, dueDate: old.dueDate } : t;
+        }));
+        enqueueToast({ message: '批量设置失败，已回滚' }, 1500);
+        return false;
+      }
+      clearSelection();
+      enqueueToast({ message: `已批量更新 ${ids.length} 条任务` }, 1300);
+      return true;
+    } finally {
+      setBulkActionLoading('');
+    }
+  };
+
   const undoDelete = async () => {
     if (!undoData) return;
     const ok = await restoreTasks(undoData);
@@ -141,7 +181,7 @@ export const useTaskMutations = ({
     bulkComplete,
     bulkDelete,
     clearCompleted,
+    bulkSetFields,
     undoDelete
   };
 };
-

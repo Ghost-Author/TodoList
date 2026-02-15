@@ -9,6 +9,8 @@ const WheelSettingsPanel = ({
   historyCollapsed,
   setHistoryCollapsed,
   options,
+  getOptionWeight,
+  onOptionWeightChange,
   newOption,
   setNewOption,
   submitNewOption,
@@ -100,10 +102,17 @@ const WheelSettingsPanel = ({
                 </button>
               ))}
             </div>
+            <div className="mt-2 text-[10px] text-[#7b6f8c]">权重 `x1-x5`：数值越高，被抽中的概率越高。</div>
             <div className="flex flex-wrap gap-2 mt-3 max-h-36 overflow-y-auto pr-1">
               {options.length === 0 && <div className="text-xs text-slate-400">还没有选项，先加几个吧。</div>}
               {options.map((opt) => (
-                <WheelOptionChip key={opt.id} option={opt} onRemove={onRemoveOption} />
+                <WheelOptionChip
+                  key={opt.id}
+                  option={opt}
+                  weight={getOptionWeight?.(opt.id) || 1}
+                  onWeightChange={onOptionWeightChange}
+                  onRemove={onRemoveOption}
+                />
               ))}
             </div>
           </>

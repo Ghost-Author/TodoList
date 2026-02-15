@@ -102,6 +102,7 @@ const App = () => {
     updateTask: patchTask,
     bulkComplete: bulkCompleteTasks,
     bulkDelete: bulkDeleteTasks,
+    bulkUpdateFields: bulkUpdateTasks,
     saveOrder,
     restoreTasks,
     exportData: exportDataPayload,
@@ -122,6 +123,8 @@ const App = () => {
     wheelCreating,
     currentWheelOptions,
     currentWheelHistory,
+    getWheelOptionWeight,
+    setWheelOptionWeight,
     addWheelOption,
     removeWheelOption,
     addWheelGroup,
@@ -163,6 +166,7 @@ const App = () => {
     bulkComplete,
     bulkDelete,
     clearCompleted,
+    bulkSetFields,
     undoDelete
   } = useTaskMutations({
     tasks,
@@ -173,6 +177,7 @@ const App = () => {
     patchTask,
     bulkCompleteTasks,
     bulkDeleteTasks,
+    bulkUpdateTasks,
     restoreTasks,
     enqueueToast,
     setToast
@@ -697,11 +702,13 @@ const App = () => {
                 bulkComplete={bulkComplete}
                 bulkDelete={bulkDelete}
                 clearCompleted={clearCompleted}
+                bulkSetFields={bulkSetFields}
                 bulkActionLoading={bulkActionLoading}
                 canDrag={canDrag}
                 selectedCount={selectedIds.size}
                 filteredCount={filteredTasks.length}
                 filteredTasks={filteredTasks}
+                categories={categories}
               />
             </div>
 
@@ -795,6 +802,8 @@ const App = () => {
                   onClearHistory={() => runWheelAction(() => clearWheelHistory(), '清空记录失败')}
                   onRestoreHistory={(items) => runWheelAction(() => restoreWheelHistory(items), '撤销清空失败')}
                   options={currentWheelOptions}
+                  getOptionWeight={getWheelOptionWeight}
+                  onOptionWeightChange={setWheelOptionWeight}
                   history={currentWheelHistory}
                   spinning={wheelSpinning}
                   angle={wheelAngle}

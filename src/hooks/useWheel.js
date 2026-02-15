@@ -7,6 +7,7 @@ const DEFAULT_OPTIONS = ['整理桌面 5 分钟', '喝一杯水', '伸展一下'
 export const useWheel = ({ session, createTask, priority, category, dueDate, note, tags }) => {
   const [wheelOptions, setWheelOptions] = useState([]);
   const [wheelHistory, setWheelHistory] = useState([]);
+  const [wheelWeights, setWheelWeights] = useState({});
   const [wheelLoading, setWheelLoading] = useState(true);
   const [wheelSpinning, setWheelSpinning] = useState(false);
   const [wheelAngle, setWheelAngle] = useState(0);
@@ -21,6 +22,7 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   const resetWheelData = () => {
     setWheelOptions([]);
     setWheelHistory([]);
+    setWheelWeights({});
     setWheelLoading(false);
     setWheelSpinning(false);
     setWheelAngle(0);
@@ -128,6 +130,38 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
   }, [session]);
 
   useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const key = `cloud_todo_wheel_weights:${userId}`;
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) {
+        setWheelWeights({});
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== 'object') {
+        setWheelWeights({});
+        return;
+      }
+      setWheelWeights(parsed);
+    } catch {
+      setWheelWeights({});
+    }
+  }, [session]);
+
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const key = `cloud_todo_wheel_weights:${userId}`;
+    try {
+      localStorage.setItem(key, JSON.stringify(wheelWeights || {}));
+    } catch {
+      // Ignore localStorage failures.
+    }
+  }, [session, wheelWeights]);
+
+  useEffect(() => {
     setWheelResult('');
     setWheelCreated(false);
     setWheelCreating(false);
@@ -164,7 +198,24 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
       .eq('user_id', session.user.id);
     if (error) return false;
     setWheelOptions((prev) => prev.filter((opt) => opt.id !== id));
+    setWheelWeights((prev) => {
+      if (!Object.prototype.hasOwnProperty.call(prev || {}, id)) return prev;
+      const next = { ...(prev || {}) };
+      delete next[id];
+      return next;
+    });
     return true;
+  };
+
+  const setWheelOptionWeight = (id, weight) => {
+    const normalized = Math.max(1, Math.min(5, Number(weight) || 1));
+    setWheelWeights((prev) => ({ ...(prev || {}), [id]: normalized }));
+  };
+
+  const getWheelOptionWeight = (id) => {
+    const raw = wheelWeights?.[id];
+    const num = Number(raw);
+    return Number.isFinite(num) && num > 0 ? Math.max(1, Math.min(5, Math.round(num))) : 1;
   };
 
   const addWheelGroup = async (name) => {
@@ -308,7 +359,17 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     if (wheelSpinning || currentWheelOptions.length === 0) return;
 
     const count = currentWheelOptions.length;
-    let index = Math.floor(Math.random() * count);
+    const weights = currentWheelOptions.map((opt) => getWheelOptionWeight(opt.id));
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    let threshold = Math.random() * Math.max(totalWeight, 1);
+    let index = 0;
+    for (let i = 0; i < weights.length; i += 1) {
+      threshold -= weights[i];
+      if (threshold <= 0) {
+        index = i;
+        break;
+      }
+    }
     if (count > 1 && wheelResult) {
       const picked = currentWheelOptions[index]?.label;
       if (picked === wheelResult) {
@@ -387,6 +448,8 @@ export const useWheel = ({ session, createTask, priority, category, dueDate, not
     wheelCreating,
     currentWheelOptions,
     currentWheelHistory,
+    getWheelOptionWeight,
+    setWheelOptionWeight,
     addWheelOption,
     removeWheelOption,
     addWheelGroup,

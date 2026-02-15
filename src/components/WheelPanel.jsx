@@ -26,6 +26,8 @@ const WheelPanel = ({
   onClearHistory,
   onRestoreHistory,
   options,
+  getOptionWeight,
+  onOptionWeightChange,
   history,
   spinning,
   angle,
@@ -242,6 +244,8 @@ const WheelPanel = ({
                 historyCollapsed={historyCollapsed}
                 setHistoryCollapsed={setHistoryCollapsed}
                 options={options}
+                getOptionWeight={getOptionWeight}
+                onOptionWeightChange={onOptionWeightChange}
                 newOption={newOption}
                 setNewOption={setNewOption}
                 submitNewOption={submitNewOption}

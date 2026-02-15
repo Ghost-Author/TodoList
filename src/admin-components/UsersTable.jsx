@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 const UsersTable = ({
   users,
@@ -23,6 +23,7 @@ const UsersTable = ({
     created: true,
     lastLogin: true
   });
+  const [sortBy, setSortBy] = useState('created_desc');
 
   useEffect(() => {
     try {
@@ -67,6 +68,32 @@ const UsersTable = ({
         : <React.Fragment key={`${part}-${idx}`}>{part}</React.Fragment>
     ));
   };
+  const sortedUsers = useMemo(() => {
+    const list = [...users];
+    const parseTime = (val) => {
+      const ts = new Date(val || '').getTime();
+      return Number.isFinite(ts) ? ts : 0;
+    };
+    list.sort((a, b) => {
+      if (sortBy === 'email_asc') {
+        return String(a.email || '').localeCompare(String(b.email || ''), 'zh-CN');
+      }
+      if (sortBy === 'email_desc') {
+        return String(b.email || '').localeCompare(String(a.email || ''), 'zh-CN');
+      }
+      if (sortBy === 'login_asc') {
+        return parseTime(a.last_sign_in_at) - parseTime(b.last_sign_in_at);
+      }
+      if (sortBy === 'login_desc') {
+        return parseTime(b.last_sign_in_at) - parseTime(a.last_sign_in_at);
+      }
+      if (sortBy === 'created_asc') {
+        return parseTime(a.created_at) - parseTime(b.created_at);
+      }
+      return parseTime(b.created_at) - parseTime(a.created_at);
+    });
+    return list;
+  }, [users, sortBy]);
 
   return (
     <div className="mt-6">
@@ -143,10 +170,22 @@ const UsersTable = ({
         <button type="button" onClick={() => setColumnVisible('email')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.email ? '' : 'opacity-50'}`}>邮箱</button>
         <button type="button" onClick={() => setColumnVisible('created')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.created ? '' : 'opacity-50'}`}>创建时间</button>
         <button type="button" onClick={() => setColumnVisible('lastLogin')} className={`pill-soft px-2 py-1 rounded-full ${visibleCols.lastLogin ? '' : 'opacity-50'}`}>最近登录</button>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="text-[11px] bg-white/85 rounded-full px-2 py-1 outline-none ring-1 ring-[#ffe4f2]"
+        >
+          <option value="created_desc">创建时间 新→旧</option>
+          <option value="created_asc">创建时间 旧→新</option>
+          <option value="login_desc">最近登录 新→旧</option>
+          <option value="login_asc">最近登录 旧→新</option>
+          <option value="email_asc">邮箱 A→Z</option>
+          <option value="email_desc">邮箱 Z→A</option>
+        </select>
       </div>
 
       <div className="md:hidden space-y-2">
-        {users.map((u) => (
+        {sortedUsers.map((u) => (
           <div key={u.id} className="card-soft-sm p-3">
             <div className="space-y-1.5 text-xs text-[#7b6f8c]">
               {visibleCols.email && (
@@ -179,7 +218,7 @@ const UsersTable = ({
             </div>
           </div>
         ))}
-        {users.length === 0 && !usersLoading && (
+        {sortedUsers.length === 0 && !usersLoading && (
           <div className="card-soft-sm p-4 text-xs text-[#7b6f8c] text-center">暂无数据</div>
         )}
       </div>
@@ -195,7 +234,7 @@ const UsersTable = ({
             </tr>
           </thead>
           <tbody className="text-[#3b2e4a]">
-            {users.map((u) => (
+            {sortedUsers.map((u) => (
               <tr key={u.id} className="border-t border-[#ffe4f2]">
                 {visibleCols.email && <td className="py-2 break-all">{renderHighlighted(u.email || '-')}</td>}
                 {visibleCols.created && <td className="py-2">{u.created_at ? new Date(u.created_at).toLocaleString() : '-'}</td>}
@@ -211,7 +250,7 @@ const UsersTable = ({
                 </td>
               </tr>
             ))}
-            {users.length === 0 && !usersLoading && (
+            {sortedUsers.length === 0 && !usersLoading && (
               <tr>
                 <td className="py-4 text-[#7b6f8c]" colSpan={safeVisibleCount + 1}>暂无数据</td>
               </tr>
